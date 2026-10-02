@@ -1,0 +1,62 @@
+// TPMS student module — paste into https://dbdiagram.io (DBML)
+Table departments { id bigint [pk] name varchar [unique] code varchar [unique] is_active bool }
+Table branches { id bigint [pk] department_id bigint [ref: > departments.id] name varchar code varchar [unique] }
+Table users {
+  id bigint [pk] name varchar email varchar [unique] password varchar
+  role varchar [note: 'student|tp_coordinator|tpo|system_admin|hod|recruiter']
+  department_id bigint [ref: > departments.id, note: 'required for coordinator/HOD']
+  is_active bool
+}
+Table student_master_list {
+  id bigint [pk] university_id varchar [unique] full_name varchar institutional_email varchar
+  department_id bigint [ref: > departments.id] branch_id bigint [ref: > branches.id]
+  admission_type varchar [note: 'REGULAR|LATERAL'] admission_year smallint graduation_year smallint
+  current_semester smallint claimed_at timestamptz import_batch varchar
+}
+Table students {
+  id bigint [pk] user_id bigint [unique, ref: - users.id] master_list_id bigint [unique, ref: - student_master_list.id]
+  university_id varchar [unique] full_name varchar
+  department_id bigint [ref: > departments.id] branch_id bigint [ref: > branches.id]
+  admission_type varchar admission_year smallint graduation_year smallint current_semester smallint
+  date_of_birth date gender varchar identity_confirmed_at timestamptz
+  personal_email varchar phone varchar current_city varchar permanent_city varchar
+  skills jsonb languages jsonb github_url varchar linkedin_url varchar portfolio_url varchar
+  preferred_roles jsonb preferred_locations jsonb opted_out_of_placement bool opt_out_reason text
+  profile_locked_at timestamptz
+}
+Table documents {
+  id bigint [pk] uuid uuid [unique] student_id bigint [ref: > students.id]
+  document_type varchar version smallint replaces_id bigint [ref: - documents.id]
+  disk varchar path varchar [unique] original_name varchar mime_type varchar size_bytes bigint sha256 char
+  status varchar [note: 'PENDING|APPROVED|REJECTED|SUPERSEDED'] is_primary bool
+  uploaded_by bigint [ref: > users.id] reviewed_by bigint [ref: > users.id] reviewed_at timestamptz
+  rejection_reason_code varchar rejection_reason text
+  indexes { (id, student_id) [unique] }
+}
+Table academic_records {
+  id bigint [pk] student_id bigint [ref: > students.id]
+  level varchar [note: 'TENTH|TWELFTH|DIPLOMA|DEGREE_SEM'] semester smallint
+  institution_name varchar board_or_university varchar passing_year smallint
+  percentage numeric obtained_marks numeric total_marks numeric sgpa numeric cgpa numeric
+  backlogs_in_term smallint active_backlogs_after_term smallint
+  document_id bigint [ref: > documents.id, note: 'composite FK (document_id, student_id)']
+  status varchar [note: 'DRAFT|PENDING|VERIFIED|REJECTED|SUPERSEDED'] version smallint
+  supersedes_id bigint [ref: - academic_records.id]
+  submitted_at timestamptz reviewed_by bigint [ref: > users.id] reviewed_at timestamptz
+  rejection_reason_code varchar rejection_reason text locked_at timestamptz
+}
+Table experiences {
+  id bigint [pk] student_id bigint [ref: > students.id]
+  type varchar organization varchar role_title varchar start_date date end_date date is_ongoing bool description text
+  certificate_document_id bigint [ref: > documents.id, note: 'composite FK (certificate_document_id, student_id)']
+  status varchar [note: 'SELF_DECLARED|DRAFT|PENDING|VERIFIED|REJECTED|SUPERSEDED'] version smallint
+  supersedes_id bigint [ref: - experiences.id]
+  submitted_at timestamptz reviewed_by bigint [ref: > users.id] reviewed_at timestamptz
+  rejection_reason_code varchar rejection_reason text
+}
+Table audit_logs {
+  id bigint [pk] actor_id bigint [ref: > users.id] actor_role varchar action varchar
+  subject_type varchar subject_id bigint student_id bigint [ref: > students.id]
+  old_values jsonb new_values jsonb meta jsonb created_at timestamptz
+  Note: 'append-only: trigger blocks UPDATE/DELETE'
+}
