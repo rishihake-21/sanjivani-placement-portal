@@ -3,17 +3,20 @@
 namespace App\Services;
 
 use App\Enums\AcademicLevel;
+use App\Enums\RecordStatus;
 use App\Models\Student;
 use App\Support\VerifiedAcademicSnapshot;
+use Illuminate\Support\Collection;
 
 /**
- * Single read-path for academic values used by eligibility and reports.
+ * REPLACES the student-module file of the same name. Behaviour is unchanged; the snapshot logic
+ * moved into fromRecords() so the eligibility engine can build snapshots for many students from
+ * ONE preloaded query instead of one query per student.
+ *
  * It reads status = 'VERIFIED' rows and nothing else.
  *
  * CGPA: if the latest verified semester carries the university's printed CGPA, that value wins;
- * otherwise the plain mean of verified SGPAs. (Credit-weighted CGPA would need subject credits,
- * which this module does not store.)
- *
+ * otherwise the plain mean of verified SGPAs.
  * Backlogs: total = sum of backlogs_in_term over verified semesters;
  *           active = active_backlogs_after_term of the latest verified semester.
  */
@@ -21,7 +24,13 @@ class VerifiedAcademicProfileService
 {
     public function forStudent(Student $student): VerifiedAcademicSnapshot
     {
-        $verified = $student->academicRecords()->verified()->get();
+        return $this->fromRecords($student, $student->academicRecords()->verified()->get());
+    }
+
+    /** @param  Collection<int, \App\Models\AcademicRecord>  $records  any records of this student; non-VERIFIED rows are ignored */
+    public function fromRecords(Student $student, Collection $records): VerifiedAcademicSnapshot
+    {
+        $verified = $records->filter(fn ($r) => $r->status === RecordStatus::VERIFIED);
         $byKey = $verified->keyBy(fn ($r) => $r->level->value . ':' . ($r->semester ?? 0));
 
         $missing = [];
@@ -31,7 +40,7 @@ class VerifiedAcademicProfileService
             }
         }
 
-        $semesters = $verified->where('level', AcademicLevel::DEGREE_SEM)->sortBy('semester')->values();
+        $semesters = $verified->filter(fn ($r) => $r->level === AcademicLevel::DEGREE_SEM)->sortBy('semester')->values();
         $latest = $semesters->last();
 
         $cgpa = null;

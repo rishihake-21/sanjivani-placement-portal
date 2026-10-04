@@ -50,5 +50,9 @@ class DatabaseSeeder extends Seeder
                 'role' => Role::TP_COORDINATOR, 'department_id' => $department->id, 'is_active' => true,
             ]);
         }
+
+        // Seed students
+        $this->call(StudentSeeder::class);
+        $this->call(CoordinatorSeeder::class);
     }
 }

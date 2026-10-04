@@ -26,6 +26,11 @@ class ProfileController extends Controller
     public function update(UpdateProfileRequest $request, AuditLogger $audit): JsonResponse
     {
         $student = $this->currentStudent($request);
+
+        // Same 423 the academic and experience services raise for a locked profile,
+        // so every locked write answers the same way.
+        abort_if($student->isLocked(), 423, 'Your profile is locked (batch completed). Contact the T&P office.');
+
         Gate::authorize('update', $student);
 
         $data = $request->validated();
