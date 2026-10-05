@@ -31,6 +31,15 @@ Route::middleware('role:tp_coordinator')->prefix('coordinator')->group(function 
     Route::get('reupload-requests', [Coordinator\ReuploadRequestController::class, 'index']);
     Route::post('students/{studentId}/reupload-requests', [Coordinator\ReuploadRequestController::class, 'store'])->whereNumber('studentId');
     Route::post('reupload-requests/{id}/cancel', [Coordinator\ReuploadRequestController::class, 'cancel'])->whereNumber('id');
+
+    Route::get('verification-queue', [Coordinator\VerificationController::class, 'queue']);
+    Route::post('academic-records/{id}/approve', [Coordinator\VerificationController::class, 'approveAcademicRecord'])->whereNumber('id');
+    Route::post('academic-records/{id}/reject', [Coordinator\VerificationController::class, 'rejectAcademicRecord'])->whereNumber('id');
+    Route::post('academic-records/{id}/unlock', [Coordinator\VerificationController::class, 'unlockAcademicRecord'])->whereNumber('id');
+    Route::post('experiences/{id}/approve', [Coordinator\VerificationController::class, 'approveExperience'])->whereNumber('id');
+    Route::post('experiences/{id}/reject', [Coordinator\VerificationController::class, 'rejectExperience'])->whereNumber('id');
+    Route::post('documents/{document}/approve', [Coordinator\VerificationController::class, 'approveDocument'])->whereUuid('document');
+    Route::post('documents/{document}/reject', [Coordinator\VerificationController::class, 'rejectDocument'])->whereUuid('document');
 });
 
 // ---- Student: sees what their coordinator asked for ----------------------------------------------

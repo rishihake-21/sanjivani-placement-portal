@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use App\Http\Controllers\DocumentDownloadController;
 use App\Http\Controllers\Web\AuthPageController;
+use App\Http\Controllers\Web\CoordinatorPageController;
 use App\Http\Controllers\Web\StudentPageController;
 use App\Http\Controllers\Web\TpoPageController;
 use App\Http\Controllers\Student\AcademicRecordController;
@@ -284,9 +285,42 @@ Route::middleware(['auth', 'role:tp_coordinator'])
     ->name('coordinator.')
     ->group(function () {
 
-        Route::get('/dashboard', function () {
-            return view('coordinator.dashboard');
-        })->name('dashboard');
+        Route::get('/dashboard', [CoordinatorPageController::class, 'dashboard'])->name('dashboard');
+        Route::get('/profile', [CoordinatorPageController::class, 'profile'])->name('profile');
+        Route::get('/verification-queue', [CoordinatorPageController::class, 'queue'])->name('queue');
+
+        Route::get('/students', [CoordinatorPageController::class, 'students'])->name('students');
+        Route::get('/students/{id}', [CoordinatorPageController::class, 'student'])->whereNumber('id')->name('students.show');
+
+        Route::get('/reupload-requests', [CoordinatorPageController::class, 'reuploads'])->name('reuploads');
+
+        Route::get('/drives', [CoordinatorPageController::class, 'drives'])->name('drives');
+        Route::get('/drives/{id}', [CoordinatorPageController::class, 'drive'])->whereNumber('id')->name('drives.show');
+
+        Route::get('/applications', [CoordinatorPageController::class, 'applications'])->name('applications');
+        Route::get('/applications/{id}', [CoordinatorPageController::class, 'application'])->whereNumber('id')->name('applications.show');
+
+        Route::get('/placements', [CoordinatorPageController::class, 'placements'])->name('placements');
+        Route::get('/reports', [CoordinatorPageController::class, 'reports'])->name('reports');
+        Route::get('/reports/students.csv', [\App\Http\Controllers\Coordinator\ReportController::class, 'students'])->name('reports.students-csv');
+        Route::get('/reports/placements.csv', [\App\Http\Controllers\Coordinator\ReportController::class, 'placements'])->name('reports.placements-csv');
+
+        Route::get('/documents/{document}/download', DocumentDownloadController::class)->name('documents.download');
+
+        Route::prefix('x')->name('x.')->group(function () {
+            Route::post('/academic-records/{id}/approve', [\App\Http\Controllers\Coordinator\VerificationController::class, 'approveAcademicRecord'])->whereNumber('id')->name('academic.approve');
+            Route::post('/academic-records/{id}/reject', [\App\Http\Controllers\Coordinator\VerificationController::class, 'rejectAcademicRecord'])->whereNumber('id')->name('academic.reject');
+            Route::post('/academic-records/{id}/unlock', [\App\Http\Controllers\Coordinator\VerificationController::class, 'unlockAcademicRecord'])->whereNumber('id')->name('academic.unlock');
+
+            Route::post('/experiences/{id}/approve', [\App\Http\Controllers\Coordinator\VerificationController::class, 'approveExperience'])->whereNumber('id')->name('experience.approve');
+            Route::post('/experiences/{id}/reject', [\App\Http\Controllers\Coordinator\VerificationController::class, 'rejectExperience'])->whereNumber('id')->name('experience.reject');
+
+            Route::post('/documents/{document}/approve', [\App\Http\Controllers\Coordinator\VerificationController::class, 'approveDocument'])->whereUuid('document')->name('document.approve');
+            Route::post('/documents/{document}/reject', [\App\Http\Controllers\Coordinator\VerificationController::class, 'rejectDocument'])->whereUuid('document')->name('document.reject');
+
+            Route::post('/students/{studentId}/reupload-requests', [\App\Http\Controllers\Coordinator\ReuploadRequestController::class, 'store'])->whereNumber('studentId')->name('reupload.store');
+            Route::post('/reupload-requests/{id}/cancel', [\App\Http\Controllers\Coordinator\ReuploadRequestController::class, 'cancel'])->whereNumber('id')->name('reupload.cancel');
+        });
 
     });
 
