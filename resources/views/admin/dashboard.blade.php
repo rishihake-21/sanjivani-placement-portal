@@ -42,7 +42,7 @@
   .admin-account-cell b{display:block;font-weight:600}
   .admin-account-cell .sub{display:block;color:var(--text-muted);font-size:12px}
   .admin-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
-  .admin-structure-layout{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;align-items:start}
+  .admin-structure-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:24px;align-items:start}
   .admin-structure-layout>section{min-width:0}
   .admin-structure-layout .tbl-wrap{max-width:100%}
   .admin-structure-layout .tbl{min-width:560px}
