@@ -42,7 +42,15 @@
   .admin-account-cell b{display:block;font-weight:600}
   .admin-account-cell .sub{display:block;color:var(--text-muted);font-size:12px}
   .admin-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
-  @@container ct (max-width:900px){.admin-main-grid{grid-template-columns:minmax(0,1fr)}.admin-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  .admin-structure-layout{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;align-items:start}
+  .admin-structure-layout>section{min-width:0}
+  .admin-structure-layout .tbl-wrap{max-width:100%}
+  .admin-structure-layout .tbl{min-width:560px}
+  .admin-structure-layout .admin-actions .btn{padding:6px 8px;font-size:12px}
+  .admin-structure-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .admin-structure-head h3{font:700 15px/1.3 var(--font)}
+  .admin-structure-head p{margin-top:5px;color:var(--text-muted);font-size:13px}
+  @@container ct (max-width:900px){.admin-main-grid,.admin-structure-layout{grid-template-columns:minmax(0,1fr)}.admin-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
   @@container ct (max-width:560px){.admin-stat-grid{grid-template-columns:minmax(0,1fr)}.admin-form-grid{grid-template-columns:minmax(0,1fr)}.admin-form-grid .full{grid-column:auto}.admin-dialog-head,.admin-dialog-body{padding:16px}.admin-dialog-foot{padding:14px 16px}}
 </style>
 @endpush
@@ -67,6 +75,41 @@
     <div class="stat"><span class="cap">Awaiting registration</span><div class="v" id="s-roster-unclaimed">&ndash;</div><span class="meta">Roster records not claimed yet</span></div>
     <div class="stat"><span class="cap">Claimed roster entries</span><div class="v" id="s-roster-claimed">&ndash;</div><span class="meta">Claim timestamp is recorded</span></div>
   </div>
+
+  <x-ui.card id="structure" title="Department & branch management">
+    <p class="meta" style="margin-bottom:18px">Create and rename departments and branches. Deactivate discontinued entries instead of deleting them so historical roster and student records keep their references.</p>
+    <div class="admin-structure-layout">
+      <section aria-labelledby="admin-departments-title">
+        <div class="admin-structure-head admin-section-intro">
+          <div><h3 id="admin-departments-title">Departments</h3><p>Manage department names, codes and availability.</p></div>
+          <button type="button" class="btn btn-primary" id="add-department">Add department</button>
+        </div>
+        <div class="tbl-wrap">
+          <table class="tbl" data-cols='["Department","Active branches","Status","Actions"]'>
+            <thead><tr><th>Department</th><th>Active branches</th><th>Status</th><th><span class="sr">Actions</span></th></tr></thead>
+            <tbody id="department-admin-rows"><tr><td colspan="4"><div class="skel" style="width:60%"></div></td></tr></tbody>
+          </table>
+        </div>
+      </section>
+      <section aria-labelledby="admin-branches-title">
+        <div class="admin-structure-head admin-section-intro">
+          <div><h3 id="admin-branches-title">Branches</h3><p>Create branches within active departments. Update branch codes in roster imports when changing them here.</p></div>
+          <button type="button" class="btn btn-primary" id="add-branch">Add branch</button>
+        </div>
+        <div class="admin-filters">
+          <div class="field search"><label for="branch-search">Search branches</label><input id="branch-search" type="search" placeholder="Branch name or code"></div>
+          <div class="field"><label for="branch-filter-department">Department</label><select id="branch-filter-department"><option value="">All departments</option></select></div>
+          <div class="field"><label for="branch-filter-status">Status</label><select id="branch-filter-status"><option value="all">All branches</option><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+        </div>
+        <div class="tbl-wrap">
+          <table class="tbl" data-cols='["Branch","Department","Status","Actions"]'>
+            <thead><tr><th>Branch</th><th>Department</th><th>Status</th><th><span class="sr">Actions</span></th></tr></thead>
+            <tbody id="branch-admin-rows"><tr><td colspan="4"><div class="skel" style="width:60%"></div></td></tr></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </x-ui.card>
 
   <div class="stack">
     <x-ui.card id="coordinators" title="Coordinator accounts">
