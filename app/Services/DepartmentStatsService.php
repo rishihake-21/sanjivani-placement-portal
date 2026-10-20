@@ -78,42 +78,62 @@ class DepartmentStatsService
         ];
     }
 
-    /** One row per branch of the department. */
-    public function branchSummary(int $departmentId, ?int $graduationYear = null): array
+    /** One row per division of the department (legacy rows without division_id are reported by their branch alias). */
+    public function divisionSummary(int $departmentId, ?int $graduationYear = null): array
     {
-        $yearFilter = fn (Builder $q) => $q->when($graduationYear, fn (Builder $w) => $w->where('s.graduation_year', $graduationYear));
+        $yearFilter = fn (Builder $query) => $query->when(
+            $graduationYear,
+            fn (Builder $filtered) => $filtered->where('s.graduation_year', $graduationYear)
+        );
+        $groupKey = "CASE WHEN s.division_id IS NOT NULL THEN 'D:' || s.division_id::text ELSE 'B:' || COALESCE(s.branch_id::text, '0') END";
 
-        $branches = $yearFilter(DB::table('students as s')
-            ->join('branches as b', 'b.id', '=', 's.branch_id')
-            ->where('s.department_id', $departmentId))
-            ->selectRaw('b.id as branch_id, b.code, b.name, count(*) as students,
-                sum(case when s.opted_out_of_placement then 1 else 0 end) as opted_out')
-            ->groupBy('b.id', 'b.code', 'b.name')->orderBy('b.code')->get();
+        $divisions = $yearFilter(
+            DB::table('students as s')
+                ->leftJoin('divisions as dv', 'dv.id', '=', 's.division_id')
+                ->leftJoin('branches as b', 'b.id', '=', 's.branch_id')
+                ->where('s.department_id', $departmentId)
+        )
+            ->selectRaw($groupKey . ' as group_key')
+            ->selectRaw('s.division_id, s.branch_id, COALESCE(dv.code, b.code, \'UNASSIGNED\') as code, COALESCE(dv.name, b.name, \'Unassigned\') as name')
+            ->selectRaw('count(*) as students, sum(case when s.opted_out_of_placement then 1 else 0 end) as opted_out')
+            ->groupByRaw($groupKey . ', s.division_id, s.branch_id, COALESCE(dv.code, b.code, \'UNASSIGNED\'), COALESCE(dv.name, b.name, \'Unassigned\')')
+            ->orderBy('code')
+            ->get();
 
-        $applied = $yearFilter(DB::table('applications as a')
-            ->join('students as s', 's.id', '=', 'a.student_id')
-            ->where('s.department_id', $departmentId))
-            ->selectRaw('s.branch_id, count(distinct s.id) as n')->groupBy('s.branch_id')->pluck('n', 'branch_id');
+        $applied = $yearFilter(
+            DB::table('applications as a')
+                ->join('students as s', 's.id', '=', 'a.student_id')
+                ->where('s.department_id', $departmentId)
+        )
+            ->selectRaw($groupKey . ' as group_key, count(distinct s.id) as n')
+            ->groupByRaw($groupKey)
+            ->pluck('n', 'group_key');
 
-        $placed = $yearFilter(DB::table('placements as p')
-            ->join('students as s', 's.id', '=', 'p.student_id')
-            ->where('s.department_id', $departmentId)
-            ->where('p.status', PlacementStatus::PLACED->value))
-            ->selectRaw('s.branch_id, count(distinct s.id) as placed, max(p.ctc_lpa) as highest_ctc, avg(p.ctc_lpa) as average_ctc')
-            ->groupBy('s.branch_id')->get()->keyBy('branch_id');
+        $placed = $yearFilter(
+            DB::table('placements as p')
+                ->join('students as s', 's.id', '=', 'p.student_id')
+                ->where('s.department_id', $departmentId)
+                ->where('p.status', PlacementStatus::PLACED->value)
+        )
+            ->selectRaw($groupKey . ' as group_key, count(distinct s.id) as placed, max(p.ctc_lpa) as highest_ctc, avg(p.ctc_lpa) as average_ctc')
+            ->groupByRaw($groupKey)
+            ->get()
+            ->keyBy('group_key');
 
-        return $branches->map(function ($row) use ($applied, $placed) {
-            $p = $placed->get($row->branch_id);
+        return $divisions->map(function ($row) use ($applied, $placed) {
+            $p = $placed->get($row->group_key);
             $eligible = (int) $row->students - (int) $row->opted_out;
             $placedCount = (int) ($p->placed ?? 0);
 
             return [
-                'branch_id' => (int) $row->branch_id,
+                'division_id' => $row->division_id === null ? null : (int) $row->division_id,
+                // Compatibility for clients that still call the grouping a branch.
+                'branch_id' => $row->branch_id === null ? null : (int) $row->branch_id,
                 'code' => $row->code,
                 'name' => $row->name,
                 'students' => (int) $row->students,
                 'opted_out' => (int) $row->opted_out,
-                'applied' => (int) ($applied[$row->branch_id] ?? 0),
+                'applied' => (int) ($applied[$row->group_key] ?? 0),
                 'placed' => $placedCount,
                 'unplaced' => max(0, $eligible - $placedCount),
                 'placement_percentage' => $eligible > 0 ? round($placedCount / $eligible * 100, 2) : null,
@@ -122,4 +142,11 @@ class DepartmentStatsService
             ];
         })->values()->all();
     }
+
+    /** Backward-compatible method name used by older callers. */
+    public function branchSummary(int $departmentId, ?int $graduationYear = null): array
+    {
+        return $this->divisionSummary($departmentId, $graduationYear);
+    }
+
 }
