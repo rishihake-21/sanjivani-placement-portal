@@ -120,7 +120,7 @@ return new class extends Migration
         $defaultDivisionByDepartment = [];
         foreach (DB::table('departments')->orderBy('id')->get(['id', 'code']) as $department) {
             $code = substr(strtoupper((string) $department->code), 0, 18) . '-UNASSIGNED';
-            $existing = DB::table('divisions')->where('code', $code)->first();
+            $existing = DB::table('divisions')->where('department_id', $department->id)->where('code', $code)->first();
             if ($existing) {
                 $divisionId = (int) $existing->id;
             } else {
