@@ -74,11 +74,11 @@ final class DrivePresenter
                     : null,
             ])->values(),
             'divisions' => $departments->flatMap(fn ($department) => $department->divisions
-                ->where('is_active', true)
                 ->map(fn ($division) => [
                     'id' => $division->id,
                     'code' => $division->code,
                     'name' => $division->name,
+                    'is_active' => (bool) $division->is_active,
                     'department_id' => $department->id,
                     'department_code' => $department->code,
                     'department_name' => $department->name,
