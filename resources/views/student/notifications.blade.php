@@ -7,7 +7,7 @@
   <div class="ph">
     <div>
       <h1>Notifications</h1>
-      <p class="meta"><span class="num">{{ $unread }} unread</span> &middot; latest 50 decisions from your T&amp;P Coordinator</p>
+      <p class="meta"><span class="num">{{ $unread }} unread</span> &middot; latest 50 updates about drives and application progress</p>
     </div>
     <div class="row wrap">
       <label class="chk"><input type="checkbox" data-nav-param="unread" @checked($unreadOnly)> Unread only</label>
