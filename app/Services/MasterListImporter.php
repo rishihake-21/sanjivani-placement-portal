@@ -166,6 +166,9 @@ class MasterListImporter
             ]);
 
             $rowErrors = $validator->errors()->all();
+            if ($hasDivisionCode && $row['program_code'] === '') {
+                $rowErrors[] = 'program_code is required for programme/department/division roster imports.';
+            }
             if ($row['division_code'] === '' && $row['branch_code'] === '') {
                 $rowErrors[] = 'division_code is required (legacy files may use branch_code).';
             }
