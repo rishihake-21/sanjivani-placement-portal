@@ -42,8 +42,8 @@
   .admin-account-cell b{display:block;font-weight:600}
   .admin-account-cell .sub{display:block;color:var(--text-muted);font-size:12px}
   .admin-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
-  @container ct (max-width:900px){.admin-main-grid{grid-template-columns:minmax(0,1fr)}.admin-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-  @container ct (max-width:560px){.admin-stat-grid{grid-template-columns:minmax(0,1fr)}.admin-form-grid{grid-template-columns:minmax(0,1fr)}.admin-form-grid .full{grid-column:auto}.admin-dialog-head,.admin-dialog-body{padding:16px}.admin-dialog-foot{padding:14px 16px}}
+  @@container ct (max-width:900px){.admin-main-grid{grid-template-columns:minmax(0,1fr)}.admin-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @@container ct (max-width:560px){.admin-stat-grid{grid-template-columns:minmax(0,1fr)}.admin-form-grid{grid-template-columns:minmax(0,1fr)}.admin-form-grid .full{grid-column:auto}.admin-dialog-head,.admin-dialog-body{padding:16px}.admin-dialog-foot{padding:14px 16px}}
 </style>
 @endpush
 
@@ -362,6 +362,12 @@
   }
 
   function openCreateDialog() {
+    const departmentSelect = $('#coord-department');
+    const hasVacancy = departmentSelect && Array.from(departmentSelect.options).some((option) => option.value && !option.disabled);
+    if (!hasVacancy) {
+      toast('Every active department already has a coordinator, or there are no active departments. Deactivate an account or activate a department before adding another.', 'info');
+      return;
+    }
     editingId = null;
     coordinatorForm.reset();
     clearCoordinatorErrors();
