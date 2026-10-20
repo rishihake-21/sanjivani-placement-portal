@@ -45,7 +45,7 @@ class DriveController extends Controller
 
     public function show(int $id): JsonResponse
     {
-        $drive = PlacementDrive::query()->with(['company', 'eligibility', 'branches'])->findOrFail($id);
+        $drive = PlacementDrive::query()->with(['company', 'eligibility', 'branches', 'departments.program'])->findOrFail($id);
 
         $byStage = $drive->applications()->selectRaw('stage, count(*) as n')->groupBy('stage')->pluck('n', 'stage');
 
