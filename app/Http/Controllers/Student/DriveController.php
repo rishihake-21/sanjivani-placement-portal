@@ -97,10 +97,13 @@ class DriveController extends Controller
         return PlacementDrive::query()->where(fn (Builder $q) => $this->scopeTargeted($q, $student));
     }
 
-    /** Same graduation year and a target branch that includes the student's branch. */
+    /** Same graduation year and a target department that includes every one of its divisions. */
     private function scopeTargeted(Builder $query, Student $student): Builder
     {
         return $query->where('graduation_year', $student->graduation_year)
-            ->whereHas('branches', fn (Builder $b) => $b->where('branches.id', $student->branch_id));
+            ->where(function (Builder $target) use ($student) {
+                $target->whereHas('departments', fn (Builder $d) => $d->where('departments.id', $student->department_id))
+                    ->orWhereHas('branches', fn (Builder $b) => $b->where('branches.department_id', $student->department_id));
+            });
     }
 }
