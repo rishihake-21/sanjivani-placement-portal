@@ -274,6 +274,40 @@
     </div>
   </form>
 </dialog>
+
+<dialog id="department-dialog" class="admin-dialog" aria-labelledby="department-dialog-title">
+  <form id="department-form" novalidate>
+    <div class="admin-dialog-head">
+      <div><h2 id="department-dialog-title">Add department</h2><p class="meta" id="department-dialog-subtitle">Create a department record.</p></div>
+      <button type="button" class="icon-btn" data-close-department aria-label="Close department form">&times;</button>
+    </div>
+    <div class="admin-dialog-body">
+      <div class="admin-form-grid">
+        <div class="field" data-field="name"><label for="department-name">Department name <span aria-hidden="true">*</span></label><input id="department-name" name="name" data-f="name" type="text" maxlength="120" required><span class="err" role="alert" hidden></span></div>
+        <div class="field" data-field="code"><label for="department-code">Department code <span aria-hidden="true">*</span></label><input id="department-code" name="code" data-f="code" type="text" maxlength="20" pattern="[A-Za-z0-9_-]+" placeholder="e.g. CSE" required><span class="hint">Letters, numbers, hyphens and underscores; saved in uppercase.</span><span class="err" role="alert" hidden></span></div>
+      </div>
+    </div>
+    <div class="admin-dialog-foot"><button type="button" class="btn btn-secondary" data-close-department>Cancel</button><button type="submit" class="btn btn-primary" id="department-save">Create department</button></div>
+  </form>
+</dialog>
+
+<dialog id="branch-dialog" class="admin-dialog" aria-labelledby="branch-dialog-title">
+  <form id="branch-form" novalidate>
+    <div class="admin-dialog-head">
+      <div><h2 id="branch-dialog-title">Add branch</h2><p class="meta" id="branch-dialog-subtitle">Add a branch beneath a department.</p></div>
+      <button type="button" class="icon-btn" data-close-branch aria-label="Close branch form">&times;</button>
+    </div>
+    <div class="admin-dialog-body">
+      <div class="admin-form-grid">
+        <div class="field full" data-field="department_id" id="branch-department-field"><label for="branch-department">Parent department <span aria-hidden="true">*</span></label><select id="branch-department" name="department_id" data-f="department_id" required><option value="">Choose an active department</option></select><span class="err" role="alert" hidden></span></div>
+        <div class="field full" id="branch-current-department-field" hidden><label>Parent department</label><p class="admin-note" id="branch-current-department"></p><span class="hint">The branch parent cannot be changed after creation to protect existing records.</span></div>
+        <div class="field" data-field="name"><label for="branch-name">Branch name <span aria-hidden="true">*</span></label><input id="branch-name" name="name" data-f="name" type="text" maxlength="120" required><span class="err" role="alert" hidden></span></div>
+        <div class="field" data-field="code"><label for="branch-code">Branch code <span aria-hidden="true">*</span></label><input id="branch-code" name="code" data-f="code" type="text" maxlength="20" pattern="[A-Za-z0-9_-]+" placeholder="e.g. CSE" required><span class="hint">Must be unique across all branches; saved in uppercase.</span><span class="err" role="alert" hidden></span></div>
+      </div>
+    </div>
+    <div class="admin-dialog-foot"><button type="button" class="btn btn-secondary" data-close-branch>Cancel</button><button type="submit" class="btn btn-primary" id="branch-save">Create branch</button></div>
+  </form>
+</dialog>
 @endsection
 
 @push('scripts')
