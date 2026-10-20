@@ -5,7 +5,7 @@
              graduation_year, pending_reviews (pending academic records + experiences)
   $pg        ['current_page','last_page','total','prev_url','next_url']  (urls keep the filters)
   $filters   current values: ['search','division_id','semester','admission_type','only_pending']  (missing keys = empty)
-  $divisions  [['id','code','name'], ...]  the department's divisiones
+  $divisions  [['id','code','name'], ...]  the department's divisions
 --}}
 @extends('layouts.coordinator')
 @use('App\Support\StudentUi', 'U')
@@ -36,7 +36,7 @@
         <div class="field">
           <label for="f-division">Division</label>
           <select id="f-division" name="division_id">
-            <option value="">All divisiones</option>
+            <option value="">All divisions</option>
             @foreach ($divisions as $b)
               <option value="{{ $b['id'] }}" @selected((string) ($f['division_id'] ?? '') === (string) $b['id'])>{{ $b['code'] }} &middot; {{ $b['name'] }}</option>
             @endforeach
