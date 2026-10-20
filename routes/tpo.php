@@ -5,11 +5,15 @@ use App\Http\Controllers\Tpo;
 use Illuminate\Support\Facades\Route;
 
 /*
-| Loaded by TpoServiceProvider under: prefix /api, middleware api + auth:sanctum.
+| Required by routes/api.php, so it is mounted on /api behind auth:sanctum.
 */
 
 // ---- TPO ------------------------------------------------------------------------------------------
 Route::middleware('role:tpo')->prefix('tpo')->group(function () {
+    // university-wide student directory
+    Route::get('students', [Tpo\StudentDirectoryController::class, 'index']);
+    Route::get('students/{id}', [Tpo\StudentDirectoryController::class, 'show'])->whereNumber('id');
+
     // companies
     Route::get('companies', [Tpo\CompanyController::class, 'index']);
     Route::post('companies', [Tpo\CompanyController::class, 'store']);
@@ -55,6 +59,30 @@ Route::middleware('role:tpo')->prefix('tpo')->group(function () {
 
 // ---- Student: drives, applications, own placements ------------------------------------------------------
 Route::middleware('role:student')->prefix('student')->group(function () {
+    Route::get('profile', [Student\ProfileController::class, 'show']);
+    Route::patch('profile', [Student\ProfileController::class, 'update']);
+
+    Route::get('academic-records', [Student\AcademicRecordController::class, 'index']);
+    Route::post('academic-records', [Student\AcademicRecordController::class, 'store']);
+    Route::get('academic-records/{id}', [Student\AcademicRecordController::class, 'show'])->whereNumber('id');
+    Route::patch('academic-records/{id}', [Student\AcademicRecordController::class, 'update'])->whereNumber('id');
+    Route::delete('academic-records/{id}', [Student\AcademicRecordController::class, 'destroy'])->whereNumber('id');
+    Route::post('academic-records/{id}/document', [Student\AcademicRecordController::class, 'attachDocument'])->whereNumber('id');
+    Route::post('academic-records/{id}/submit', [Student\AcademicRecordController::class, 'submit'])->whereNumber('id');
+
+    Route::get('experiences', [Student\ExperienceController::class, 'index']);
+    Route::post('experiences', [Student\ExperienceController::class, 'store']);
+    Route::patch('experiences/{id}', [Student\ExperienceController::class, 'update'])->whereNumber('id');
+    Route::delete('experiences/{id}', [Student\ExperienceController::class, 'destroy'])->whereNumber('id');
+    Route::post('experiences/{id}/certificate', [Student\ExperienceController::class, 'attachCertificate'])->whereNumber('id');
+    Route::post('experiences/{id}/submit', [Student\ExperienceController::class, 'submit'])->whereNumber('id');
+
+    Route::get('documents', [Student\DocumentController::class, 'index']);
+    Route::post('documents', [Student\DocumentController::class, 'store']);
+
+    Route::get('notifications', [Student\NotificationController::class, 'index']);
+    Route::post('notifications/{id}/read', [Student\NotificationController::class, 'markRead']);
+
     Route::get('drives', [Student\DriveController::class, 'index']);
     Route::get('drives/{id}', [Student\DriveController::class, 'show'])->whereNumber('id');
     Route::post('drives/{id}/apply', [Student\DriveController::class, 'apply'])->whereNumber('id')->middleware('throttle:20,1');

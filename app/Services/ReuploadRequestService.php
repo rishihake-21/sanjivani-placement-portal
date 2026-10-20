@@ -21,11 +21,12 @@ use Illuminate\Support\Facades\DB;
  *  - verified academic record : unlocked (if locked) so the student can start a correction
  *  - verified experience      : student edits it -> revision
  *  - standalone document      : student uploads a replacement
- * The request closes itself when the student submits the new version (CoordinatorServiceProvider).
+ * The request closes itself when the student submits the new version (see fulfil(), called from
+ * AcademicRecordService::submit, ExperienceService::submit and DocumentService::store).
  */
 class ReuploadRequestService
 {
-    public function __construct(private AuditLogger $audit, private VerificationService $verification)
+    public function __construct(private AuditLogger $audit)
     {
     }
 
@@ -48,7 +49,7 @@ class ReuploadRequestService
                     'subject_type' => $type->value, 'subject_id' => $subjectId, 'reason' => $reason,
                 ], $coordinator);
 
-                $student->user->notify(new RecordReviewed($label, 'REUPLOAD_REQUESTED', null, $reason));
+                DB::afterCommit(fn () => $student->user->notify(new RecordReviewed($label, 'REUPLOAD_REQUESTED', null, $reason)));
 
                 return $request;
             });
@@ -57,6 +58,27 @@ class ReuploadRequestService
         }
 
         return $request;
+    }
+
+    /**
+     * Close open requests once the student has submitted a new version of the subject.
+     * Idempotent: only OPEN requests are touched, so a repeat call is a no-op.
+     *
+     * @param  list<int|null>  $subjectIds  the submitted row and (for revisions) the row it supersedes
+     */
+    public function fulfil(Student $student, ReuploadSubject $type, array $subjectIds): int
+    {
+        $ids = array_values(array_filter($subjectIds, fn ($id) => $id !== null));
+        if ($ids === []) {
+            return 0;
+        }
+
+        return ReuploadRequest::query()
+            ->where('student_id', $student->id)
+            ->where('status', ReuploadStatus::OPEN->value)
+            ->where('subject_type', $type->value)
+            ->whereIn('subject_id', $ids)
+            ->update(['status' => ReuploadStatus::FULFILLED->value, 'closed_at' => now(), 'updated_at' => now()]);
     }
 
     public function cancel(ReuploadRequest $request, User $coordinator): ReuploadRequest
@@ -86,7 +108,7 @@ class ReuploadRequestService
                 abort_if($record === null, 404, 'Record not found for this student.');
                 abort_unless($record->status === RecordStatus::VERIFIED, 409, 'Only verified records need a re-upload request. Reject pending records instead.');
                 if ($record->isLocked()) {
-                    $this->verification->unlock($record, $coordinator, 'Re-upload requested: ' . $reason);
+                    app(VerificationService::class)->unlock($record, $coordinator, 'Re-upload requested: ' . $reason);
                 }
 
                 return $record->label();

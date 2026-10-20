@@ -6,12 +6,15 @@ use App\Http\Controllers\Student;
 use Illuminate\Support\Facades\Route;
 
 /*
-| Loaded by CoordinatorServiceProvider under: prefix /api, middleware api + auth:sanctum.
-| Adds to the student-module routes; nothing in routes/api.php needs editing.
+| Required by routes/api.php, so it is mounted on /api behind auth:sanctum.
+| Shared by the T&P coordinator and the system admin.
 */
 
 // ---- T&P Coordinator (own department only) ------------------------------------------------------
 Route::middleware('role:tp_coordinator')->prefix('coordinator')->group(function () {
+    Route::get('students', [Coordinator\StudentController::class, 'index']);
+    Route::get('students/{id}', [Coordinator\StudentController::class, 'show'])->whereNumber('id');
+
     Route::get('profile', [Coordinator\ProfileController::class, 'show']);
 
     Route::get('dashboard', [Coordinator\DashboardController::class, 'dashboard']);

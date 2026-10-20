@@ -29,22 +29,4 @@ class ReuploadRequest extends Model
     {
         return $this->belongsTo(User::class, 'requested_by');
     }
-
-    /**
-     * Close open requests when the student has submitted a new version.
-     * @param  list<int|null>  $subjectIds  the row itself and (for revisions) the row it supersedes
-     */
-    public static function fulfil(ReuploadSubject $type, array $subjectIds): int
-    {
-        $ids = array_values(array_filter($subjectIds, fn ($id) => $id !== null));
-        if ($ids === []) {
-            return 0;
-        }
-
-        return static::query()
-            ->where('status', ReuploadStatus::OPEN->value)
-            ->where('subject_type', $type->value)
-            ->whereIn('subject_id', $ids)
-            ->update(['status' => ReuploadStatus::FULFILLED->value, 'closed_at' => now(), 'updated_at' => now()]);
-    }
 }

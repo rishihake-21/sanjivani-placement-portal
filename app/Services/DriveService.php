@@ -153,12 +153,14 @@ class DriveService
             $drive->forceFill(['status' => DriveStatus::CANCELLED, 'cancel_reason' => $reason, 'closed_at' => now()])->save();
             $this->audit->record('drive.cancelled', $drive, null, ['status' => $was], ['status' => 'CANCELLED'], $tpo, ['reason' => $reason]);
 
-            // Tell everyone who is still in the process.
-            Application::query()->where('drive_id', $drive->id)->with('student.user')->get()
-                ->filter(fn (Application $a) => StageTransitions::withdrawable($a->stage))
-                ->each(fn (Application $a) => $a->student->user->notify(new PlacementNotice(
-                    'drive_cancelled', 'Drive cancelled: ' . $drive->company->name . ' - ' . $drive->title, $reason, ['drive_id' => $drive->id]
-                )));
+            // Tell everyone who is still in the process, once the cancellation has committed.
+            DB::afterCommit(function () use ($drive, $reason) {
+                Application::query()->where('drive_id', $drive->id)->with('student.user')->get()
+                    ->filter(fn (Application $a) => StageTransitions::withdrawable($a->stage))
+                    ->each(fn (Application $a) => $a->student->user->notify(new PlacementNotice(
+                        'drive_cancelled', 'Drive cancelled: ' . $drive->company->name . ' - ' . $drive->title, $reason, ['drive_id' => $drive->id]
+                    )));
+            });
 
             return $this->loaded($drive);
         });
@@ -180,17 +182,44 @@ class DriveService
         });
     }
 
-    /** Scheduled hourly (tpms:close-expired-drives): published drives whose deadline passed stop accepting applications. */
+    /**
+     * Scheduled hourly (tpms:close-expired-drives): published drives whose deadline passed stop accepting applications.
+     *
+     * Candidates are captured as an ID snapshot first, so mutating each drive's status can never shift an
+     * offset cursor and skip a row. Each drive is flipped in its own short transaction under a row lock and
+     * re-checked, so repeated or concurrent runs close a drive once and write exactly one audit record.
+     */
     public function closeExpired(): int
     {
+        $ids = PlacementDrive::query()
+            ->where('status', DriveStatus::PUBLISHED->value)
+            ->where('application_deadline', '<', now())
+            ->orderBy('id')
+            ->pluck('id');
+
         $count = 0;
 
-        PlacementDrive::query()->where('status', DriveStatus::PUBLISHED->value)->where('application_deadline', '<', now())
-            ->each(function (PlacementDrive $drive) use (&$count) {
+        foreach ($ids as $id) {
+            $closed = DB::transaction(function () use ($id) {
+                $drive = PlacementDrive::query()->whereKey($id)->lockForUpdate()->first();
+
+                if ($drive === null
+                    || $drive->status !== DriveStatus::PUBLISHED
+                    || $drive->application_deadline === null
+                    || ! $drive->application_deadline->isPast()) {
+                    return false;
+                }
+
                 $drive->forceFill(['status' => DriveStatus::CLOSED, 'closed_at' => now()])->save();
                 $this->audit->record('drive.auto_closed', $drive, null, ['status' => 'PUBLISHED'], ['status' => 'CLOSED'], null);
-                $count++;
+
+                return true;
             });
+
+            if ($closed) {
+                $count++;
+            }
+        }
 
         return $count;
     }

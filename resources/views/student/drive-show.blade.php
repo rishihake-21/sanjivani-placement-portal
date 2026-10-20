@@ -6,10 +6,10 @@
 <div class="page">
     <div class="ph">
         <div>
-            <a href="{{ route('student.drives') }}" class="linkbtn" style="margin-bottom:8px;display:inline-block">{!! U::icon('out', 'sm') !!} Back to Drives</a>
-            <h1>{{ $drive->company_name }} - {{ $drive->role }}</h1>
+            <a href="{{ route('student.drives') }}" class="linkbtn" style="margin-bottom:8px;display:inline-block"><svg class="icon sm" aria-hidden="true"><use href="#i-out"/></svg> Back to Drives</a>
+            <h1>{{ $drive->company->name }} - {{ $drive->title }}</h1>
         </div>
-        <span class="badge b-{{ $drive->status === 'open' ? 'ok' : ($drive->status === 'closed' ? 'no' : 'wait') }}" style="margin-top:8px">{{ ucfirst($drive->status) }}</span>
+        <span class="badge b-{{ $drive->status->value === 'PUBLISHED' ? 'ok' : ($drive->status->value === 'CLOSED' ? 'no' : 'wait') }}" style="margin-top:8px">{{ $drive->status->value }}</span>
     </div>
     
     <div class="stack">
@@ -48,7 +48,7 @@
                         <div><dt>Location</dt><dd>{{ $drive->location }}</dd></div>
                         <div><dt>Drive Date</dt><dd>{{ \Carbon\Carbon::parse($drive->drive_date)->format('d M Y') }}</dd></div>
                         <div><dt>Last Date to Apply</dt><dd>{{ \Carbon\Carbon::parse($drive->last_date_to_apply)->format('d M Y') }}</dd></div>
-                        <div><dt>Department</dt><dd>{{ $drive->department->name }}</dd></div>
+                        <div><dt>Department</dt><dd>{{ $drive->branches->pluck('department.name')->unique()->implode(', ') }}</dd></div>
                         <div><dt>Batch</dt><dd>{{ $drive->batch_year }}</dd></div>
                     </dl>
                 </section>
@@ -58,24 +58,20 @@
                     <div class="card-h"><h2>Your Eligibility</h2></div>
                     @if ($isEligible)
                         <div class="notice ok" style="margin-bottom:16px">
-                            {!! U::icon('check', 'sm') !!}
+                            <svg class="icon sm" aria-hidden="true"><use href="#i-check"/></svg>
                             <div>You meet the eligibility criteria for this drive.</div>
                         </div>
                     @else
                         <div class="notice no" style="margin-bottom:16px">
-                            {!! U::icon('x', 'sm') !!}
+                            <svg class="icon sm" aria-hidden="true"><use href="#i-x"/></svg>
                             <div>You do not meet the eligibility criteria. Contact T&P Coordinator for details.</div>
                         </div>
                     @endif
                     
                     @if ($hasApplied)
                         <button type="button" class="btn btn-secondary" disabled style="width:100%">Already Applied</button>
-                    @elseif ($isEligible && $drive->status === 'open')
-                        <form action="{{ route('student.applications.store') }}" method="POST">
-                            @csrf
-                            <input type="hidden" name="drive_id" value="{{ $drive->id }}">
-                            <button type="submit" class="btn btn-primary" style="width:100%">{!! U::icon('plus', 'sm') !!} Apply Now</button>
-                        </form>
+                    @elseif ($isEligible && $drive->status->value === 'PUBLISHED')
+                        <a href="{{ route('student.drives.apply', $drive->id) }}" class="btn btn-primary" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px"><svg class="icon sm" aria-hidden="true"><use href="#i-plus"/></svg> Apply Now</a>
                     @else
                         <button type="button" class="btn btn-secondary" disabled style="width:100%">Cannot Apply</button>
                     @endif

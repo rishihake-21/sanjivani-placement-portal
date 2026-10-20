@@ -211,12 +211,17 @@ class ApplicationService
         // Students are notified of staff-driven changes, not of their own withdrawal.
         if ($actor->id !== $application->student?->user_id) {
             $application->loadMissing('drive.company', 'student.user');
-            $application->student->user->notify(new PlacementNotice(
+            $student = $application->student;
+            $title = $application->drive->company->name . ': ' . str_replace('_', ' ', $to->value);
+            $applicationId = $application->id;
+            $stage = $to->value;
+
+            DB::afterCommit(fn () => $student->user->notify(new PlacementNotice(
                 'stage_changed',
-                $application->drive->company->name . ': ' . str_replace('_', ' ', $to->value),
+                $title,
                 $remarks,
-                ['application_id' => $application->id, 'stage' => $to->value],
-            ));
+                ['application_id' => $applicationId, 'stage' => $stage],
+            )));
         }
     }
 

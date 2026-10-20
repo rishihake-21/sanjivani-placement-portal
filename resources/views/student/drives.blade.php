@@ -30,12 +30,26 @@
                         <tbody>
                             @foreach ($drives as $drive)
                                 <tr>
-                                    <td data-l="Company"><b>{{ $drive->company_name }}</b></td>
-                                    <td data-l="Role">{{ $drive->role }}</td>
-                                    <td data-l="Package">{{ $drive->package_lpa }} LPA</td>
-                                    <td data-l="Eligibility">{{ $drive->eligibility_criteria }}</td>
-                                    <td data-l="Date">{{ \Carbon\Carbon::parse($drive->drive_date)->format('d M Y') }}</td>
-                                    <td data-l="Status"><span class="badge b-{{ $drive->status === 'open' ? 'ok' : ($drive->status === 'closed' ? 'no' : 'wait') }}">{{ ucfirst($drive->status) }}</span></td>
+                                    <td data-l="Company"><b>{{ $drive->company->name }}</b></td>
+                                    <td data-l="Role">{{ $drive->title }}</td>
+                                    <td data-l="Package">{{ $drive->ctc_lpa }} LPA</td>
+                                    <td data-l="Eligibility">
+                                        @if ($drive->eligibility)
+                                            CGPA ≥ {{ $drive->eligibility->min_cgpa }}, 10th ≥ {{ $drive->eligibility->min_tenth_percentage }}%, 12th ≥ {{ $drive->eligibility->min_twelfth_percentage }}%
+                                        @else
+                                            <span class="meta">Not specified</span>
+                                        @endif
+                                    </td>
+                                    <td data-l="Date">
+                                        @if ($drive->application_deadline)
+                                            {{ \Carbon\Carbon::parse($drive->application_deadline)->format('d M Y') }}
+                                        @else
+                                            <span class="meta">Not specified</span>
+                                        @endif
+                                    </td>
+                                    <td data-l="Status">
+                                        <span class="badge b-{{ $drive->status->value === 'PUBLISHED' ? 'ok' : ($drive->status->value === 'CLOSED' ? 'no' : 'wait') }}">{{ $drive->status->value }}</span>
+                                    </td>
                                     <td class="act">
                                         <a href="{{ route('student.drives.show', $drive->id) }}" class="btn btn-secondary">View</a>
                                     </td>

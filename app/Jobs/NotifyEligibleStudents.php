@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Enums\DriveStatus;
 use App\Models\PlacementDrive;
+use App\Models\Student;
 use App\Notifications\PlacementNotice;
 use App\Services\EligibilityEngine;
 use App\Support\EligibilityResult;
@@ -39,6 +40,11 @@ class NotifyEligibleStudents implements ShouldQueue
                     continue;
                 }
 
+                // Re-runs (a retried job) must not deliver the same drive notice twice.
+                if ($this->alreadyNotified($student, $drive)) {
+                    continue;
+                }
+
                 $student->user->notify(new PlacementNotice(
                     'drive_published',
                     'New drive: ' . $drive->company->name . ' - ' . $drive->title,
@@ -49,5 +55,19 @@ class NotifyEligibleStudents implements ShouldQueue
                 ));
             }
         });
+    }
+
+    /**
+     * True when this student already holds the drive_published notice for this drive.
+     * The notifications table stores `data` as a JSON string, so the row is decoded through
+     * the model cast rather than queried as a JSON path.
+     */
+    private function alreadyNotified(Student $student, PlacementDrive $drive): bool
+    {
+        return $student->user->notifications()
+            ->where('type', PlacementNotice::class)
+            ->get()
+            ->contains(fn ($notification) => ($notification->data['kind'] ?? null) === 'drive_published'
+                && ($notification->data['drive_id'] ?? null) === $drive->id);
     }
 }

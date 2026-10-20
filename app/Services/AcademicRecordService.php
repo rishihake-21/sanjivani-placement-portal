@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\AcademicLevel;
 use App\Enums\DocumentStatus;
 use App\Enums\RecordStatus;
+use App\Enums\ReuploadSubject;
 use App\Models\AcademicRecord;
 use App\Models\Student;
 use App\Models\User;
@@ -30,8 +31,11 @@ class AcademicRecordService
         'sgpa', 'cgpa', 'backlogs_in_term', 'active_backlogs_after_term',
     ];
 
-    public function __construct(private DocumentService $documents, private AuditLogger $audit)
-    {
+    public function __construct(
+        private DocumentService $documents,
+        private ReuploadRequestService $reuploads,
+        private AuditLogger $audit,
+    ) {
     }
 
     public function create(Student $student, User $actor, array $data, ?UploadedFile $file = null): AcademicRecord
@@ -201,6 +205,8 @@ class AcademicRecordService
                 'rejection_reason_code' => null,
                 'rejection_reason' => null,
             ])->save();
+
+            $this->reuploads->fulfil($record->student, ReuploadSubject::ACADEMIC_RECORD, [$record->id, $record->supersedes_id]);
 
             $this->audit->record('academic_record.submitted', $record, $record->student_id, $before, ['status' => 'PENDING'], $actor);
 

@@ -246,11 +246,21 @@ class VerificationService
 
     private function notify(AcademicRecord|Experience $record, string $decision, ?RejectionReason $code = null, ?string $text = null): void
     {
-        $record->student->user->notify(new RecordReviewed($record->label(), $decision, $code?->value, $text ?? $code?->label()));
+        $student = $record->student;
+        $label = $record->label();
+        $reasonCode = $code?->value;
+        $reasonText = $text ?? $code?->label();
+
+        DB::afterCommit(fn () => $student->user->notify(new RecordReviewed($label, $decision, $reasonCode, $reasonText)));
     }
 
     private function notifyDocument(Document $document, string $decision, ?RejectionReason $code = null, ?string $text = null): void
     {
-        $document->student->user->notify(new RecordReviewed($document->document_type->value, $decision, $code?->value, $text ?? $code?->label()));
+        $student = $document->student;
+        $subject = $document->document_type->value;
+        $reasonCode = $code?->value;
+        $reasonText = $text ?? $code?->label();
+
+        DB::afterCommit(fn () => $student->user->notify(new RecordReviewed($subject, $decision, $reasonCode, $reasonText)));
     }
 }

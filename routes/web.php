@@ -83,12 +83,15 @@ Route::post('/forgot-password', function () {
 | Document download (API path)
 |--------------------------------------------------------------------------
 |
-| DocumentResource builds download_url from this name. The portal's own copy
-| lives at student.documents.download inside the student group below.
+| DocumentResource builds download_url from this name. auth:sanctum guards it
+| because it is called by API clients (Bearer token) as well as the stateful
+| SPA session. The portal's own copy lives at student.documents.download
+| inside the student group below.
 |
 */
 
 Route::get('/api/documents/{document}/download', DocumentDownloadController::class)
+    ->middleware('auth:sanctum')
     ->name('documents.download');
 
 
@@ -173,13 +176,14 @@ Route::get('/dashboard', [StudentPageController::class, 'dashboard'])->name('das
 
         /*
         |--------------------------------------------------------------------------
-        | Write routes
+        | Write routes - the "/x/" convention
         |--------------------------------------------------------------------------
         |
-        | The portal's AJAX forms post here with the web session and the CSRF token.
-        | They are the module's own API controllers mounted again, so validation,
-        | policies and the 422/409/423 responses are the API's own. GET /api/*
-        | with Sanctum is untouched.
+        | Every portal write endpoint lives under an "/x/" prefix so it can never
+        | be mistaken for the JSON API. These are the module's own API controllers
+        | mounted again on the web session + CSRF, so validation, policies and the
+        | 422/409/423 responses are the API's own. Reads and token clients keep
+        | using /api/* with auth:sanctum.
         |
         */
 
@@ -216,8 +220,8 @@ Route::get('/dashboard', [StudentPageController::class, 'dashboard'])->name('das
 
             $student = $request->user()->student;
 
-            $drives = \App\Models\Drive::query()
-                ->where('status', \App\Enums\DriveStatus::OPEN)
+            $drives = \App\Models\PlacementDrive::query()
+                ->where('status', \App\Enums\DriveStatus::PUBLISHED)
                 ->orderByDesc('created_at')
                 ->get();
 
@@ -231,12 +235,14 @@ Route::get('/dashboard', [StudentPageController::class, 'dashboard'])->name('das
         })->name('drives');
 
 
-        Route::get('/drives/{drive}', function (Request $request, $drive) {
+        Route::get('/drives/{drive}', function (Request $request, \App\Models\PlacementDrive $drive) {
 
             $student = $request->user()->student;
 
+            $drive->load('branches.department');
+
             $engine = app(\App\Services\EligibilityEngine::class);
-            $eligibility = $engine->evaluate($drive, $student);
+            $eligibility = $engine->evaluate($student, $drive);
 
             return view('student.drive-show', [
                 'active' => 'student.drives',
@@ -250,6 +256,45 @@ Route::get('/dashboard', [StudentPageController::class, 'dashboard'])->name('das
             ]);
 
         })->name('drives.show');
+
+
+        Route::get('/drives/{drive}/apply', function (Request $request, \App\Models\PlacementDrive $drive) {
+
+            $student = $request->user()->student;
+
+            $engine = app(\App\Services\EligibilityEngine::class);
+            $eligibility = $engine->evaluate($student, $drive);
+
+            $hasApplied = $student->applications()
+                ->where('drive_id', $drive->id)
+                ->exists();
+
+            $application = null;
+            if ($hasApplied) {
+                $application = $student->applications()
+                    ->where('drive_id', $drive->id)
+                    ->first();
+            }
+
+            // Get primary resume
+            $resume = $student->documents()
+                ->where('document_type', 'RESUME')
+                ->where('is_primary', true)
+                ->where('status', '<>', \App\Enums\DocumentStatus::SUPERSEDED->value)
+                ->first();
+
+            return view('student.drive-apply', [
+                'active' => 'student.drives',
+                'user' => $request->user(),
+                'student' => $student,
+                'drive' => $drive,
+                'eligibility' => $eligibility,
+                'hasApplied' => $hasApplied,
+                'application' => $application,
+                'resume' => $resume,
+            ]);
+
+        })->name('drives.apply');
 
 
         /*
@@ -307,6 +352,10 @@ Route::middleware(['auth', 'role:tp_coordinator'])
 
         Route::get('/documents/{document}/download', DocumentDownloadController::class)->name('documents.download');
 
+        /*
+        | Write routes under the "/x/" convention: same controllers as the /api/*
+        | JSON API, remounted on the web session + CSRF for the portal's forms.
+        */
         Route::prefix('x')->name('x.')->group(function () {
             Route::post('/academic-records/{id}/approve', [\App\Http\Controllers\Coordinator\VerificationController::class, 'approveAcademicRecord'])->whereNumber('id')->name('academic.approve');
             Route::post('/academic-records/{id}/reject', [\App\Http\Controllers\Coordinator\VerificationController::class, 'rejectAcademicRecord'])->whereNumber('id')->name('academic.reject');

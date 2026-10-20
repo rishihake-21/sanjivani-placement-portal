@@ -7,6 +7,8 @@ use App\Http\Controllers\Concerns\PresentsStudentDetail;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\DocumentResource;
 use App\Models\Student;
+use App\Services\Student\StudentDocumentService;
+use App\Services\Student\StudentNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Arr;
@@ -20,6 +22,12 @@ use Illuminate\View\View;
 class StudentPageController extends Controller
 {
     use PresentsStudentDetail;
+
+    public function __construct(
+        private StudentDocumentService $documents,
+        private StudentNotificationService $notifications,
+    ) {
+    }
 
     public function dashboard(Request $request): View
     {
@@ -103,20 +111,14 @@ class StudentPageController extends Controller
     /** Same query as Student\DocumentController::index. */
     private function loadDocuments(Student $student, bool $history): array
     {
-        $query = $student->documents()->orderByDesc('created_at');
-        if (! $history) {
-            $query->where('status', '<>', 'SUPERSEDED');
-        }
-
-        return $this->present(DocumentResource::collection($query->get()), request());
+        return $this->present(DocumentResource::collection($this->documents->documents($student, $history)), request());
     }
 
     /** Same payload as Student\NotificationController::index, plus the readable rejection label. */
     private function loadNotifications(Request $request): array
     {
-        return $request->user()->notifications()->latest()->limit(50)->get()
-            ->map(function ($n) {
-                $row = ['id' => $n->id, 'read' => $n->read_at !== null, 'created_at' => $n->created_at] + $n->data;
+        return $this->notifications->recent($request->user())
+            ->map(function ($row) {
                 $row['reason_label'] = ! empty($row['reason_code']) ? RejectionReason::tryFrom($row['reason_code'])?->label() : null;
 
                 return $row;

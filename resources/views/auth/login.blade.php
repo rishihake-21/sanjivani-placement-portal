@@ -15,20 +15,20 @@
 <div style="display:flex;height:100vh;background:#fff">
     <div style="flex:1;background:#3f4550;color:#fff;display:flex;flex-direction:column;justify-content:space-between;padding:64px">
         <div style="display:flex;align-items:center;gap:16px">
-            <img src="{{ asset('images/sanjivani logo.png') }}" alt="Sanjivani University" style="width:64px;height:64px;object-fit:contain;">
-            <div style="font-weight:700;font-size:20px;letter-spacing:.04em">SANJIVANI UNIVERSITY</div>
+            <!-- <img src="{{ asset('images/sanjivani logo.png') }}" alt="Sanjivani University" style="width:64px;height:64px;object-fit:contain;"> -->
+            <div style="font-weight:700;font-size:20px;letter-spacing:.04em"> UNIVERSITY TPMS</div>
         </div>
         <div>
             <h1 style="margin:0 0 16px;font-size:44px;line-height:1.15">Training & Placement<br>Management System</h1>
             <p style="margin:0;max-width:480px;font-size:18px;line-height:1.5;color:#d5d9e0">Build a verified profile, track your applications, and let the T&P cell see only what has been checked.</p>
         </div>
-        <div style="font-size:14px;color:#d5d9e0">&copy; 2026 Sanjivani University</div>
+        <div style="font-size:14px;color:#d5d9e0">&copy; 2026 University TPMS</div>
     </div>
     <div style="width:520px;box-sizing:border-box;padding:96px 64px;max-width:100%;overflow-y:auto">
         <h2 style="margin:0 0 8px;font-size:28px">Sign in</h2>
         <p style="margin:0 0 8px;color:#4b5563;font-size:15px">Use your institutional account.</p>
         
-        <form method="POST" action="{{ route('login') }}">
+        <form method="POST" action="{{ route('login.post') }}">
             @csrf
             
             <fieldset style="border:0;padding:0;margin:20px 0 0">

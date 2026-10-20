@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\DocumentStatus;
 use App\Enums\DocumentType;
+use App\Enums\ReuploadSubject;
 use App\Models\Document;
 use App\Models\Student;
 use App\Models\User;
@@ -23,7 +24,7 @@ use Throwable;
  */
 class DocumentService
 {
-    public function __construct(private AuditLogger $audit)
+    public function __construct(private AuditLogger $audit, private ReuploadRequestService $reuploads)
     {
     }
 
@@ -88,6 +89,11 @@ class DocumentService
                     'is_primary' => $primary,
                     'uploaded_by' => $uploader->id,
                 ]);
+
+                // A replacement file closes a coordinator's standing re-upload request for the old one.
+                if ($document->replaces_id !== null) {
+                    $this->reuploads->fulfil($student, ReuploadSubject::DOCUMENT, [$document->replaces_id]);
+                }
 
                 $this->audit->record('document.uploaded', $document, $student->id, null, [
                     'document_type' => $type->value,

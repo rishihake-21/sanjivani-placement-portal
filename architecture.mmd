@@ -1,0 +1,117 @@
+%% UMS Sanjivani — Architecture Diagram
+%% Evidence classification:
+%%   [Confirmed]         = directly observed in HTML source or public assets
+%%   [Strongly Inferred] = high-confidence conclusion from corroborating signals
+%%   [Unknown]           = insufficient evidence; shown as dashed borders
+%%
+%% NOTE: This diagram documents OBSERVED boundaries only.
+%% No database tables, API contracts, or source files are invented.
+
+graph TB
+    subgraph CLIENT ["Client Layer [Confirmed]"]
+        direction TB
+        BROWSER["Web Browser<br/>(Chrome recommended)"]
+
+        subgraph LEGACY_UI ["Legacy Frontend [Confirmed]"]
+            direction LR
+            JQUERY["jQuery"]
+            BOOTSTRAP["Bootstrap 3"]
+            METRONIC["Metronic Theme"]
+            SELECT2["Select2"]
+            BOOTBOX["Bootbox"]
+            BACKSTRETCH["jQuery Backstretch"]
+            BLOCKUI["jQuery BlockUI"]
+            JQVALIDATE["jQuery Validation"]
+            JSCOOKIE["js.cookie"]
+            DATEPICKER["Bootstrap Datepicker"]
+        end
+
+        subgraph REACT_UI ["React Student Panel [Confirmed: exists]"]
+            REACT["React.js<br/>(version unknown)<br/>(URL unknown)"]
+        end
+
+        RECAPTCHA["Google reCAPTCHA<br/>[Confirmed]"]
+    end
+
+    subgraph CDN_LAYER ["CDN Layer [Confirmed]"]
+        CDN["cdn.gnums.in/Default/<br/>Shared across all GNUMS institutions"]
+    end
+
+    subgraph SERVER ["Server Layer"]
+        direction TB
+
+        subgraph WEB_SERVER ["Web Server [Strongly Inferred]"]
+            IIS["IIS<br/>(version unknown)"]
+        end
+
+        subgraph APP_LAYER ["Application Layer [Confirmed]"]
+            direction TB
+            WEBFORMS["ASP.NET WebForms<br/>.NET Framework<br/>(version unknown)"]
+            SCRIPTMGR["ScriptManager<br/>+ UpdatePanels<br/>(ASP.NET AJAX)"]
+            VIEWSTATE["ViewState<br/>(encrypted)"]
+            EVENTVAL["EventValidation"]
+            VALIDATORS["Server-Side Validators"]
+        end
+
+        subgraph AUTH ["Authentication [Confirmed]"]
+            direction LR
+            FORM_AUTH["Username + Password<br/>(Staff Code / Mobile / Email)"]
+            GOOGLE_AUTH["Google OAuth SSO"]
+            OTP_AUTH["OTP Login<br/>(Staff)"]
+        end
+    end
+
+    subgraph DATA ["Data Layer [Strongly Inferred]"]
+        SQLSERVER["Microsoft SQL Server<br/>(version unknown)"]
+    end
+
+    subgraph EXTERNAL ["External Integrations [Strongly Inferred]"]
+        direction LR
+        RAZORPAY["Razorpay"]
+        ICICI["ICICI Bank Gateway"]
+        UPI["UPI / Net Banking"]
+        DIGILOCKER["DigiLocker"]
+        ABCID["ABC-ID"]
+    end
+
+    subgraph MOBILE ["Mobile Apps [Confirmed]"]
+        direction LR
+        ANDROID_STAFF["Staff App<br/>(Android)"]
+        IOS_STAFF["Staff App<br/>(iOS)"]
+        STUDENT_APP["Student App<br/>(likely exists)"]
+    end
+
+    %% Connections
+    BROWSER -->|"HTTPS"| IIS
+    BROWSER -->|"Static assets"| CDN
+    BROWSER -->|"reCAPTCHA verify"| RECAPTCHA
+    CDN -->|"JS, CSS, fonts, icons"| BROWSER
+
+    IIS --> WEBFORMS
+    WEBFORMS --> SCRIPTMGR
+    WEBFORMS --> VIEWSTATE
+    WEBFORMS --> EVENTVAL
+    WEBFORMS --> VALIDATORS
+    WEBFORMS --> AUTH
+    WEBFORMS -->|"Data access<br/>(method unknown)"| SQLSERVER
+
+    AUTH -->|"OAuth 2.0"| GOOGLE_AUTH
+
+    WEBFORMS -->|"Redirect after login<br/>(Student role)"| REACT
+
+    MOBILE -->|"API<br/>(design unknown)"| IIS
+
+    WEBFORMS -.->|"Payment<br/>(pages unknown)"| RAZORPAY
+    WEBFORMS -.->|"Payment"| ICICI
+    WEBFORMS -.->|"Payment"| UPI
+    WEBFORMS -.->|"Integration"| DIGILOCKER
+    WEBFORMS -.->|"Integration"| ABCID
+
+    %% Styling
+    classDef confirmed fill:#d4edda,stroke:#155724,color:#155724
+    classDef inferred fill:#fff3cd,stroke:#856404,color:#856404
+    classDef unknown fill:#f8d7da,stroke:#721c24,color:#721c24
+
+    class JQUERY,BOOTSTRAP,METRONIC,SELECT2,BOOTBOX,BACKSTRETCH,BLOCKUI,JQVALIDATE,JSCOOKIE,DATEPICKER,CDN,WEBFORMS,SCRIPTMGR,VIEWSTATE,EVENTVAL,VALIDATORS,FORM_AUTH,GOOGLE_AUTH,OTP_AUTH,RECAPTCHA,BROWSER,ANDROID_STAFF,IOS_STAFF confirmed
+    class IIS,SQLSERVER,RAZORPAY,ICICI,UPI,DIGILOCKER,ABCID,STUDENT_APP inferred
+    class REACT,DATEPICKER unknown

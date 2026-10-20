@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\AcademicLevel;
 use App\Enums\AdmissionType;
+use App\Models\Application;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -58,6 +59,11 @@ class Student extends Model
     public function documents(): HasMany
     {
         return $this->hasMany(Document::class);
+    }
+
+    public function applications(): HasMany
+    {
+        return $this->hasMany(Application::class);
     }
 
     public function scopeInDepartment(Builder $query, int $departmentId): Builder

@@ -4,19 +4,18 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Concerns\PresentsStudentDetail;
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\Coordinator\ApplicationController;
-use App\Http\Controllers\Coordinator\DriveController;
-use App\Http\Controllers\Coordinator\PlacementController;
-use App\Http\Controllers\Coordinator\ReuploadRequestController;
-use App\Http\Controllers\Coordinator\StudentController;
-use App\Http\Controllers\Coordinator\VerificationController;
 use App\Models\Branch;
 use App\Models\Company;
 use App\Models\Coordinator;
 use App\Models\Document;
 use App\Models\PlacementDrive;
-use App\Models\ReuploadRequest;
 use App\Models\Student;
+use App\Services\Coordinator\ApplicationDirectoryService;
+use App\Services\Coordinator\DriveDirectoryService;
+use App\Services\Coordinator\PlacementDirectoryService;
+use App\Services\Coordinator\ReuploadRequestDirectoryService;
+use App\Services\Coordinator\StudentDirectoryService;
+use App\Services\Coordinator\VerificationQueueService;
 use App\Services\DepartmentStatsService;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
@@ -32,12 +31,12 @@ class CoordinatorPageController extends Controller
 
     public function __construct(
         private DepartmentStatsService $stats,
-        private StudentController $students,
-        private VerificationController $verification,
-        private DriveController $drives,
-        private ApplicationController $applications,
-        private PlacementController $placements,
-        private ReuploadRequestController $reuploads,
+        private StudentDirectoryService $students,
+        private VerificationQueueService $verification,
+        private DriveDirectoryService $drives,
+        private ApplicationDirectoryService $applications,
+        private PlacementDirectoryService $placements,
+        private ReuploadRequestDirectoryService $reuploads,
     ) {
     }
 
@@ -68,7 +67,7 @@ class CoordinatorPageController extends Controller
 
     public function students(Request $request): View
     {
-        [$rows, $pg] = $this->rowsAndPager($this->payload($this->students->index($this->clean($request)), $request));
+        [$rows, $pg] = $this->rowsAndPager($this->payload($this->students->directory($this->clean($request)), $request));
 
         return view('coordinator.students', $this->context($request, 'coordinator.students', [
             'rows' => $rows,
@@ -95,7 +94,7 @@ class CoordinatorPageController extends Controller
         }
         unset($document);
 
-        $progress = $this->payload($this->applications->studentProgress($this->clean($request), $id), $request)['data'];
+        $progress = $this->payload($this->applications->studentProgress($this->clean($request), $id), $request);
 
         return view('coordinator.student-show', $this->context($request, 'coordinator.students', [
             'student' => Arr::except($profile, ['academic_records', 'experiences', 'documents']),
@@ -105,7 +104,7 @@ class CoordinatorPageController extends Controller
             'completeness' => $detail['completeness'],
             'verified' => $detail['verified_academics'],
             'progress' => $progress,
-            'reuploads' => $this->studentReuploads($request, $id),
+            'reuploads' => $this->reuploads->forStudent($this->clean($request), $id),
         ]));
     }
 
@@ -133,7 +132,7 @@ class CoordinatorPageController extends Controller
 
     public function drive(Request $request, int $id): View
     {
-        $drive = $this->payload($this->drives->show($this->clean($request), $id), $request)['data'];
+        $drive = $this->payload($this->drives->show($this->clean($request), $id), $request);
 
         return view('coordinator.drive-show', $this->context($request, 'coordinator.drives', [
             'drive' => $drive,
@@ -155,7 +154,7 @@ class CoordinatorPageController extends Controller
 
     public function application(Request $request, int $id): View
     {
-        $application = $this->payload($this->applications->show($this->clean($request), $id), $request)['data'];
+        $application = $this->payload($this->applications->show($this->clean($request), $id), $request);
 
         return view('coordinator.application-show', $this->context($request, 'coordinator.applications', [
             'application' => $application,
@@ -214,17 +213,21 @@ class CoordinatorPageController extends Controller
         ];
     }
 
-    private function payload(mixed $response, Request $request): array
+    /**
+     * A read model result as the plain array the JSON API would send (dates as ISO strings, enums as values),
+     * so the Blade screens render exactly what GET /api/coordinator/* returns.
+     */
+    private function payload(mixed $value, Request $request): array
     {
-        if ($response instanceof JsonResource || $response instanceof Responsable) {
-            $response = $response->toResponse($request);
+        if ($value instanceof JsonResource || $value instanceof Responsable) {
+            $value = $value->toResponse($request);
         }
 
-        if ($response instanceof JsonResponse) {
-            return json_decode($response->getContent(), true) ?: [];
+        if ($value instanceof JsonResponse) {
+            return json_decode($value->getContent(), true) ?: [];
         }
 
-        return (array) $response;
+        return json_decode(json_encode($value), true) ?: [];
     }
 
     private function present(JsonResource $resource, Request $request): array
@@ -319,26 +322,6 @@ class CoordinatorPageController extends Controller
             ->get(['id', 'name'])
             ->map->only(['id', 'name'])
             ->values()
-            ->all();
-    }
-
-    private function studentReuploads(Request $request, int $studentId): array
-    {
-        return ReuploadRequest::query()
-            ->where('student_id', $studentId)
-            ->whereHas('student', fn ($query) => $query->where('department_id', (int) $request->user()->department_id))
-            ->latest()
-            ->limit(50)
-            ->get()
-            ->map(fn (ReuploadRequest $reupload) => [
-                'id' => $reupload->id,
-                'subject_type' => $reupload->subject_type->value,
-                'subject_id' => $reupload->subject_id,
-                'reason' => $reupload->reason,
-                'status' => $reupload->status->value,
-                'created_at' => $reupload->created_at,
-                'closed_at' => $reupload->closed_at,
-            ])
             ->all();
     }
 }

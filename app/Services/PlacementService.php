@@ -73,7 +73,11 @@ class PlacementService
 
             $this->audit->record('placement.verified', $locked, $locked->student_id, ['status' => 'OFFERED'], ['status' => 'PLACED'], $tpo);
             if ($locked->application_id === null) { // with an application, the stage change already notified the student
-                $locked->student->user->notify(new PlacementNotice('placed', 'Your placement is confirmed', $locked->role_title, ['placement_id' => $locked->id]));
+                $student = $locked->student;
+                $placementId = $locked->id;
+                $roleTitle = $locked->role_title;
+
+                DB::afterCommit(fn () => $student->user->notify(new PlacementNotice('placed', 'Your placement is confirmed', $roleTitle, ['placement_id' => $placementId])));
             }
 
             return $locked->load('company');
@@ -140,11 +144,12 @@ class PlacementService
             ]);
 
             $this->audit->record('placement.created_manual', $placement, $student->id, null, AuditLogger::snapshot($placement), $tpo);
-            $student->user->notify(new PlacementNotice(
+
+            DB::afterCommit(fn () => $student->user->notify(new PlacementNotice(
                 $status === PlacementStatus::PLACED ? 'placed' : 'offer_recorded',
                 $status === PlacementStatus::PLACED ? 'Your placement is confirmed' : 'Offer recorded: ' . $placement->role_title,
                 null, ['placement_id' => $placement->id]
-            ));
+            )));
 
             return $placement->load('company');
         });

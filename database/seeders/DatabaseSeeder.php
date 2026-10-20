@@ -54,5 +54,8 @@ class DatabaseSeeder extends Seeder
         // Seed students
         $this->call(StudentSeeder::class);
         $this->call(CoordinatorSeeder::class);
+
+        // Seed complete students, companies, and drives
+        $this->call(CompleteStudentAndCompanySeeder::class);
     }
 }

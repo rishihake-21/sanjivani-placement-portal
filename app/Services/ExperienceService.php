@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\DocumentStatus;
 use App\Enums\ExperienceType;
 use App\Enums\RecordStatus;
+use App\Enums\ReuploadSubject;
 use App\Models\Experience;
 use App\Models\Student;
 use App\Models\User;
@@ -23,8 +24,11 @@ class ExperienceService
 {
     public const FIELDS = ['type', 'organization', 'role_title', 'start_date', 'end_date', 'is_ongoing', 'description'];
 
-    public function __construct(private DocumentService $documents, private AuditLogger $audit)
-    {
+    public function __construct(
+        private DocumentService $documents,
+        private ReuploadRequestService $reuploads,
+        private AuditLogger $audit,
+    ) {
     }
 
     public function create(Student $student, User $actor, array $data, ?UploadedFile $certificate = null): Experience
@@ -161,6 +165,8 @@ class ExperienceService
                 'rejection_reason_code' => null,
                 'rejection_reason' => null,
             ])->save();
+
+            $this->reuploads->fulfil($experience->student, ReuploadSubject::EXPERIENCE, [$experience->id, $experience->supersedes_id]);
 
             $this->audit->record('experience.submitted', $experience, $experience->student_id, $before, ['status' => 'PENDING'], $actor);
 
