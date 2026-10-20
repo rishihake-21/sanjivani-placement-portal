@@ -36,6 +36,14 @@ final class DrivePresenter
                 'max_active_backlogs', 'max_total_backlogs', 'diploma_counts_as_twelfth',
             ]),
             'branches' => $drive->branches->map(fn ($b) => ['id' => $b->id, 'code' => $b->code, 'name' => $b->name, 'department_id' => $b->department_id])->values(),
+            'departments' => $drive->departments->map(fn ($d) => [
+                'id' => $d->id,
+                'code' => $d->code,
+                'name' => $d->name,
+                'program' => $d->relationLoaded('program') && $d->program
+                    ? ['id' => $d->program->id, 'code' => $d->program->code, 'name' => $d->program->name]
+                    : null,
+            ])->values(),
         ];
     }
 }
