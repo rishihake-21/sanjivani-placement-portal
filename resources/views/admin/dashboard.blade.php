@@ -56,7 +56,7 @@
 @endpush
 
 @section('content')
-  <x-ui.page-header title="System administration" meta="Manage departments, branches, coordinator accounts and the official student master-list roster.">
+  <x-ui.page-header title="System administration" meta="Manage programmes, departments, divisions, coordinator accounts and the official student master-list roster.">
     <button type="button" class="btn btn-primary" data-add-coordinator>
       <svg class="icon sm" aria-hidden="true"><use href="#i-plus"/></svg>
       Add coordinator
@@ -70,7 +70,7 @@
     <div class="stat"><span class="cap">Active departments</span><div class="v" id="s-active-departments">&ndash;</div><span class="meta" id="s-total-departments"></span></div>
     <div class="stat"><span class="cap">Active coordinators</span><div class="v" id="s-active-coordinators">&ndash;</div><span class="meta">Department assignments in force</span></div>
     <div class="stat"><span class="cap">Inactive coordinators</span><div class="v" id="s-inactive-coordinators">&ndash;</div><span class="meta">Historical accounts retained</span></div>
-    <div class="stat"><span class="cap">Active branches</span><div class="v" id="s-active-branches">&ndash;</div><span class="meta">Across the university</span></div>
+    <div class="stat"><span class="cap">Active divisions</span><div class="v" id="s-active-divisions">&ndash;</div><span class="meta">Across all departments</span></div>
     <div class="stat"><span class="cap">Master-list entries</span><div class="v" id="s-roster-total">&ndash;</div><span class="meta">Official roster records</span></div>
     <div class="stat"><span class="cap">Awaiting registration</span><div class="v" id="s-roster-unclaimed">&ndash;</div><span class="meta">Roster records not claimed yet</span></div>
     <div class="stat"><span class="cap">Claimed roster entries</span><div class="v" id="s-roster-claimed">&ndash;</div><span class="meta">Claim timestamp is recorded</span></div>
@@ -135,7 +135,7 @@
           <select id="coord-filter-department">
             <option value="">All departments</option>
             @foreach ($departments as $department)
-              <option value="{{ $department->id }}">{{ $department->code }} &middot; {{ $department->name }}</option>
+              <option value="{{ $department->id }}">{{ $department->program?->name }} &middot; {{ $department->code }} — {{ $department->name }}</option>
             @endforeach
           </select>
         </div>
@@ -160,9 +160,9 @@
       <x-ui.card id="department-coverage" title="Department coverage">
         <p class="meta" style="margin-bottom:14px">Shows whether each department has an active coordinator. No student marks, experience documents or placement details are exposed here.</p>
         <div class="tbl-wrap">
-          <table class="tbl" data-cols='["Department","Active branches","Coordinator","Coverage"]'>
-            <thead><tr><th>Department</th><th>Active branches</th><th>Coordinator</th><th>Coverage</th></tr></thead>
-            <tbody id="coverage-rows"><tr><td colspan="4"><div class="skel" style="width:60%"></div></td></tr></tbody>
+          <table class="tbl" data-cols='["Department","Programme","Active divisions","Coordinator","Coverage"]'>
+            <thead><tr><th>Department</th><th>Programme</th><th>Active divisions</th><th>Coordinator</th><th>Coverage</th></tr></thead>
+            <tbody id="coverage-rows"><tr><td colspan="5"><div class="skel" style="width:60%"></div></td></tr></tbody>
           </table>
         </div>
       </x-ui.card>
@@ -702,7 +702,7 @@
     setText('s-total-departments', metrics.departments_total + ' total departments');
     setText('s-active-coordinators', metrics.coordinators_active);
     setText('s-inactive-coordinators', metrics.coordinators_inactive);
-    setText('s-active-branches', metrics.branches_active);
+    setText('s-active-divisions', metrics.divisions_active);
     setText('s-roster-total', metrics.roster_total);
     setText('s-roster-unclaimed', metrics.roster_unclaimed);
     setText('s-roster-claimed', metrics.roster_claimed);
@@ -771,7 +771,8 @@
         : '<span class="badge b-wait">Unassigned</span>';
       return [
         '<span class="admin-coverage-name">' + esc(department.code) + '</span><span class="sub">' + esc(department.name) + '</span><span class="sub">' + departmentState + '</span>',
-        '<span class="num">' + esc(department.active_branches_count) + '</span>',
+        '<span class="admin-account-cell"><b>' + esc(department.program_name || '—') + '</b><span class="sub">' + esc(department.program_code || '') + '</span></span>',
+        '<span class="num">' + esc(department.active_divisions_count) + '</span>',
         coordinatorCell,
         coverage
       ];
