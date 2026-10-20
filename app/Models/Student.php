@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Student extends Model
 {
     /** Identity/admission columns are system-controlled: never mass-assigned from a request. */
-    protected $guarded = ['id', 'user_id', 'master_list_id', 'university_id', 'department_id', 'branch_id',
+    protected $guarded = ['id', 'user_id', 'master_list_id', 'university_id', 'department_id', 'branch_id', 'division_id',
         'admission_type', 'admission_year', 'graduation_year', 'current_semester', 'profile_locked_at'];
 
     protected function casts(): array
