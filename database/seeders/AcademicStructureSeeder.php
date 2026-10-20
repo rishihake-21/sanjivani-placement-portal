@@ -24,8 +24,7 @@ class AcademicStructureSeeder extends Seeder
                 'name' => 'B.Tech',
                 'departments' => [
                     'CSE' => ['name' => 'Computer Science and Engineering', 'divisions' => [
-                        ['FY CSE-A', 'FY-CSE-A'], ['SY CSE-A', 'SY-CSE-A'], ['SY CSE-B', 'SY-CSE-B'],
-                        ['TY CSE-A', 'TY-CSE-A'], ['DSY CSE', 'DSY-CSE'],
+                        ['Final Year CSE-A', 'FINAL-CSE-A'], ['Final Year CSE-B', 'FINAL-CSE-B'],
                     ]],
                     'AIML' => ['name' => 'Artificial Intelligence and Machine Learning', 'divisions' => [
                         ['FY AI-ML-A', 'FY-AIML-A'], ['SY AI-ML-A', 'SY-AIML-A'], ['SY AI-ML-B', 'SY-AIML-B'],
@@ -35,21 +34,9 @@ class AcademicStructureSeeder extends Seeder
                         ['FY AIDS-A', 'FY-AIDS-A'], ['SY AIDS-A', 'SY-AIDS-A'], ['SY AIDS-B', 'SY-AIDS-B'],
                         ['TY AIDS-A', 'TY-AIDS-A'], ['DSY AIDS', 'DSY-AIDS'],
                     ]],
-                    'IT' => ['name' => 'Information Technology', 'divisions' => [
-                        ['FY IT-A', 'FY-IT-A'], ['SY IT-A', 'SY-IT-A'], ['SY IT-B', 'SY-IT-B'],
-                        ['TY IT-A', 'TY-IT-A'], ['DSY IT', 'DSY-IT'],
-                    ]],
-                    'ECE' => ['name' => 'Electronics and Telecommunication', 'divisions' => [
-                        ['FY ECE-A', 'FY-ECE-A'], ['SY ECE-A', 'SY-ECE-A'], ['SY ECE-B', 'SY-ECE-B'],
-                        ['TY ECE-A', 'TY-ECE-A'], ['DSY ECE', 'DSY-ECE'],
-                    ]],
                     'ME' => ['name' => 'Mechanical Engineering', 'divisions' => [
                         ['FY Mechanical-A', 'FY-ME-A'], ['SY Mechanical-A', 'SY-ME-A'], ['SY Mechanical-B', 'SY-ME-B'],
                         ['TY Mechanical-A', 'TY-ME-A'], ['DSY Mechanical', 'DSY-ME'],
-                    ]],
-                    'CE' => ['name' => 'Civil Engineering', 'divisions' => [
-                        ['FY Civil-A', 'FY-CE-A'], ['SY Civil-A', 'SY-CE-A'], ['SY Civil-B', 'SY-CE-B'],
-                        ['TY Civil-A', 'TY-CE-A'], ['DSY Civil', 'DSY-CE'],
                     ]],
                     'CYBERSEC' => ['name' => 'Cyber Security', 'divisions' => [
                         ['FY Cyber Security-A', 'FY-CYBERSEC-A'], ['SY Cyber Security-A', 'SY-CYBERSEC-A'],
@@ -145,10 +132,7 @@ class AcademicStructureSeeder extends Seeder
                 'CSE' => ['BTECH', 'CSE', 'Computer Engineering'],
                 'CSE-AIML' => ['BTECH', 'AIML', 'CSE (AI & ML)'],
                 'AIDS' => ['BTECH', 'AIDS', 'Artificial Intelligence and Data Science'],
-                'IT' => ['BTECH', 'IT', 'Information Technology'],
-                'ECE' => ['BTECH', 'ECE', 'Electronics and Telecommunication'],
                 'ME' => ['BTECH', 'ME', 'Mechanical Engineering'],
-                'CE' => ['BTECH', 'CE', 'Civil Engineering'],
                 'CYBERSEC' => ['BTECH', 'CYBERSEC', 'Cyber Security'],
 
                 // Programme-qualified aliases avoid collisions where the same
@@ -190,6 +174,6 @@ class AcademicStructureSeeder extends Seeder
             }
         });
 
-        $this->command?->info('Seeded 6 programmes, 17 departments, programme-specific divisions, and legacy branch aliases.');
+        $this->command?->info('Seeded 6 programmes, 14 departments, programme-specific divisions, and legacy branch aliases.');
     }
 }
