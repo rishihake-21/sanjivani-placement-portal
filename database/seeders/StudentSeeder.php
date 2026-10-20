@@ -307,10 +307,34 @@ class StudentSeeder extends Seeder
             ],
         ];
 
+        // Give demo students explicit, realistic sections so multi-division drive
+        // eligibility and coordinator views can be exercised immediately.
+        $divisionCodes = [
+            '2126UCEM2564' => 'SY-CSE-A',
+            '2126UCEF2565' => 'SY-CSE-B',
+            '2126UCEM2566' => 'SY-AIML-A',
+            '2126UITF2567' => 'SY-IT-A',
+            '2126UITM2568' => 'SY-IT-B',
+            '2126UECF2569' => 'SY-ECE-A',
+            '2126UMEF2570' => 'SY-ME-A',
+            '2126UCVF2571' => 'SY-CE-A',
+        ];
+
         foreach ($students as $data) {
-            $departmentCode = Department::query()->whereKey($data['department_id'])->value('code');
-            $divisionId = Division::query()->where('department_id', $data['department_id'])->where('code', substr(strtoupper((string) $departmentCode), 0, 18) . '-UNASSIGNED')->value('id')
-                ?? Division::query()->where('department_id', $data['department_id'])->where('is_active', true)->value('id');
+            $divisionCode = $divisionCodes[$data['university_id']] ?? null;
+            $divisionId = $divisionCode
+                ? Division::query()
+                    ->where('department_id', $data['department_id'])
+                    ->where('code', $divisionCode)
+                    ->where('is_active', true)
+                    ->value('id')
+                : null;
+
+            if ($divisionId === null) {
+                throw new \\RuntimeException(
+                    "No seeded division {$divisionCode} for demo student {$data['university_id']}."
+                );
+            }
 
             // Create or update master list entry
             $masterList = StudentMasterList::firstOrCreate(
