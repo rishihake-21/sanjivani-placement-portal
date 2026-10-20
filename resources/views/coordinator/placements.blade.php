@@ -1,10 +1,10 @@
 {{--
   Official placement records of the department's students (read only; the TPO maintains them). Route: coordinator.placements
-  $rows       GET /api/coordinator/placements -> data. Row: id, student{id,university_id,full_name,branch}, company,
+  $rows       GET /api/coordinator/placements -> data. Row: id, student{id,university_id,full_name,division}, company,
               role_title, ctc_lpa, location, offer_date, joining_date, status
   $pg         ['current_page','last_page','total','prev_url','next_url']
-  $filters    ['status','branch_id','graduation_year','company_id']
-  $branches   [['id','code','name'], ...]
+  $filters    ['status','division_id','graduation_year','company_id']
+  $divisions   [['id','code','name'], ...]
   $companies  optional [['id','name'], ...] for the company select (omit to hide it)
 --}}
 @extends('layouts.coordinator')
@@ -14,7 +14,7 @@
 @section('content')
 @php
   $f = $filters;
-  $hasFilter = ! empty($f['status']) || ! empty($f['branch_id']) || ! empty($f['graduation_year']) || ! empty($f['company_id']);
+  $hasFilter = ! empty($f['status']) || ! empty($f['division_id']) || ! empty($f['graduation_year']) || ! empty($f['company_id']);
 @endphp
 <div class="page">
   <div class="ph">
@@ -39,11 +39,11 @@
           </select>
         </div>
         <div class="field">
-          <label for="f-branch">Branch</label>
-          <select id="f-branch" name="branch_id">
-            <option value="">All branches</option>
-            @foreach ($branches as $b)
-              <option value="{{ $b['id'] }}" @selected((string) ($f['branch_id'] ?? '') === (string) $b['id'])>{{ $b['code'] }} &middot; {{ $b['name'] }}</option>
+          <label for="f-division">Division</label>
+          <select id="f-division" name="division_id">
+            <option value="">All divisiones</option>
+            @foreach ($divisions as $b)
+              <option value="{{ $b['id'] }}" @selected((string) ($f['division_id'] ?? '') === (string) $b['id'])>{{ $b['code'] }} &middot; {{ $b['name'] }}</option>
             @endforeach
           </select>
         </div>
@@ -73,12 +73,12 @@
       @if (count($rows))
         <div class="tbl-wrap">
           <table class="tbl">
-            <thead><tr><th>Student</th><th>Branch</th><th>Company</th><th>Role</th><th>CTC</th><th>Location</th><th>Offer date</th><th>Joining date</th><th>Status</th></tr></thead>
+            <thead><tr><th>Student</th><th>Division</th><th>Company</th><th>Role</th><th>CTC</th><th>Location</th><th>Offer date</th><th>Joining date</th><th>Status</th></tr></thead>
             <tbody>
               @foreach ($rows as $r)
                 <tr>
                   <td data-l="Student"><a class="linkbtn" href="{{ route('coordinator.students.show', $r['student']['id']) }}"><b>{{ $r['student']['full_name'] }}</b></a><span class="sub">{{ $r['student']['university_id'] }}</span></td>
-                  <td data-l="Branch">{{ U::orDash($r['student']['branch'] ?? null) }}</td>
+                  <td data-l="Division">{{ U::orDash($r['student']['division'] ?? $r['student']['branch'] ?? null) }}</td>
                   <td data-l="Company"><b>{{ $r['company'] }}</b></td>
                   <td data-l="Role">{{ U::orDash($r['role_title'] ?? null) }}</td>
                   <td data-l="CTC" class="num nw">{{ ($r['ctc_lpa'] ?? null) === null ? '–' : U::num2($r['ctc_lpa']) . ' LPA' }}</td>
