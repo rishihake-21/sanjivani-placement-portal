@@ -207,7 +207,7 @@
 
     <x-ui.card title="System admin access boundary">
       <div class="admin-note">
-        This dashboard is intentionally limited to coordinator-account lifecycle and student master-list administration. Student academic records, experience certificates and placement records remain under their dedicated T&amp;P and TPO workflows.
+        This dashboard manages the academic hierarchy, coordinator-account lifecycle and student master-list administration. Student academic records, experience certificates and placement records remain under their dedicated T&amp;P and TPO workflows.
       </div>
     </x-ui.card>
   </div>
