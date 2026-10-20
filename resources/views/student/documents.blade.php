@@ -42,11 +42,12 @@
       </form>
     </section>
 
-    <section class="card" aria-labelledby="h-docs">
+    <section class="card" aria-labelledby="h-docs" data-documents-refresh data-documents-url="{{ url('/api/student/documents') }}" data-history="{{ $history ? '1' : '0' }}">
       <div class="card-h">
         <h2 id="h-docs">Your documents</h2>
         <label class="chk"><input type="checkbox" data-nav-param="history" @checked($history)> Show replaced versions</label>
       </div>
+      <div data-documents-content>
       @if (count($documents))
         <div class="tbl-wrap">
           <table class="tbl">
@@ -68,6 +69,7 @@
       @else
         <p class="empty">No documents uploaded yet.</p>
       @endif
+      </div>
     </section>
   </div>
 </div>
