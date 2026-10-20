@@ -65,8 +65,8 @@
       const q = { graduation_year: f.graduation_year };
       try {
         const [d, b, c] = await Promise.all([api('/tpo/reports/departments', { query: q }), api('/tpo/reports/divisions', { query: q }), api('/tpo/reports/companies', { query: q })]);
-        fillRows($('#dept-rows'), d.data, (r) => [`<span class="name">${esc(r.code)}</span><span class="sub">${esc(r.name)}</span>`, n(r.students), n(r.applied), n(r.placed), n(r.unplaced), pctCell(r.placement_percentage), lpa(r.highest_ctc_lpa), lpa(r.average_ctc_lpa)], 'No students for this batch.');
-        fillRows($('#division-rows'), b.data, (r) => [`<span class="name">${esc(r.code)}</span><span class="sub">${esc(r.name)}</span>`, esc(r.department || ''), n(r.students), n(r.applied), n(r.placed), n(r.unplaced), pctCell(r.placement_percentage), lpa(r.highest_ctc_lpa), lpa(r.average_ctc_lpa)], 'No students for this batch.');
+        fillRows($('#dept-rows'), d.data, (r) => [`<span class="name">${esc(r.code)} — ${esc(r.name)}</span><span class="sub">${esc(r.program || '')}</span>`, n(r.students), n(r.applied), n(r.placed), n(r.unplaced), pctCell(r.placement_percentage), lpa(r.highest_ctc_lpa), lpa(r.average_ctc_lpa)], 'No students for this batch.');
+        fillRows($('#division-rows'), b.data, (r) => [`<span class="name">${esc(r.code)} — ${esc(r.name)}</span><span class="sub">${esc(r.program || '')}</span>`, `<span>${esc(r.department || '')} — ${esc(r.department_name || '')}</span><span class="sub">${esc(r.program || '')}</span>`, n(r.students), n(r.applied), n(r.placed), n(r.unplaced), pctCell(r.placement_percentage), lpa(r.highest_ctc_lpa), lpa(r.average_ctc_lpa)], 'No students for this batch.');
         fillRows($('#company-rows'), c.data, (r) => [`<span class="name">${esc(r.company)}</span>`, n(r.drives), n(r.applications), n(r.students_selected), n(r.students_placed), lpa(r.highest_ctc_lpa), lpa(r.average_ctc_lpa)], 'No company has run a drive for this batch yet.');
       } catch (e) { fail(e); }
     }
