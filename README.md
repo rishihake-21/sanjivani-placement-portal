@@ -61,13 +61,13 @@ Keep Laravel's default users migration: migration `...000002` extends it (its `0
 
 ```bash
 php artisan migrate
-php artisan db:seed                                  # departments, branches, admin, TPO, one coordinator per dept
+php artisan db:seed                                  # programmes, departments, divisions, admin, TPO, one coordinator per dept
 php artisan tpms:import-master-list roster.csv --batch=2026-odd
 php artisan test
 ```
 
 Roster CSV header:
-`university_id,full_name,institutional_email,department_code,branch_code,admission_type,admission_year,graduation_year,current_semester`
+`university_id,full_name,institutional_email,program_code,department_code,division_code,admission_type,admission_year,graduation_year,current_semester`
 
 ## 2. Storage architecture (one file-storage system)
 
@@ -87,7 +87,7 @@ download ► GET /api/documents/{uuid}/download ► DocumentPolicy ► stream (n
 
 | Table | Purpose |
 |---|---|
-| `departments`, `branches` | reference data |
+| `programs`, `departments`, `divisions` | canonical academic hierarchy; a coordinator is assigned to a department |\n| `branches`, `branch_id` | legacy compatibility for old roster/API records during migration |
 | `users` (+`role`, `department_id`, `is_active`) | all accounts; coordinator must have a department (CHECK) |
 | `student_master_list` | imported roster; registration only for unclaimed IDs |
 | `students` | sections A, B, D, F (identity, contact, skills/links, preferences) |
@@ -124,8 +124,8 @@ locked VERIFIED ─► edit refused (423) until the coordinator unlocks it (reas
 | Auth | `POST /api/auth/register`, `/login`, `/logout`; `GET /api/me` |
 | Student | `GET/PATCH /api/student/profile` · `GET/POST /api/student/academic-records` · `PATCH/DELETE …/{id}` · `POST …/{id}/document` · `POST …/{id}/submit` · same shape for `/experiences` (`…/{id}/certificate` attaches **and** submits) · `GET/POST /api/student/documents` (resume, other) · `GET /api/student/notifications` |
 | Coordinator (own dept) | `GET /api/coordinator/students[/{id}]` · `GET /api/coordinator/verification-queue` · `POST academic-records/{id}/approve|reject|unlock` · `experiences/{id}/approve|reject` · `documents/{uuid}/approve|reject` |
-| TPO (read-only) | `GET /api/tpo/students[/{id}]` (filters: department_id, branch_id, semester, admission_type, search, only_pending) |
-| TPO / Admin | `POST /api/master-list/import` (CSV) |
+| TPO (read-only) | `GET /api/tpo/students[/{id}]` (filters: department_id, division_id, branch_id (legacy), semester, admission_type, search, only_pending) |
+| TPO / Admin | `POST /api/master-list/import` (CSV; `division_code` is canonical, `branch_code` remains accepted for old files) |
 | Files | `GET /api/documents/{uuid}/download` |
 
 Reject body: `{"reason_code": "DATA_MISMATCH|UNREADABLE|WRONG_DOCUMENT|INCOMPLETE|INVALID_OR_EXPIRED|OTHER", "reason": "required for OTHER"}`.
