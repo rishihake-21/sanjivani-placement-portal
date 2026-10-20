@@ -34,7 +34,7 @@ class DatabaseSeeder extends Seeder
         }
 
         $structure = [
-            ['CSE', 'Computer Science and Engineering', [['CSE', 'Computer Engineering'], ['CSE-AIML', 'CSE (AI & ML)']]],
+            ['CSE', 'Computer Science and Engineering', [['CSE', 'Computer Engineering']],
             ['IT', 'Information Technology', [['IT', 'Information Technology']]],
             ['ECE', 'Electronics and Telecommunication', [['ECE', 'Electronics and Telecommunication']]],
             ['ME', 'Mechanical Engineering', [['ME', 'Mechanical Engineering']]],
@@ -60,6 +60,13 @@ class DatabaseSeeder extends Seeder
         $departments['AIML'] = Department::firstOrCreate(
             ['code' => 'AIML'],
             ['name' => 'Artificial Intelligence and Machine Learning', 'program_id' => $programs['BTECH']->id, 'is_active' => true]
+        );
+
+        // Compatibility alias for older branch_id/branch_ids clients belongs to AI/ML,
+        // not to the CSE department. The canonical admin hierarchy uses the AIML department.
+        Branch::updateOrCreate(
+            ['code' => 'CSE-AIML'],
+            ['department_id' => $departments['AIML']->id, 'name' => 'CSE (AI & ML)', 'is_active' => true]
         );
 
         // Preserve the old branch code for older clients but make its canonical parent AI/ML.
