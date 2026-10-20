@@ -7,6 +7,7 @@ use App\Enums\Role;
 use App\Models\Branch;
 use App\Models\Department;
 use App\Models\Division;
+use App\Models\Program;
 use App\Models\Student;
 use App\Models\StudentMasterList;
 use App\Models\User;
@@ -18,13 +19,14 @@ class StudentSeeder extends Seeder
     {
         $password = env('TPMS_SEED_PASSWORD') ?: 'password';
 
-        // Get departments and branches
-        $cseDept = Department::where('code', 'CSE')->first();
-        $aimlDept = Department::where('code', 'AIML')->first();
-        $itDept = Department::where('code', 'IT')->first();
-        $eceDept = Department::where('code', 'ECE')->first();
-        $meDept = Department::where('code', 'ME')->first();
-        $ceDept = Department::where('code', 'CE')->first();
+        // Demo roster currently represents B.Tech students; qualify department codes by programme.
+        $btechId = Program::query()->where('code', 'BTECH')->value('id');
+        $cseDept = Department::where('program_id', $btechId)->where('code', 'CSE')->first();
+        $aimlDept = Department::where('program_id', $btechId)->where('code', 'AIML')->first();
+        $itDept = Department::where('program_id', $btechId)->where('code', 'IT')->first();
+        $eceDept = Department::where('program_id', $btechId)->where('code', 'ECE')->first();
+        $meDept = Department::where('program_id', $btechId)->where('code', 'ME')->first();
+        $ceDept = Department::where('program_id', $btechId)->where('code', 'CE')->first();
 
         $cseBranch = Branch::where('code', 'CSE')->first();
         $cseAimlBranch = Branch::where('code', 'CSE-AIML')->first();
@@ -307,7 +309,7 @@ class StudentSeeder extends Seeder
 
         foreach ($students as $data) {
             $departmentCode = Department::query()->whereKey($data['department_id'])->value('code');
-            $divisionId = Division::query()->where('code', substr(strtoupper((string) $departmentCode), 0, 18) . '-UNASSIGNED')->value('id')
+            $divisionId = Division::query()->where('department_id', $data['department_id'])->where('code', substr(strtoupper((string) $departmentCode), 0, 18) . '-UNASSIGNED')->value('id')
                 ?? Division::query()->where('department_id', $data['department_id'])->where('is_active', true)->value('id');
 
             // Create or update master list entry
