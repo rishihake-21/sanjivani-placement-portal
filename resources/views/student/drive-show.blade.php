@@ -49,7 +49,14 @@
                         <div><dt>Location</dt><dd>{{ $drive->location ?: 'Not specified' }}</dd></div>
                         <div><dt>Drive date</dt><dd>{{ $drive->drive_date?->format('d M Y') ?? 'To be announced' }}</dd></div>
                         <div><dt>Application deadline</dt><dd>{{ $drive->application_deadline?->format('d M Y, g:i A') ?? 'Not specified' }}</dd></div>
-                        <div><dt>Eligible branches</dt><dd>{{ $drive->branches->pluck('name')->filter()->unique()->implode(', ') ?: 'Check with the T&P office' }}</dd></div>
+                        <div><dt>Target departments</dt><dd>
+                            @if ($drive->departments->isNotEmpty())
+                                {{ $drive->departments->map(fn ($department) => trim(($department->program?->name ? $department->program->name . ' · ' : '') . $department->code . ' — ' . $department->name))->unique()->implode(', ') }}
+                            @else
+                                {{ $drive->branches->pluck('name')->filter()->unique()->implode(', ') ?: 'Check with the T&P office' }}
+                            @endif
+                        </dd></div>
+                        <div><dt>Your division</dt><dd>{{ $student->division?->name ?? $student->branch?->name ?? 'Not assigned' }}</dd></div>
                         <div><dt>Graduation year</dt><dd>{{ $drive->graduation_year }}</dd></div>
                     </dl>
                 </section>
