@@ -11,6 +11,7 @@ use App\Models\Branch;
 use App\Models\Company;
 use App\Models\Department;
 use App\Models\Division;
+use App\Models\Program;
 use App\Models\PlacementDrive;
 use App\Models\Student;
 use App\Models\StudentMasterList;
@@ -29,11 +30,13 @@ class CompleteStudentAndCompanySeeder extends Seeder
         $hashedPassword = Hash::make($password);
 
         // Get departments and branches
-        $cseDept = Department::where('code', 'CSE')->first();
-        $itDept = Department::where('code', 'IT')->first();
-        $eceDept = Department::where('code', 'ECE')->first();
-        $meDept = Department::where('code', 'ME')->first();
-        $ceDept = Department::where('code', 'CE')->first();
+        // The sample records below are B.Tech students; resolve departments within B.Tech.
+        $btechId = Program::query()->where('code', 'BTECH')->value('id');
+        $cseDept = Department::where('program_id', $btechId)->where('code', 'CSE')->first();
+        $itDept = Department::where('program_id', $btechId)->where('code', 'IT')->first();
+        $eceDept = Department::where('program_id', $btechId)->where('code', 'ECE')->first();
+        $meDept = Department::where('program_id', $btechId)->where('code', 'ME')->first();
+        $ceDept = Department::where('program_id', $btechId)->where('code', 'CE')->first();
 
         $cseBranch = Branch::where('code', 'CSE')->first();
         $cseAimlBranch = Branch::where('code', 'CSE-AIML')->first();
@@ -197,7 +200,7 @@ class CompleteStudentAndCompanySeeder extends Seeder
         // Create complete students with academic records, experience, and documents
         foreach ($completeStudents as $data) {
             $departmentCode = Department::query()->whereKey($data['department_id'])->value('code');
-            $divisionId = Division::query()->where('code', substr(strtoupper((string) $departmentCode), 0, 18) . '-UNASSIGNED')->value('id')
+            $divisionId = Division::query()->where('department_id', $data['department_id'])->where('code', substr(strtoupper((string) $departmentCode), 0, 18) . '-UNASSIGNED')->value('id')
                 ?? Division::query()->where('department_id', $data['department_id'])->where('is_active', true)->value('id');
 
             // Create master list entry
@@ -574,7 +577,7 @@ class CompleteStudentAndCompanySeeder extends Seeder
             $drive->branches()->sync($branchIds);
             $targetDepartmentIds = Branch::query()->whereIn('id', $branchIds)->get(['code', 'department_id'])->map(function ($branch) {
                 if ($branch->code === 'CSE-AIML') {
-                    return Department::query()->where('code', 'AIML')->value('id');
+                    return Department::query()->where('program_id', Program::query()->where('code', 'BTECH')->value('id'))->where('code', 'AIML')->value('id');
                 }
 
                 return $branch->department_id;
