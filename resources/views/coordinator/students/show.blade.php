@@ -78,7 +78,7 @@
       const s = d.student, comp = d.completeness || {}, ver = d.verified_academics || {};
       document.title = s.full_name + ' · TPMS';
       $('.ph h1').textContent = s.full_name;
-      $('.ph .meta').innerHTML = `${esc(s.university_id)} &middot; ${esc(s.branch ? s.branch.name : '')} &middot; Semester ${esc(s.current_semester)} &middot; ${esc(C.ADMISSION[s.admission_type] || s.admission_type)} &middot; Graduating ${esc(s.graduation_year)}`;
+      $('.ph .meta').innerHTML = `${esc(s.university_id)} &middot; ${esc(s.department && s.department.program ? s.department.program.name : '')} &middot; ${esc(s.division ? s.division.name : (s.branch ? s.branch.name : 'Division not assigned'))} &middot; Semester ${esc(s.current_semester)} &middot; ${esc(C.ADMISSION[s.admission_type] || s.admission_type)} &middot; Graduating ${esc(s.graduation_year)}`;
       $('#btn-reupload').disabled = false;
       $('#lock-note').innerHTML = s.profile_locked ? '<div style="margin-bottom:24px">' + notice('neutral', 'lock', 'This profile is locked because the batch is completed. The student cannot edit it.') + '</div>' : '';
 
@@ -97,7 +97,7 @@
       const link = (u) => (u && web(u) ? `<a class="linkbtn" href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(u)}</a>` : val(u));
       $('#profile-body').innerHTML =
         head('Identity') + dl([
-          ['University ID', val(s.university_id)], ['Full name', val(s.full_name)], ['Department', val(s.department && s.department.name)], ['Branch', val(s.branch && s.branch.name)],
+          ['University ID', val(s.university_id)], ['Full name', val(s.full_name)], ['Programme', val(s.department && s.department.program && s.department.program.name)], ['Department', val(s.department && s.department.name)], ['Division', val(s.division && s.division.name ? s.division.name : (s.branch && s.branch.name))],
           ['Admission type', val(C.ADMISSION[s.admission_type] || s.admission_type)], ['Admission year', val(s.admission_year)], ['Graduation year', val(s.graduation_year)], ['Current semester', val(s.current_semester)],
           ['Date of birth', s.date_of_birth ? fmtDate(s.date_of_birth) : dash], ['Gender', val(C.GENDER[s.gender] || s.gender)],
           ['Identity', s.identity_confirmed_at ? 'Confirmed ' + fmtDate(s.identity_confirmed_at) : 'Not confirmed'],
