@@ -55,8 +55,8 @@ class DatabaseSeeder extends Seeder
                     ]);
                 });
 
-            // B.Tech students span multiple divisions; separate demo students cover
-            // the remaining programmes. Drives target departments, not divisions.
+            // Seed 20 students in Final Year CSE-A and additional samples across
+            // retained B.Tech departments and the other programmes. Drives target departments, not divisions.
             $this->call(StudentSeeder::class);
             $this->call(CoordinatorSeeder::class);
             $this->call(HierarchyDemoRosterSeeder::class);
