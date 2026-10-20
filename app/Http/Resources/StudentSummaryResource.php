@@ -16,7 +16,7 @@ class StudentSummaryResource extends JsonResource
             'full_name' => $this->full_name,
             'department' => $this->whenLoaded('department', fn () => $this->department->code),
             'division' => $this->whenLoaded('division', fn () => $this->division?->code ?? $this->branch?->code),
-            'branch' => $this->whenLoaded('branch', fn () => $this->division?->code ?? $this->branch?->code),
+            'branch' => $this->whenLoaded('branch', fn () => $this->branch?->code),
             'admission_type' => $this->admission_type->value,
             'current_semester' => $this->current_semester,
             'graduation_year' => $this->graduation_year,
