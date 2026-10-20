@@ -103,7 +103,13 @@ class DriveController extends Controller
         return $query->where('graduation_year', $student->graduation_year)
             ->where(function (Builder $target) use ($student) {
                 $target->whereHas('departments', fn (Builder $d) => $d->where('departments.id', $student->department_id))
-                    ->orWhereHas('branches', fn (Builder $b) => $b->where('branches.department_id', $student->department_id));
+                    ->orWhere(function (Builder $legacy) use ($student) {
+                        $legacy->whereDoesntHave('departments')
+                            ->whereHas('branches', function (Builder $branch) use ($student) {
+                                $branch->where('branches.department_id', $student->department_id)
+                                    ->where('branches.code', '<>', 'CSE-AIML');
+                            });
+                    });
             });
     }
 }
