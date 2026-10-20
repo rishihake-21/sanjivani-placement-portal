@@ -50,10 +50,9 @@ class MasterListImporter
                     'import_batch' => $batch,
                 ];
 
-                // This nullable field exists only for legacy clients. New roster rows need no branch alias.
-                if ($row['_branch_id'] !== null) {
-                    $attributes['branch_id'] = $row['_branch_id'];
-                }
+                // Keep old branch IDs only when supplied by a legacy import. Canonical division
+                // imports clear the old alias so it cannot conflict with a new department assignment.
+                $attributes['branch_id'] = $row['_branch_id'];
 
                 $entry = MasterListEntry::query()
                     ->where('university_id', $row['university_id'])
@@ -90,11 +89,9 @@ class MasterListImporter
         $new = [
             'department_id' => $attributes['department_id'],
             'division_id' => $attributes['division_id'],
+            'branch_id' => $attributes['branch_id'],
             'current_semester' => $attributes['current_semester'],
         ];
-        if (array_key_exists('branch_id', $attributes)) {
-            $new['branch_id'] = $attributes['branch_id'];
-        }
 
         $old = array_intersect_key($student->getAttributes(), $new);
         if ($old != $new) {
