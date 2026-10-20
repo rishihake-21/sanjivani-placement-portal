@@ -42,7 +42,7 @@
   .admin-account-cell b{display:block;font-weight:600}
   .admin-account-cell .sub{display:block;color:var(--text-muted);font-size:12px}
   .admin-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
-  .admin-structure-layout{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;align-items:start}
+  .admin-structure-layout{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;align-items:start}
   .admin-structure-layout>section{min-width:0}
   .admin-structure-layout .tbl-wrap{max-width:100%}
   .admin-structure-layout .tbl{min-width:560px}
@@ -76,42 +76,49 @@
     <div class="stat"><span class="cap">Claimed roster entries</span><div class="v" id="s-roster-claimed">&ndash;</div><span class="meta">Claim timestamp is recorded</span></div>
   </div>
 
-  <x-ui.card id="structure" title="Department & branch management">
-    <p class="meta" style="margin-bottom:18px">Create and rename departments and branches. Deactivate discontinued entries instead of deleting them so historical roster and student records keep their references.</p>
+  <x-ui.card id="structure" title="Academic structure">
+    <p class="meta" style="margin-bottom:18px">Manage programmes, departments, and divisions. One T&P coordinator is assigned per department, and that coordinator covers every division under it. Records are deactivated rather than deleted.</p>
     <div class="admin-structure-layout">
+      <section aria-labelledby="admin-programs-title">
+        <div class="admin-structure-head admin-section-intro">
+          <div><h3 id="admin-programs-title">Programmes</h3><p>BBA, MBA, B.Tech, M.Tech, and integrated programmes.</p></div>
+          <button type="button" class="btn btn-primary" id="add-program">Add programme</button>
+        </div>
+        <div class="tbl-wrap"><table class="tbl" data-cols='["Programme","Departments","Status","Actions"]'>
+          <thead><tr><th>Programme</th><th>Active departments</th><th>Status</th><th><span class="sr">Actions</span></th></tr></thead>
+          <tbody id="program-admin-rows"><tr><td colspan="4"><div class="skel" style="width:60%"></div></td></tr></tbody>
+        </table></div>
+      </section>
       <section aria-labelledby="admin-departments-title">
         <div class="admin-structure-head admin-section-intro">
-          <div><h3 id="admin-departments-title">Departments</h3><p>Manage department names, codes and availability.</p></div>
+          <div><h3 id="admin-departments-title">Departments</h3><p>Coordinator assignments are made at this level.</p></div>
           <button type="button" class="btn btn-primary" id="add-department">Add department</button>
         </div>
-        <div class="tbl-wrap">
-          <table class="tbl" data-cols='["Department","Active branches","Status","Actions"]'>
-            <thead><tr><th>Department</th><th>Active branches</th><th>Status</th><th><span class="sr">Actions</span></th></tr></thead>
-            <tbody id="department-admin-rows"><tr><td colspan="4"><div class="skel" style="width:60%"></div></td></tr></tbody>
-          </table>
-        </div>
+        <div class="tbl-wrap"><table class="tbl" data-cols='["Department","Programme","Divisions","Status","Actions"]'>
+          <thead><tr><th>Department</th><th>Programme</th><th>Active divisions</th><th>Status</th><th><span class="sr">Actions</span></th></tr></thead>
+          <tbody id="department-admin-rows"><tr><td colspan="5"><div class="skel" style="width:60%"></div></td></tr></tbody>
+        </table></div>
       </section>
-      <section aria-labelledby="admin-branches-title">
+      <section aria-labelledby="admin-divisions-title">
         <div class="admin-structure-head admin-section-intro">
-          <div><h3 id="admin-branches-title">Branches</h3><p>Create branches within active departments. Update branch codes in roster imports when changing them here.</p></div>
-          <button type="button" class="btn btn-primary" id="add-branch">Add branch</button>
+          <div><h3 id="admin-divisions-title">Divisions / sections</h3><p>Examples: SY CSE-A, SY CSE-B, DSY CSE-B.</p></div>
+          <button type="button" class="btn btn-primary" id="add-division">Add division</button>
         </div>
         <div class="admin-filters">
-          <div class="field search"><label for="branch-search">Search branches</label><input id="branch-search" type="search" placeholder="Branch name or code"></div>
-          <div class="field"><label for="branch-filter-department">Department</label><select id="branch-filter-department"><option value="">All departments</option></select></div>
-          <div class="field"><label for="branch-filter-status">Status</label><select id="branch-filter-status"><option value="all">All branches</option><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+          <div class="field search"><label for="division-search">Search divisions</label><input id="division-search" type="search" placeholder="Division name or code"></div>
+          <div class="field"><label for="division-filter-department">Department</label><select id="division-filter-department"><option value="">All departments</option></select></div>
+          <div class="field"><label for="division-filter-status">Status</label><select id="division-filter-status"><option value="all">All divisions</option><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
         </div>
-        <div class="tbl-wrap">
-          <table class="tbl" data-cols='["Branch","Department","Status","Actions"]'>
-            <thead><tr><th>Branch</th><th>Department</th><th>Status</th><th><span class="sr">Actions</span></th></tr></thead>
-            <tbody id="branch-admin-rows"><tr><td colspan="4"><div class="skel" style="width:60%"></div></td></tr></tbody>
-          </table>
-        </div>
+        <div class="tbl-wrap"><table class="tbl" data-cols='["Division","Department / programme","Status","Actions"]'>
+          <thead><tr><th>Division</th><th>Department / programme</th><th>Status</th><th><span class="sr">Actions</span></th></tr></thead>
+          <tbody id="division-admin-rows"><tr><td colspan="4"><div class="skel" style="width:60%"></div></td></tr></tbody>
+        </table></div>
       </section>
     </div>
   </x-ui.card>
 
   <div class="stack">
+    <x-ui.card id="coordinators" title="Coordinator accounts">
     <x-ui.card id="coordinators" title="Coordinator accounts">
       <x-slot:actions>
         <button type="button" class="btn btn-primary" data-add-coordinator>
