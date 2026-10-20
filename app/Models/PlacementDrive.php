@@ -41,6 +41,29 @@ class PlacementDrive extends Model
         return $this->belongsToMany(Branch::class, 'drive_branches', 'drive_id', 'branch_id');
     }
 
+    public function departments(): BelongsToMany
+    {
+        return $this->belongsToMany(Department::class, 'drive_departments', 'drive_id', 'department_id');
+    }
+
+    /**
+     * Resolve department targeting for modern drives and legacy drives that were created
+     * with branch_ids before the programme hierarchy existed.
+     *
+     * @return list<int>
+     */
+    public function targetDepartmentIds(): array
+    {
+        $this->loadMissing(['departments', 'branches']);
+
+        return $this->departments->pluck('id')
+            ->merge($this->branches->pluck('department_id'))
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
     public function applications(): HasMany
     {
         return $this->hasMany(Application::class, 'drive_id');
@@ -51,6 +74,9 @@ class PlacementDrive extends Model
     {
         return $query
             ->whereIn('status', [DriveStatus::PUBLISHED->value, DriveStatus::CLOSED->value])
-            ->whereHas('branches', fn (Builder $b) => $b->where('branches.department_id', $departmentId));
+            ->where(function (Builder $target) use ($departmentId) {
+                $target->whereHas('departments', fn (Builder $d) => $d->where('departments.id', $departmentId))
+                    ->orWhereHas('branches', fn (Builder $b) => $b->where('branches.department_id', $departmentId));
+            });
     }
 }
