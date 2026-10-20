@@ -29,7 +29,7 @@ class EligibilityEngine
 
     public function evaluate(Student $student, PlacementDrive $drive): EligibilityResult
     {
-        $drive->loadMissing(['eligibility', 'branches']);
+        $drive->loadMissing(['eligibility', 'branches', 'departments']);
 
         $snapshot = $this->academics->fromRecords($student, $student->academicRecords()->verified()->get());
         $placed = Placement::query()->where('student_id', $student->id)->where('status', 'PLACED')->exists();
@@ -49,7 +49,7 @@ class EligibilityEngine
             return [];
         }
 
-        $drive->loadMissing(['eligibility', 'branches']);
+        $drive->loadMissing(['eligibility', 'branches', 'departments']);
         $ids = $students->pluck('id')->all();
 
         $records = AcademicRecord::query()->verified()->whereIn('student_id', $ids)->get()->groupBy('student_id');
@@ -68,14 +68,14 @@ class EligibilityEngine
         return $results;
     }
 
-    /** Students a drive is aimed at: its graduation year and its target branches. */
+    /** Students a drive is aimed at: its graduation year and every division in its target departments. */
     public function candidateQuery(PlacementDrive $drive): Builder
     {
-        $drive->loadMissing('branches');
+        $departmentIds = $drive->targetDepartmentIds();
 
         return Student::query()
             ->where('graduation_year', $drive->graduation_year)
-            ->whereIn('branch_id', $drive->branches->pluck('id'));
+            ->whereIn('department_id', $departmentIds);
     }
 
     // ------------------------------------------------------------------------------------------------
@@ -83,14 +83,14 @@ class EligibilityEngine
     private function check(Student $student, PlacementDrive $drive, VerifiedAcademicSnapshot $snap, bool $placed): EligibilityResult
     {
         $checks = [];
-        $branchIds = $drive->branches->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $departmentIds = $drive->targetDepartmentIds();
 
         $checks[] = $this->boolean('graduation_year', 'Graduation year', $drive->graduation_year, $student->graduation_year,
             (int) $student->graduation_year === (int) $drive->graduation_year,
             'This drive is for the ' . $drive->graduation_year . ' batch.');
-        $checks[] = $this->boolean('branch', 'Branch', null, $student->branch_id,
-            in_array((int) $student->branch_id, $branchIds, true),
-            'Your branch is not targeted by this drive.');
+        $checks[] = $this->boolean('department', 'Department', null, $student->department_id,
+            in_array((int) $student->department_id, $departmentIds, true),
+            'Your department is not targeted by this drive.');
         $checks[] = $this->boolean('placement_opt_out', 'Placement opt-out', false, (bool) $student->opted_out_of_placement,
             ! $student->opted_out_of_placement,
             'You have opted out of campus placements.');
