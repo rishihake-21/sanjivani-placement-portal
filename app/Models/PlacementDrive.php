@@ -76,7 +76,7 @@ class PlacementDrive extends Model
         return $this->hasMany(Application::class, 'drive_id');
     }
 
-    /** Drives a coordinator may see: already published (or closed) AND targeting a branch of their department. */
+    /** Drives a coordinator may see: already published (or closed) AND targeting their department. */
     public function scopeVisibleToDepartment(Builder $query, int $departmentId): Builder
     {
         return $query
