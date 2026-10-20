@@ -1,0 +1,166 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('programs', function (Blueprint $table) {
+            $table->id();
+            $table->string('name', 120)->unique();
+            $table->string('code', 20)->unique();
+            $table->boolean('is_active')->default(true);
+            $table->timestampsTz();
+        });
+
+        $now = now();
+        DB::table('programs')->insertOrIgnore([
+            ['name' => 'B.Tech', 'code' => 'BTECH', 'is_active' => true, 'created_at' => $now, 'updated_at' => $now],
+            ['name' => 'BBA', 'code' => 'BBA', 'is_active' => true, 'created_at' => $now, 'updated_at' => $now],
+            ['name' => 'MBA', 'code' => 'MBA', 'is_active' => true, 'created_at' => $now, 'updated_at' => $now],
+            ['name' => 'M.Tech', 'code' => 'MTECH', 'is_active' => true, 'created_at' => $now, 'updated_at' => $now],
+            ['name' => 'Integrated B.Tech', 'code' => 'IBTECH', 'is_active' => true, 'created_at' => $now, 'updated_at' => $now],
+            ['name' => 'Integrated M.Tech', 'code' => 'IMTECH', 'is_active' => true, 'created_at' => $now, 'updated_at' => $now],
+        ]);
+
+        $btechId = DB::table('programs')->where('code', 'BTECH')->value('id');
+
+        Schema::table('departments', function (Blueprint $table) {
+            $table->foreignId('program_id')->nullable()->constrained('programs')->restrictOnDelete();
+        });
+
+        // Preserve the existing department records and put them under the existing B.Tech programme.
+        DB::table('departments')->update(['program_id' => $btechId]);
+        DB::statement('ALTER TABLE departments ALTER COLUMN program_id SET NOT NULL');
+
+        // AI/ML was previously represented as a child branch of CSE in the legacy schema.
+        // Promote it to a real department and later remap those legacy roster records to it.
+        $aiml = DB::table('departments')->where('code', 'AIML')->first();
+        if ($aiml === null) {
+            $aimlId = DB::table('departments')->insertGetId([
+                'name' => 'Artificial Intelligence and Machine Learning',
+                'code' => 'AIML',
+                'is_active' => true,
+                'program_id' => $btechId,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        } else {
+            $aimlId = (int) $aiml->id;
+            DB::table('departments')->where('id', $aimlId)->update(['program_id' => $btechId, 'updated_at' => $now]);
+        }
+
+        Schema::create('divisions', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('department_id')->constrained()->restrictOnDelete();
+            $table->string('name', 120);
+            $table->string('code', 30)->unique();
+            $table->boolean('is_active')->default(true);
+            $table->timestampsTz();
+            $table->unique(['department_id', 'name']);
+        });
+
+        Schema::table('student_master_list', function (Blueprint $table) {
+            $table->foreignId('division_id')->nullable()->constrained('divisions')->restrictOnDelete();
+        });
+
+        Schema::table('students', function (Blueprint $table) {
+            $table->foreignId('division_id')->nullable()->constrained('divisions')->restrictOnDelete();
+        });
+
+        // Keep legacy branch_id intact for backwards compatibility, but promote legacy CSE-AIML
+        // roster rows to the dedicated AI/ML department so coordinator scope matches the domain.
+        $legacyAimlBranchId = DB::table('branches')->where('code', 'CSE-AIML')->value('id');
+        $cseId = DB::table('departments')->where('code', 'CSE')->value('id');
+        if ($legacyAimlBranchId !== null) {
+            if ($cseId !== null) {
+                DB::table('student_master_list')
+                    ->where('branch_id', $legacyAimlBranchId)
+                    ->where('department_id', $cseId)
+                    ->update(['department_id' => $aimlId, 'updated_at' => $now]);
+                DB::table('students')
+                    ->where('branch_id', $legacyAimlBranchId)
+                    ->where('department_id', $cseId)
+                    ->update(['department_id' => $aimlId, 'updated_at' => $now]);
+            }
+        }
+
+        // We cannot infer class sections (SY CSE-A, SY CSE-B, DSY, etc.) from the
+        // old Branch rows. Create an explicit unassigned division per department.
+        // Admin/TPO can replace this assignment from the master-list import without losing IDs.
+        $defaultDivisionByDepartment = [];
+        foreach (DB::table('departments')->orderBy('id')->get(['id', 'code']) as $department) {
+            $code = strtoupper((string) $department->code) . '-UNASSIGNED';
+            $existing = DB::table('divisions')->where('code', $code)->first();
+            if ($existing) {
+                $divisionId = (int) $existing->id;
+            } else {
+                $divisionId = DB::table('divisions')->insertGetId([
+                    'department_id' => $department->id,
+                    'name' => 'Unassigned (migrated records)',
+                    'code' => $code,
+                    'is_active' => true,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+            $defaultDivisionByDepartment[(int) $department->id] = $divisionId;
+        }
+
+        foreach ($defaultDivisionByDepartment as $departmentId => $divisionId) {
+            DB::table('student_master_list')->where('department_id', $departmentId)
+                ->whereNull('division_id')->update(['division_id' => $divisionId]);
+            DB::table('students')->where('department_id', $departmentId)
+                ->whereNull('division_id')->update(['division_id' => $divisionId]);
+        }
+
+        // Drives now target departments. Keep drive_branches unchanged for old clients/data,
+        // and migrate each existing target into the new department-level pivot.
+        Schema::create('drive_departments', function (Blueprint $table) {
+            $table->foreignId('drive_id')->constrained('placement_drives')->restrictOnDelete();
+            $table->foreignId('department_id')->constrained('departments')->restrictOnDelete();
+            $table->primary(['drive_id', 'department_id']);
+            $table->index('department_id');
+        });
+
+        $branches = DB::table('branches')->get(['id', 'code', 'department_id'])->keyBy('id');
+        foreach (DB::table('drive_branches')->get(['drive_id', 'branch_id']) as $target) {
+            $legacyBranch = $branches->get($target->branch_id);
+            if ($legacyBranch === null) {
+                continue;
+            }
+            $departmentId = $legacyBranch->code === 'CSE-AIML'
+                ? $aimlId
+                : (int) $legacyBranch->department_id;
+
+            DB::table('drive_departments')->insertOrIgnore([
+                'drive_id' => $target->drive_id,
+                'department_id' => $departmentId,
+            ]);
+        }
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('drive_departments');
+
+        Schema::table('students', function (Blueprint $table) {
+            $table->dropConstrainedForeignId('division_id');
+        });
+        Schema::table('student_master_list', function (Blueprint $table) {
+            $table->dropConstrainedForeignId('division_id');
+        });
+
+        Schema::dropIfExists('divisions');
+
+        Schema::table('departments', function (Blueprint $table) {
+            $table->dropConstrainedForeignId('program_id');
+        });
+
+        Schema::dropIfExists('programs');
+    }
+};
