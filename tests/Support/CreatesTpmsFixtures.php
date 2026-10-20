@@ -63,7 +63,7 @@ trait CreatesTpmsFixtures
         $student->forceFill([
             'user_id' => $user->id, 'master_list_id' => $entry->id, 'university_id' => $universityId,
             'full_name' => $entry->full_name, 'department_id' => $department->id, 'branch_id' => $branch->id,
-            'division_id' => $department->getRelation('testDivision')->id,
+            'division_id' => ($department->id === $this->cse->id ? $this->cseDivision : $this->mechDivision)->id,
             'admission_type' => $type, 'admission_year' => 2026, 'graduation_year' => 2029, 'current_semester' => $semester,
         ])->save();
 
