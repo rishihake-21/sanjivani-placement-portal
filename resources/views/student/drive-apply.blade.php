@@ -37,6 +37,7 @@
                 <a href="{{ route('student.applications') }}" class="btn btn-primary" style="margin-top:12px">View my applications</a>
             </section>
         @else
+            @php($uiCanSubmit = $eligibility?->isEligible() && $resume && $resume->status === 'APPROVED' && $drive->status->value === 'PUBLISHED' && $drive->application_deadline && $drive->application_deadline->gt(now()))
             <section class="card">
                 <div class="card-h"><h2>Eligibility review</h2></div>
                 <p class="meta">Eligibility is evaluated using verified academic information. Pending verification is different from failing a criterion.</p>
@@ -105,9 +106,12 @@
 
             <section class="card">
                 <div id="application-feedback" class="notice" role="status" aria-live="polite" hidden></div>
+                @unless ($uiCanSubmit)
+                    <div class="notice wait" style="margin-bottom:14px">Submission is not available yet. Confirm eligibility, wait for your primary resume to be approved, and check that the drive is still accepting applications. Your profile may have additional readiness requirements.</div>
+                @endunless
                 <div class="row wrap" style="justify-content:flex-end;gap:10px">
                     <a href="{{ route('student.drives.show', $drive) }}" class="btn btn-secondary">Cancel</a>
-                    <button type="button" class="btn btn-primary" id="btn-submit-application" disabled>Submit application</button>
+                    <button type="button" class="btn btn-primary" id="btn-submit-application" @disabled(!$uiCanSubmit)>Submit application</button>
                 </div>
             </section>
         @endif
@@ -126,10 +130,11 @@
     const submitButton = document.getElementById('btn-submit-application');
     const feedback = document.getElementById('application-feedback');
     const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    const uiCanSubmit = @json((bool) $uiCanSubmit);
 
     function updateButton() {
         if (!submitButton) return;
-        submitButton.disabled = !checkboxes.every((box) => box && box.checked) || submitButton.dataset.loading === 'true';
+        submitButton.disabled = !uiCanSubmit || !checkboxes.every((box) => box && box.checked) || submitButton.dataset.loading === 'true';
     }
 
     function showFeedback(message, type) {
