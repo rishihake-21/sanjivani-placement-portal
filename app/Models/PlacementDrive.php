@@ -88,8 +88,7 @@ class PlacementDrive extends Model
                     ->orWhere(function (Builder $legacy) use ($departmentId) {
                         $legacy->whereDoesntHave('departments')
                             ->whereHas('branches', function (Builder $branch) use ($departmentId) {
-                                $branch->where('branches.department_id', $departmentId)
-                                    ->where('branches.code', '<>', 'CSE-AIML');
+                                $branch->where('branches.department_id', $departmentId);
                             });
                     });
             });
