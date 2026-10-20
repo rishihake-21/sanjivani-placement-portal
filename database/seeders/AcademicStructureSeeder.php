@@ -34,14 +34,14 @@ class AcademicStructureSeeder extends Seeder
                         ['FY AIDS-A', 'FY-AIDS-A'], ['SY AIDS-A', 'SY-AIDS-A'], ['SY AIDS-B', 'SY-AIDS-B'],
                         ['TY AIDS-A', 'TY-AIDS-A'], ['DSY AIDS', 'DSY-AIDS'],
                     ]],
-                    'ME' => ['name' => 'Mechanical Engineering', 'divisions' => [
-                        ['FY Mechanical-A', 'FY-ME-A'], ['SY Mechanical-A', 'SY-ME-A'], ['SY Mechanical-B', 'SY-ME-B'],
-                        ['TY Mechanical-A', 'TY-ME-A'], ['DSY Mechanical', 'DSY-ME'],
-                    ]],
                     'CYBERSEC' => ['name' => 'Cyber Security', 'divisions' => [
                         ['FY Cyber Security-A', 'FY-CYBERSEC-A'], ['SY Cyber Security-A', 'SY-CYBERSEC-A'],
                         ['SY Cyber Security-B', 'SY-CYBERSEC-B'], ['TY Cyber Security-A', 'TY-CYBERSEC-A'],
                         ['DSY Cyber Security', 'DSY-CYBERSEC'],
+                    ]],
+                    'ME' => ['name' => 'Mechanical Engineering', 'divisions' => [
+                        ['FY Mechanical-A', 'FY-ME-A'], ['SY Mechanical-A', 'SY-ME-A'], ['SY Mechanical-B', 'SY-ME-B'],
+                        ['TY Mechanical-A', 'TY-ME-A'], ['DSY Mechanical', 'DSY-ME'],
                     ]],
                 ],
             ],
