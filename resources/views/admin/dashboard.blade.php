@@ -938,7 +938,7 @@
   });
 
   $('#download-csv-template').addEventListener('click', () => {
-    const header = 'university_id,full_name,institutional_email,program_code,department_code,division_code,admission_type,admission_year,graduation_year,current_semester\\r\\n';
+    const header = 'university_id,full_name,institutional_email,program_code,department_code,division_code,admission_type,admission_year,graduation_year,current_semester\r\n';
     const blob = new Blob([header], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
