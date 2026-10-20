@@ -224,6 +224,12 @@ Route::get('/dashboard', [StudentPageController::class, 'dashboard'])->name('das
 
             $drives = \App\Models\PlacementDrive::query()
                 ->where('status', \App\Enums\DriveStatus::PUBLISHED)
+                ->where('graduation_year', $student->graduation_year)
+                ->where(function ($target) use ($student) {
+                    $target->whereHas('departments', fn ($department) => $department->where('departments.id', $student->department_id))
+                        ->orWhereHas('branches', fn ($branch) => $branch->where('branches.department_id', $student->department_id));
+                })
+                ->with(['company', 'eligibility', 'departments.program'])
                 ->orderByDesc('created_at')
                 ->get();
 
@@ -240,6 +246,7 @@ Route::get('/dashboard', [StudentPageController::class, 'dashboard'])->name('das
         Route::get('/drives/{drive}', function (Request $request, \App\Models\PlacementDrive $drive) {
 
             $student = $request->user()->student;
+            $student->load(['division', 'branch']);
 
             $drive->load(['branches.department', 'departments.program', 'departments.divisions']);
 
