@@ -88,7 +88,7 @@ Seeded sign-in accounts use the password assigned to `TPMS_SEED_PASSWORD`:
 After seeding, verify the counts and division assignments before UI testing:
 
 ```powershell
-php artisan tinker --execute="dump(['programmes' => \\App\\Models\\Program::count(), 'departments' => \\App\\Models\\Department::count(), 'divisions' => \\App\\Models\\Division::count(), 'students_without_division' => \\Illuminate\\Support\\Facades\\DB::table('students')->whereNull('division_id')->count(), 'master_list_without_division' => \\Illuminate\\Support\\Facades\\DB::table('student_master_list')->whereNull('division_id')->count()]);"
+php artisan tinker --execute="dump(['programmes' => \App\Models\Program::count(), 'departments' => \App\Models\Department::count(), 'divisions' => \App\Models\Division::count(), 'students_without_division' => \Illuminate\Support\Facades\DB::table('students')->whereNull('division_id')->count(), 'master_list_without_division' => \Illuminate\Support\Facades\DB::table('student_master_list')->whereNull('division_id')->count()]);"
 ```
 Expected clean demo counts: 6 programmes, 17 departments, 61 divisions, and zero student/master-list rows without a division.
 
