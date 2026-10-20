@@ -5,6 +5,8 @@ namespace Database\Seeders;
 use App\Enums\Role;
 use App\Models\Branch;
 use App\Models\Department;
+use App\Models\Division;
+use App\Models\Program;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -19,6 +21,18 @@ class DatabaseSeeder extends Seeder
     {
         $password = env('TPMS_SEED_PASSWORD') ?: throw new \RuntimeException('Set TPMS_SEED_PASSWORD before seeding.');
 
+        $programs = [];
+        foreach ([
+            ['BTECH', 'B.Tech'],
+            ['BBA', 'BBA'],
+            ['MBA', 'MBA'],
+            ['MTECH', 'M.Tech'],
+            ['IBTECH', 'Integrated B.Tech'],
+            ['IMTECH', 'Integrated M.Tech'],
+        ] as [$code, $name]) {
+            $programs[$code] = Program::firstOrCreate(['code' => $code], ['name' => $name, 'is_active' => true]);
+        }
+
         $structure = [
             ['CSE', 'Computer Science and Engineering', [['CSE', 'Computer Engineering'], ['CSE-AIML', 'CSE (AI & ML)']]],
             ['IT', 'Information Technology', [['IT', 'Information Technology']]],
@@ -29,13 +43,32 @@ class DatabaseSeeder extends Seeder
 
         $departments = [];
         foreach ($structure as [$code, $name, $branches]) {
-            $departments[$code] = Department::firstOrCreate(['code' => $code], ['name' => $name]);
+            $departments[$code] = Department::firstOrCreate(
+                ['code' => $code],
+                ['name' => $name, 'program_id' => $programs['BTECH']->id, 'is_active' => true]
+            );
             foreach ($branches as [$branchCode, $branchName]) {
                 Branch::firstOrCreate(
                     ['code' => $branchCode],
                     ['department_id' => $departments[$code]->id, 'name' => $branchName]
                 );
             }
+        }
+
+        // The legacy seed grouped CSE (AI & ML) under CSE. Keep its old branch row for
+        // compatibility, but create AI/ML as its own B.Tech department in the new hierarchy.
+        $departments['AIML'] = Department::firstOrCreate(
+            ['code' => 'AIML'],
+            ['name' => 'Artificial Intelligence and Machine Learning', 'program_id' => $programs['BTECH']->id, 'is_active' => true]
+        );
+
+        // Seed a neutral placeholder for legacy students. The real section/division cannot be
+        // inferred from their old branch row; the master-list import can assign SY/DSY divisions.
+        foreach (Department::query()->with('program')->get() as $department) {
+            Division::firstOrCreate(
+                ['code' => strtoupper($department->code) . '-UNASSIGNED'],
+                ['department_id' => $department->id, 'name' => 'Unassigned (migrated records)', 'is_active' => true]
+            );
         }
 
         User::firstOrCreate(['email' => 'admin@tpms.local'], [
