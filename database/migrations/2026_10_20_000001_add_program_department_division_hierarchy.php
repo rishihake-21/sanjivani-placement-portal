@@ -38,6 +38,15 @@ return new class extends Migration
         DB::table('departments')->update(['program_id' => $btechId]);
         DB::statement('ALTER TABLE departments ALTER COLUMN program_id SET NOT NULL');
 
+        // Department names/codes are scoped to a programme; CSE can exist in B.Tech and
+        // Integrated B.Tech as separate academic departments.
+        Schema::table('departments', function (Blueprint $table) {
+            $table->dropUnique('departments_name_unique');
+            $table->dropUnique('departments_code_unique');
+            $table->unique(['program_id', 'name']);
+            $table->unique(['program_id', 'code']);
+        });
+
         // AI/ML was previously represented as a child branch of CSE in the legacy schema.
         // Promote it to a real department and later remap those legacy roster records to it.
         $aiml = DB::table('departments')->where('code', 'AIML')->first();
@@ -59,10 +68,11 @@ return new class extends Migration
             $table->id();
             $table->foreignId('department_id')->constrained()->restrictOnDelete();
             $table->string('name', 120);
-            $table->string('code', 30)->unique();
+            $table->string('code', 30);
             $table->boolean('is_active')->default(true);
             $table->timestampsTz();
             $table->unique(['department_id', 'name']);
+            $table->unique(['department_id', 'code']);
             $table->index('department_id');
         });
 
@@ -181,7 +191,18 @@ return new class extends Migration
         Schema::dropIfExists('divisions');
 
         Schema::table('departments', function (Blueprint $table) {
+            $table->dropUnique('departments_program_id_name_unique');
+            $table->dropUnique('departments_program_id_code_unique');
+            $table->dropIndex('departments_program_id_index');
             $table->dropConstrainedForeignId('program_id');
+        });
+
+        // Restore the original global uniqueness rules only if no cross-program duplicates
+        // have been created since this migration. If duplicates exist, rollback should stop
+        // instead of silently merging/removing legitimate programme-specific departments.
+        Schema::table('departments', function (Blueprint $table) {
+            $table->unique('name');
+            $table->unique('code');
         });
 
         Schema::dropIfExists('programs');
