@@ -3,7 +3,8 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
-use App\Models\Branch;
+use App\Models\Division;
+use App\Models\Program;
 use App\Models\Coordinator;
 use App\Models\Department;
 use App\Models\StudentMasterList;
@@ -20,14 +21,17 @@ class AdminPageController extends Controller
     public function dashboard(): View
     {
         $departments = Department::query()
-            ->withCount(['branches as active_branches_count' => fn ($query) => $query->where('is_active', true)])
+            ->with('program:id,name,code,is_active')
+            ->withCount(['divisions as active_divisions_count' => fn ($query) => $query->where('is_active', true)])
             ->orderBy('name')
-            ->get(['id', 'name', 'code', 'is_active']);
+            ->get(['id', 'name', 'code', 'program_id', 'is_active']);
 
         $metrics = [
             'departments_total' => Department::query()->count(),
             'departments_active' => Department::query()->where('is_active', true)->count(),
-            'branches_active' => Branch::query()->where('is_active', true)->count(),
+            'divisions_active' => Division::query()->where('is_active', true)->count(),
+            'programs_total' => Program::query()->count(),
+            'programs_active' => Program::query()->where('is_active', true)->count(),
             'coordinators_active' => Coordinator::query()->where('is_active', true)->count(),
             'coordinators_inactive' => Coordinator::query()->where('is_active', false)->count(),
             'roster_total' => StudentMasterList::query()->count(),
@@ -59,7 +63,10 @@ class AdminPageController extends Controller
                     'name' => $department->name,
                     'code' => $department->code,
                     'is_active' => (bool) $department->is_active,
-                    'active_branches_count' => (int) $department->active_branches_count,
+                    'program_id' => (int) $department->program_id,
+                    'program_name' => $department->program?->name,
+                    'program_code' => $department->program?->code,
+                    'active_divisions_count' => (int) $department->active_divisions_count,
                 ])
                 ->values(),
             'departmentOptions' => $departments
