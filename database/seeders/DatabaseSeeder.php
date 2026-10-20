@@ -39,6 +39,8 @@ class DatabaseSeeder extends Seeder
             ['ECE', 'Electronics and Telecommunication', [['ECE', 'Electronics and Telecommunication']]],
             ['ME', 'Mechanical Engineering', [['ME', 'Mechanical Engineering']]],
             ['CE', 'Civil Engineering', [['CE', 'Civil Engineering']]],
+            ['AIDS', 'Artificial Intelligence and Data Science', [['AIDS', 'Artificial Intelligence and Data Science']]],
+            ['CYBERSEC', 'Cyber Security', [['CYBERSEC', 'Cyber Security']]],
         ];
 
         $departments = [];
