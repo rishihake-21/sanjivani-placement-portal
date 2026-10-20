@@ -20,6 +20,8 @@ trait CreatesTpmsFixtures
     protected Department $mech;
     protected Branch $cseBranch;
     protected Branch $mechBranch;
+    protected Division $cseDivision;
+    protected Division $mechDivision;
 
     protected function setUpTpms(): void
     {
@@ -27,15 +29,13 @@ trait CreatesTpmsFixtures
         config(['filesystems.disks.tpms_test' => ['driver' => 'local', 'root' => storage_path('framework/testing/disks/tpms_test')]]);
         Storage::fake('tpms_test');
 
-        $program = Program::create(['name' => 'B.Tech', 'code' => 'BTECH', 'is_active' => true]);
+        $program = Program::firstOrCreate(['code' => 'BTECH'], ['name' => 'B.Tech', 'is_active' => true]);
         $this->cse = Department::create(['name' => 'Computer Science', 'code' => 'CSE', 'program_id' => $program->id]);
         $this->mech = Department::create(['name' => 'Mechanical', 'code' => 'ME', 'program_id' => $program->id]);
         $this->cseBranch = Branch::create(['department_id' => $this->cse->id, 'name' => 'Computer Engineering', 'code' => 'CSE-B']);
         $this->mechBranch = Branch::create(['department_id' => $this->mech->id, 'name' => 'Mechanical', 'code' => 'ME-B']);
-        $cseDivision = Division::create(['department_id' => $this->cse->id, 'name' => 'CSE Unassigned', 'code' => 'CSE-UNASSIGNED']);
-        $mechDivision = Division::create(['department_id' => $this->mech->id, 'name' => 'ME Unassigned', 'code' => 'ME-UNASSIGNED']);
-        $this->cse->setRelation('testDivision', $cseDivision);
-        $this->mech->setRelation('testDivision', $mechDivision);
+        $this->cseDivision = Division::create(['department_id' => $this->cse->id, 'name' => 'CSE Unassigned', 'code' => 'TEST-CSE-UNASSIGNED']);
+        $this->mechDivision = Division::create(['department_id' => $this->mech->id, 'name' => 'ME Unassigned', 'code' => 'TEST-ME-UNASSIGNED']);
     }
 
     protected function makeStudent(
@@ -54,7 +54,7 @@ trait CreatesTpmsFixtures
         $entry = MasterListEntry::create([
             'university_id' => $universityId, 'full_name' => "Student $universityId",
             'institutional_email' => $user->email, 'department_id' => $department->id, 'branch_id' => $branch->id,
-            'division_id' => $department->getRelation('testDivision')->id,
+            'division_id' => ($department->id === $this->cse->id ? $this->cseDivision : $this->mechDivision)->id,
             'admission_type' => $type, 'admission_year' => 2026, 'graduation_year' => 2029,
             'current_semester' => $semester, 'claimed_at' => now(),
         ]);
