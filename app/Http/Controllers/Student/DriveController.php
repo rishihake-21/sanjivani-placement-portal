@@ -34,7 +34,7 @@ class DriveController extends Controller
 
         $drives = $this->targetedDrives($student)
             ->where('status', DriveStatus::PUBLISHED->value)->where('application_deadline', '>', now())
-            ->with(['company:id,name', 'eligibility', 'branches'])->orderBy('application_deadline')->get();
+            ->with(['company:id,name', 'eligibility', 'branches', 'departments.program'])->orderBy('application_deadline')->get();
 
         $applied = Application::query()->where('student_id', $student->id)->pluck('stage', 'drive_id');
         $profileReady = $drives->isNotEmpty() ? $completeness->summarize($student)['can_apply'] : false;
