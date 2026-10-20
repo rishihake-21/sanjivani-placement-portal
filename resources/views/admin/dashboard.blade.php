@@ -530,6 +530,57 @@
     }
   });
 
+  $('#department-admin-rows').addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-department-action]');
+    if (!button) return;
+    const department = structureRows.find((item) => String(item.id) === button.dataset.id);
+    if (!department) return;
+    const action = button.dataset.departmentAction;
+    if (action === 'edit') {
+      openEditDepartment(department);
+      return;
+    }
+    if (action === 'deactivate' && !window.confirm('Deactivate ' + department.name + '? All its branches and its active coordinator must be deactivated first. Existing records will be retained.')) return;
+    if (action === 'reactivate' && !window.confirm('Reactivate ' + department.name + '? Its branches and coordinator remain in their current states.')) return;
+    button.disabled = true;
+    try {
+      await api('/admin/departments/' + department.id + '/' + action, { method: 'POST', body: {} });
+      flash(action === 'deactivate' ? 'Department deactivated.' : 'Department reactivated.');
+      window.location.reload();
+    } catch (error) {
+      fail(error);
+      button.disabled = false;
+    }
+  });
+
+  $('#branch-admin-rows').addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-branch-action]');
+    if (!button) return;
+    const department = structureRows.find((item) => (item.branches || []).some((branch) => String(branch.id) === button.dataset.id));
+    const branch = department && department.branches.find((item) => String(item.id) === button.dataset.id);
+    if (!branch || !department) return;
+    const action = button.dataset.branchAction;
+    if (action === 'edit') {
+      openEditBranch(Object.assign({}, branch, { department: { id: department.id, name: department.name, code: department.code } }));
+      return;
+    }
+    if (action === 'deactivate' && !window.confirm('Deactivate branch ' + branch.name + ' (' + branch.code + ')? Existing records will be retained.')) return;
+    if (action === 'reactivate' && !window.confirm('Reactivate branch ' + branch.name + '? Its parent department must be active.')) return;
+    button.disabled = true;
+    try {
+      await api('/admin/branches/' + branch.id + '/' + action, { method: 'POST', body: {} });
+      flash(action === 'deactivate' ? 'Branch deactivated.' : 'Branch reactivated.');
+      window.location.reload();
+    } catch (error) {
+      fail(error);
+      button.disabled = false;
+    }
+  });
+
+  $('#branch-search').addEventListener('input', renderStructure);
+  $('#branch-filter-department').addEventListener('change', renderStructure);
+  $('#branch-filter-status').addEventListener('change', renderStructure);
+
   function setText(id, value) {
     const element = $('#' + id);
     if (element) element.textContent = String(value == null ? 0 : value);
