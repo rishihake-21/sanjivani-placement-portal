@@ -94,7 +94,8 @@ class StudentPageController extends Controller
         $detail = $this->studentDetail($student);
         $profile = $this->present($detail['student'], $request);
 
-        return [
+        // Page-specific data must override the safe defaults below (notably notifications).
+        return $extra + [
             'active' => $active,
             'user' => $request->user(),
             'student' => Arr::except($profile, ['academic_records', 'experiences', 'documents']),
@@ -105,7 +106,7 @@ class StudentPageController extends Controller
             'unread' => $request->user()->unreadNotifications()->count(),
             'documents' => [],
             'notifications' => [],
-        ] + $extra;
+        ];
     }
 
     /** Same query as Student\DocumentController::index. */
