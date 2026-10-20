@@ -31,6 +31,7 @@ return new class extends Migration
 
         Schema::table('departments', function (Blueprint $table) {
             $table->foreignId('program_id')->nullable()->constrained('programs')->restrictOnDelete();
+            $table->index('program_id');
         });
 
         // Preserve the existing department records and put them under the existing B.Tech programme.
@@ -62,10 +63,12 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestampsTz();
             $table->unique(['department_id', 'name']);
+            $table->index('department_id');
         });
 
         Schema::table('student_master_list', function (Blueprint $table) {
             $table->foreignId('division_id')->nullable()->constrained('divisions')->restrictOnDelete();
+            $table->index('division_id');
         });
 
         Schema::table('students', function (Blueprint $table) {
