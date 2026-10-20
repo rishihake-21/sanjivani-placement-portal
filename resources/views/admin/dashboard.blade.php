@@ -130,12 +130,14 @@
           <form id="master-list-form" class="admin-import-form" enctype="multipart/form-data" novalidate>
             <div class="field" data-field="file">
               <label for="master-list-file">CSV file <span aria-hidden="true">*</span></label>
-              <input id="master-list-file" name="file" type="file" accept=".csv,.txt,text/csv,text/plain" required>
+              <input id="master-list-file" name="file" data-f="file" type="file" accept=".csv,.txt,text/csv,text/plain" required>
               <span class="hint">CSV or TXT, maximum 5 MB. Use the provided header row exactly.</span>
+              <span class="err" role="alert" hidden></span>
             </div>
             <div class="field" data-field="batch">
               <label for="master-list-batch">Import batch label (optional)</label>
-              <input id="master-list-batch" name="batch" type="text" maxlength="60" placeholder="e.g. 2026-semester-rollover">
+              <input id="master-list-batch" name="batch" data-f="batch" type="text" maxlength="60" placeholder="e.g. 2026-semester-rollover">
+              <span class="err" role="alert" hidden></span>
             </div>
             <button type="submit" class="btn btn-primary" id="master-list-submit">Validate and import CSV</button>
           </form>
@@ -177,13 +179,14 @@
       <div class="admin-form-grid">
         <div class="field full" id="coord-create-department" data-field="department_id">
           <label for="coord-department">Department <span aria-hidden="true">*</span></label>
-          <select id="coord-department" name="department_id" required>
+          <select id="coord-department" name="department_id" data-f="department_id" required>
             <option value="">Choose an available department</option>
             @foreach ($departmentOptions as $department)
               <option value="{{ $department['id'] }}" data-base-label="{{ $department['code'] }} &middot; {{ $department['name'] }}">{{ $department['code'] }} &middot; {{ $department['name'] }}</option>
             @endforeach
           </select>
           <span class="hint">Departments with an active coordinator are unavailable until that account is deactivated.</span>
+          <span class="err" role="alert" hidden></span>
         </div>
         <div class="field full" id="coord-edit-department" hidden>
           <label>Assigned department</label>
@@ -192,28 +195,34 @@
         </div>
         <div class="field" data-field="name">
           <label for="coord-name">Full name <span aria-hidden="true">*</span></label>
-          <input id="coord-name" name="name" type="text" maxlength="150" autocomplete="name" required>
+          <input id="coord-name" name="name" data-f="name" type="text" maxlength="150" autocomplete="name" required>
+          <span class="err" role="alert" hidden></span>
         </div>
         <div class="field" data-field="email">
           <label for="coord-email">Email <span aria-hidden="true">*</span></label>
-          <input id="coord-email" name="email" type="email" maxlength="190" autocomplete="email" required>
+          <input id="coord-email" name="email" data-f="email" type="email" maxlength="190" autocomplete="email" required>
+          <span class="err" role="alert" hidden></span>
         </div>
         <div class="field full" data-field="password">
           <label for="coord-password">Temporary password <span id="coord-password-required" aria-hidden="true">*</span></label>
-          <input id="coord-password" name="password" type="password" autocomplete="new-password" minlength="12">
+          <input id="coord-password" name="password" data-f="password" type="password" autocomplete="new-password" minlength="12">
+          <span class="err" role="alert" hidden></span>
           <span class="hint" id="coord-password-hint">At least 12 characters, including uppercase, lowercase and a number. Provide the credentials securely to the coordinator.</span>
         </div>
         <div class="field" data-field="employee_id">
           <label for="coord-employee-id">Employee ID</label>
-          <input id="coord-employee-id" name="employee_id" type="text" maxlength="30">
+          <input id="coord-employee-id" name="employee_id" data-f="employee_id" type="text" maxlength="30">
+          <span class="err" role="alert" hidden></span>
         </div>
         <div class="field" data-field="phone">
           <label for="coord-phone">Phone</label>
-          <input id="coord-phone" name="phone" type="tel" placeholder="10-digit number or +91 number">
+          <input id="coord-phone" name="phone" data-f="phone" type="tel" placeholder="10-digit number or +91 number">
+          <span class="err" role="alert" hidden></span>
         </div>
         <div class="field full" data-field="designation">
           <label for="coord-designation">Designation</label>
-          <input id="coord-designation" name="designation" type="text" maxlength="80" placeholder="e.g. T&P Coordinator">
+          <input id="coord-designation" name="designation" data-f="designation" type="text" maxlength="80" placeholder="e.g. T&P Coordinator">
+          <span class="err" role="alert" hidden></span>
         </div>
       </div>
     </div>
