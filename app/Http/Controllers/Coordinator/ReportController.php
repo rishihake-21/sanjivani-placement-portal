@@ -22,7 +22,7 @@ class ReportController extends Controller
             ->join('programs as pr', 'pr.id', '=', 'd.program_id')
             ->leftJoin('divisions as dv', 'dv.id', '=', 's.division_id')
             ->leftJoin('branches as b', 'b.id', '=', 's.branch_id')
-            ->leftJoin('placements as p, function ($join) {
+            ->leftJoin('placements as p', function ($join) {
                 $join->on('p.student_id', '=', 's.id')->where('p.status', '=', 'PLACED');
             })
             ->leftJoin('companies as c', 'c.id', '=', 'p.company_id')
