@@ -81,6 +81,13 @@ return new class extends Migration
         $legacyAimlBranchId = DB::table('branches')->where('code', 'CSE-AIML')->value('id');
         $cseId = DB::table('departments')->where('code', 'CSE')->value('id');
         if ($legacyAimlBranchId !== null) {
+            // Move the legacy branch first so any database guard that checks branch/department
+            // consistency accepts the subsequent roster and student reassignment.
+            DB::table('branches')->where('id', $legacyAimlBranchId)->update([
+                'department_id' => $aimlId,
+                'updated_at' => $now,
+            ]);
+
             if ($cseId !== null) {
                 DB::table('student_master_list')
                     ->where('branch_id', $legacyAimlBranchId)
