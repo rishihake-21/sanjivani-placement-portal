@@ -32,18 +32,14 @@ class CompleteStudentAndCompanySeeder extends Seeder
         // Get departments and branches
         // The sample records below are B.Tech students; resolve departments within B.Tech.
         $btechId = Program::query()->where('code', 'BTECH')->value('id');
-        $cseDept = Department::where('program_id', $btechId)->where('code', 'CSE')->first();
-        $itDept = Department::where('program_id', $btechId)->where('code', 'IT')->first();
-        $eceDept = Department::where('program_id', $btechId)->where('code', 'ECE')->first();
-        $meDept = Department::where('program_id', $btechId)->where('code', 'ME')->first();
-        $ceDept = Department::where('program_id', $btechId)->where('code', 'CE')->first();
+        $cseDept = Department::where('program_id', $btechId)->where('code', 'CSE')->firstOrFail();
+        $aimlDept = Department::where('program_id', $btechId)->where('code', 'AIML')->firstOrFail();
+        $aidsDept = Department::where('program_id', $btechId)->where('code', 'AIDS')->firstOrFail();
 
-        $cseBranch = Branch::where('code', 'CSE')->first();
-        $cseAimlBranch = Branch::where('code', 'CSE-AIML')->first();
-        $itBranch = Branch::where('code', 'IT')->first();
-        $eceBranch = Branch::where('code', 'ECE')->first();
-        $meBranch = Branch::where('code', 'ME')->first();
-        $ceBranch = Branch::where('code', 'CE')->first();
+        $cseBranch = Branch::where('code', 'CSE')->firstOrFail();
+        $cseAimlBranch = Branch::where('code', 'CSE-AIML')->firstOrFail();
+        $aidsBranch = Branch::where('code', 'AIDS')->firstOrFail();
+        $meBranch = Branch::where('code', 'ME')->firstOrFail();
 
         // ============================================
         // COMPLETE STUDENTS (all sections complete)
@@ -105,8 +101,8 @@ class CompleteStudentAndCompanySeeder extends Seeder
                 'university_id' => '2126UITF1002',
                 'full_name' => 'Priya Nair',
                 'institutional_email' => 'priya.nair@sanjivani.edu.in',
-                'department_id' => $itDept->id,
-                'branch_id' => $itBranch->id,
+                'department_id' => $aimlDept->id,
+                'branch_id' => $cseAimlBranch->id,
                 'admission_type' => AdmissionType::REGULAR,
                 'admission_year' => 2024,
                 'graduation_year' => 2028,
@@ -152,8 +148,8 @@ class CompleteStudentAndCompanySeeder extends Seeder
                 'university_id' => '2126UECM1003',
                 'full_name' => 'Rohit Patil',
                 'institutional_email' => 'rohit.patil@sanjivani.edu.in',
-                'department_id' => $eceDept->id,
-                'branch_id' => $eceBranch->id,
+                'department_id' => $aidsDept->id,
+                'branch_id' => $aidsBranch->id,
                 'admission_type' => AdmissionType::REGULAR,
                 'admission_year' => 2024,
                 'graduation_year' => 2028,
@@ -201,9 +197,9 @@ class CompleteStudentAndCompanySeeder extends Seeder
         // temporary UNASSIGNED divisions. This gives drive eligibility multiple sections
         // within each targeted department to compare.
         $divisionCodes = [
-            '2126UCEM1001' => 'SY-CSE-B',
-            '2126UITF1002' => 'SY-IT-B',
-            '2126UECM1003' => 'SY-ECE-B',
+            '2126UCEM1001' => 'FINAL-CSE-B',
+            '2126UITF1002' => 'SY-AIML-A',
+            '2126UECM1003' => 'SY-AIDS-A',
         ];
 
         // Create complete students with academic records, experience, and documents
@@ -524,7 +520,7 @@ class CompleteStudentAndCompanySeeder extends Seeder
                     'max_active_backlogs' => 0,
                     'max_total_backlogs' => 0,
                 ],
-                'branches' => ['CSE', 'CSE-AIML', 'IT', 'ECE'],
+                'branches' => ['CSE', 'CSE-AIML', 'AIDS', 'CYBERSEC'],
             ],
             [
                 'company_id' => $infosys->id,
@@ -548,7 +544,7 @@ class CompleteStudentAndCompanySeeder extends Seeder
                     'max_active_backlogs' => 0,
                     'max_total_backlogs' => 0,
                 ],
-                'branches' => ['CSE', 'CSE-AIML', 'IT', 'ECE', 'ECE'],
+                'branches' => ['CSE', 'CSE-AIML', 'ME', 'AIDS'],
             ],
             [
                 'company_id' => $amazon->id,
@@ -572,7 +568,7 @@ class CompleteStudentAndCompanySeeder extends Seeder
                     'max_active_backlogs' => 0,
                     'max_total_backlogs' => 0,
                 ],
-                'branches' => ['CSE', 'CSE-AIML', 'IT'],
+                'branches' => ['CSE', 'CSE-AIML', 'AIDS'],
             ],
         ];
 
