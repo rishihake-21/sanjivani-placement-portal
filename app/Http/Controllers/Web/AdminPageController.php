@@ -53,6 +53,15 @@ class AdminPageController extends Controller
 
         return view('admin.dashboard', [
             'departments' => $departments,
+            'departmentRows' => $departments
+                ->map(fn ($department) => [
+                    'id' => $department->id,
+                    'name' => $department->name,
+                    'code' => $department->code,
+                    'is_active' => (bool) $department->is_active,
+                    'active_branches_count' => (int) $department->active_branches_count,
+                ])
+                ->values(),
             'departmentOptions' => $departments
                 ->where('is_active', true)
                 ->map(fn ($department) => [
