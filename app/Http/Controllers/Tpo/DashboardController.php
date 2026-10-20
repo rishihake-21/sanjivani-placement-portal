@@ -23,9 +23,15 @@ class DashboardController extends Controller
         return response()->json(['graduation_year' => $this->year($request), 'data' => $this->stats->summaryBy('department', $this->year($request))]);
     }
 
+    public function divisions(Request $request): JsonResponse
+    {
+        return response()->json(['graduation_year' => $this->year($request), 'data' => $this->stats->summaryBy('division', $this->year($request))]);
+    }
+
+    /** Backward-compatible alias for older reports clients. */
     public function branches(Request $request): JsonResponse
     {
-        return response()->json(['graduation_year' => $this->year($request), 'data' => $this->stats->summaryBy('branch', $this->year($request))]);
+        return $this->divisions($request);
     }
 
     public function companies(Request $request): JsonResponse
