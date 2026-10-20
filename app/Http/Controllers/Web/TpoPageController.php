@@ -81,7 +81,7 @@ class TpoPageController extends Controller
     {
         return view('tpo.placements.index', [
             'companies' => $this->companyOptions(),
-            'departments' => Department::query()->orderBy('name')->get(['id', 'name']),
+            'departments' => Department::query()->with('program:id,name,code')->orderBy('program_id')->orderBy('name')->get(['id', 'name', 'code', 'program_id']),
             'years' => $this->years(),
         ]);
     }
@@ -90,7 +90,7 @@ class TpoPageController extends Controller
     {
         return view('tpo.reports.index', [
             'years' => $this->years(),
-            'departments' => Department::query()->orderBy('name')->get(['id', 'name']),
+            'departments' => Department::query()->with('program:id,name,code')->orderBy('program_id')->orderBy('name')->get(['id', 'name', 'code', 'program_id']),
         ]);
     }
 
