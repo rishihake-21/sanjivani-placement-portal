@@ -6,6 +6,7 @@ use App\Enums\AdmissionType;
 use App\Enums\Role;
 use App\Models\Branch;
 use App\Models\Department;
+use App\Models\Division;
 use App\Models\Student;
 use App\Models\StudentMasterList;
 use App\Models\User;
@@ -19,6 +20,7 @@ class StudentSeeder extends Seeder
 
         // Get departments and branches
         $cseDept = Department::where('code', 'CSE')->first();
+        $aimlDept = Department::where('code', 'AIML')->first();
         $itDept = Department::where('code', 'IT')->first();
         $eceDept = Department::where('code', 'ECE')->first();
         $meDept = Department::where('code', 'ME')->first();
@@ -104,7 +106,7 @@ class StudentSeeder extends Seeder
                 'university_id' => '2126UCEM2566',
                 'full_name' => 'Amit Patel',
                 'institutional_email' => 'amit.patel@sanjivani.edu.in',
-                'department_id' => $cseDept->id,
+                'department_id' => $aimlDept->id,
                 'branch_id' => $cseAimlBranch->id,
                 'admission_type' => AdmissionType::REGULAR,
                 'admission_year' => 2024,
@@ -304,6 +306,10 @@ class StudentSeeder extends Seeder
         ];
 
         foreach ($students as $data) {
+            $departmentCode = Department::query()->whereKey($data['department_id'])->value('code');
+            $divisionId = Division::query()->where('code', strtoupper((string) $departmentCode) . '-UNASSIGNED')->value('id')
+                ?? Division::query()->where('department_id', $data['department_id'])->where('is_active', true)->value('id');
+
             // Create or update master list entry
             $masterList = StudentMasterList::firstOrCreate(
                 ['university_id' => $data['university_id']],
@@ -312,6 +318,7 @@ class StudentSeeder extends Seeder
                     'institutional_email' => $data['institutional_email'],
                     'department_id' => $data['department_id'],
                     'branch_id' => $data['branch_id'],
+                    'division_id' => $divisionId,
                     'admission_type' => $data['admission_type']->value,
                     'admission_year' => $data['admission_year'],
                     'graduation_year' => $data['graduation_year'],
@@ -342,6 +349,7 @@ class StudentSeeder extends Seeder
                     'full_name' => $data['full_name'],
                     'department_id' => $data['department_id'],
                     'branch_id' => $data['branch_id'],
+                    'division_id' => $divisionId,
                     'admission_type' => $data['admission_type']->value,
                     'admission_year' => $data['admission_year'],
                     'graduation_year' => $data['graduation_year'],
