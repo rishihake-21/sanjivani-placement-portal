@@ -75,7 +75,9 @@ class AdminPageController extends Controller
                     'id' => $department->id,
                     'name' => $department->name,
                     'code' => $department->code,
-                    'active_branches_count' => (int) $department->active_branches_count,
+                    'program_id' => (int) $department->program_id,
+                    'program_name' => $department->program?->name,
+                    'active_divisions_count' => (int) $department->active_divisions_count,
                 ])
                 ->values(),
             'metrics' => $metrics,
