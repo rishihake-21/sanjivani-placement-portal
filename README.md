@@ -77,7 +77,7 @@ $env:TPMS_SEED_PASSWORD = "LocalDemoPass123!"
 php artisan migrate:fresh --seed
 ```
 
-The demo catalogue contains 6 programmes, 17 departments, real section/division codes (including SY CSE-A, SY CSE-B, and DSY CSE), one seeded T&P coordinator account per department, demo students across all 6 programmes, and department-targeted placement drives. Legacy branch rows remain only for compatibility.
+The demo catalogue contains 6 programmes and 14 departments. B.Tech has exactly five departments (CSE, AI/ML, AI & Data Science, Cyber Security, and Mechanical Engineering); CSE has exactly two divisions (Final Year CSE-A and Final Year CSE-B), with 20 demo students assigned to Final Year CSE-A. Additional demo students cover the other programmes, and sample placement drives target departments. Legacy branch rows remain only for compatibility.
 
 Seeded sign-in accounts use the password assigned to `TPMS_SEED_PASSWORD`:
 - System Admin: `admin@tpms.local`
@@ -90,7 +90,7 @@ After seeding, verify the counts and division assignments before UI testing:
 ```powershell
 php artisan tinker --execute="dump(['programmes' => \App\Models\Program::count(), 'departments' => \App\Models\Department::count(), 'divisions' => \App\Models\Division::count(), 'students_without_division' => \Illuminate\Support\Facades\DB::table('students')->whereNull('division_id')->count(), 'master_list_without_division' => \Illuminate\Support\Facades\DB::table('student_master_list')->whereNull('division_id')->count()]);"
 ```
-Expected clean demo counts: 6 programmes, 17 departments, 61 divisions, and zero student/master-list rows without a division.
+Expected clean demo counts: 6 programmes, 14 departments, 43 divisions, 28 students, 14 department coordinators, and zero student/master-list rows without a division. Final Year CSE-A should contain exactly 20 of the demo students.
 
 Roster CSV header:
 `university_id,full_name,institutional_email,program_code,department_code,division_code,admission_type,admission_year,graduation_year,current_semester`
