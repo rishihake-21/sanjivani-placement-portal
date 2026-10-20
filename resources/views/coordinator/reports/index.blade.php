@@ -30,7 +30,7 @@
       </div>
     </x-ui.card>
 
-    <x-ui.card id="sec-branches" title="By division">
+    <x-ui.card id="sec-divisions" title="By division">
       <x-ui.table id="division-rows" :cols="['Division', 'Students', 'Opted out', 'Applied', 'Placed', 'Unplaced', 'Placement %', 'Highest CTC', 'Average CTC']" />
     </x-ui.card>
   </div>
