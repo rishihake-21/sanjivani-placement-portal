@@ -22,7 +22,7 @@ class CoordinatorController extends Controller
     {
         $request->validate(['department_id' => ['sometimes', 'integer'], 'active' => ['sometimes', 'boolean']]);
 
-        $coordinators = Coordinator::query()->with(['user:id,name,email', 'department:id,name,code'])
+        $coordinators = Coordinator::query()->with(['user:id,name,email', 'department:id,name,code,program_id', 'department.program:id,name,code'])
             ->when($request->filled('department_id'), fn ($q) => $q->where('department_id', $request->integer('department_id')))
             ->when($request->has('active'), fn ($q) => $q->where('is_active', $request->boolean('active')))
             ->orderBy('department_id')->orderByDesc('is_active')->get();
@@ -62,7 +62,7 @@ class CoordinatorController extends Controller
             'id' => $c->id,
             'name' => $c->user->name,
             'email' => $c->user->email,
-            'department' => $c->department->only(['id', 'name', 'code']),
+            'department' => $c->department->only(['id', 'name', 'code']) + ['program' => $c->department->program?->only(['id', 'name', 'code'])],
             'employee_id' => $c->employee_id,
             'phone' => $c->phone,
             'designation' => $c->designation,
