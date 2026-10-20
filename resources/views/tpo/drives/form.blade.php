@@ -64,13 +64,13 @@
 
     <x-ui.card id="branches" title="Target branches">
       <div class="field">
-        <span class="lbl">Branches that may apply <span class="req" aria-hidden="true">*</span></span>
-        <div data-err="branch_ids" id="branch-picker">
+        <span class="lbl">Target departments <span class="req" aria-hidden="true">*</span></span>
+        <div data-err="department_ids" id="department-picker">
           @foreach ($departments as $department)
             <div class="dept-grp">
               <div class="dept-h">
                 <b>{{ $department->name }}</b>
-                <button type="button" class="linkbtn" data-toggle-dept="{{ $department->id }}">Select all</button>
+                <button type="button" class="linkbtn" data-toggle-program="{{ $department->id }}">Select all</button>
               </div>
               <div class="checks">
                 @foreach ($department->branches as $branch)
@@ -106,7 +106,7 @@
     let status = 'DRAFT';
 
     const field = (name) => root.querySelector('[data-f="' + name + '"]');
-    const branchBoxes = () => $$('[data-branch]', root);
+    const departmentBoxes = () => $('[data-department]', root);
 
     function fill(d) {
       status = d.status;
@@ -122,8 +122,8 @@
         field('eligibility.' + k).value = e[k] == null ? '' : e[k];
       });
       field('eligibility.diploma_counts_as_twelfth').checked = e.diploma_counts_as_twelfth == null ? true : !!e.diploma_counts_as_twelfth;
-      const picked = new Set((d.branches || []).map((b) => String(b.id)));
-      branchBoxes().forEach((b) => { b.checked = picked.has(b.dataset.branch); });
+      const picked = new Set((d.departments || []).map((b) => String(b.id)));
+      departmentBoxes().forEach((b) => { b.checked = picked.has(b.dataset.department); });
       applyLocks();
     }
 
@@ -133,7 +133,7 @@
       if (status === 'DRAFT') { note.innerHTML = ''; return; }
       const open = status === 'PUBLISHED';
       $$('[data-f]', root).forEach((el) => { el.disabled = !(open && EDITABLE_AFTER_PUBLISH.includes(el.dataset.f)); });
-      branchBoxes().forEach((b) => { b.disabled = true; });
+      departmentBoxes().forEach((b) => { b.disabled = true; });
       $$('[data-toggle-dept]', root).forEach((b) => { b.disabled = true; });
       note.innerHTML = open
         ? notice('wait', 'lock', 'This drive is published. Criteria, company, batch and target branches are locked because students have already seen them. You can still change the description, requirements, location, drive date and deadline. To change anything else, cancel the drive and create a new one.')
@@ -141,7 +141,7 @@
       if (!open) $('#save').hidden = true;
     }
 
-    $('#branch-picker').addEventListener('click', (e) => {
+    $('#department-picker').addEventListener('click', (e) => {
       const t = e.target.closest('[data-toggle-dept]');
       if (!t) return;
       const boxes = branchBoxes().filter((b) => b.dataset.dept === t.dataset.toggleDept);
@@ -155,7 +155,7 @@
       clearErrors(root);
       const body = collect(root);
       if (body.application_deadline !== undefined) body.application_deadline = fromLocalInput(body.application_deadline);
-      if (status === 'DRAFT') body.branch_ids = branchBoxes().filter((b) => b.checked).map((b) => Number(b.dataset.branch));
+      if (status === 'DRAFT') body.department_ids = departmentBoxes().filter((b) => b.checked).map((b) => Number(b.dataset.department));
 
       btn.disabled = true;
       try {
