@@ -106,8 +106,7 @@ class DriveController extends Controller
                     ->orWhere(function (Builder $legacy) use ($student) {
                         $legacy->whereDoesntHave('departments')
                             ->whereHas('branches', function (Builder $branch) use ($student) {
-                                $branch->where('branches.department_id', $student->department_id)
-                                    ->where('branches.code', '<>', 'CSE-AIML');
+                                $branch->where('branches.department_id', $student->department_id);
                             });
                     });
             });
