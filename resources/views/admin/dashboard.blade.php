@@ -56,7 +56,7 @@
 @endpush
 
 @section('content')
-  <x-ui.page-header title="System administration" meta="Manage coordinator accounts, department coverage and the official student master-list roster.">
+  <x-ui.page-header title="System administration" meta="Manage departments, branches, coordinator accounts and the official student master-list roster.">
     <button type="button" class="btn btn-primary" data-add-coordinator>
       <svg class="icon sm" aria-hidden="true"><use href="#i-plus"/></svg>
       Add coordinator
