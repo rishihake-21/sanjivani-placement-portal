@@ -1,11 +1,11 @@
 {{--
   Students of the coordinator's department. Route: coordinator.students  (GET, filters in the query string)
   $rows      GET /api/coordinator/students -> data. StudentSummaryResource rows:
-             id, university_id, full_name, department (code), branch (code), admission_type, current_semester,
+             id, university_id, full_name, department (code), division (code), admission_type, current_semester,
              graduation_year, pending_reviews (pending academic records + experiences)
   $pg        ['current_page','last_page','total','prev_url','next_url']  (urls keep the filters)
-  $filters   current values: ['search','branch_id','semester','admission_type','only_pending']  (missing keys = empty)
-  $branches  [['id','code','name'], ...]  the department's branches
+  $filters   current values: ['search','division_id','semester','admission_type','only_pending']  (missing keys = empty)
+  $divisions  [['id','code','name'], ...]  the department's divisiones
 --}}
 @extends('layouts.coordinator')
 @use('App\Support\StudentUi', 'U')
@@ -14,7 +14,7 @@
 @section('content')
 @php
   $f = $filters;
-  $hasFilter = ! empty($f['search']) || ! empty($f['branch_id']) || ! empty($f['semester']) || ! empty($f['admission_type']) || ! empty($f['only_pending']);
+  $hasFilter = ! empty($f['search']) || ! empty($f['division_id']) || ! empty($f['semester']) || ! empty($f['admission_type']) || ! empty($f['only_pending']);
 @endphp
 <div class="page">
   <div class="ph">
@@ -34,11 +34,11 @@
           <input id="f-search" type="text" name="search" value="{{ $f['search'] ?? '' }}" autocomplete="off">
         </div>
         <div class="field">
-          <label for="f-branch">Branch</label>
-          <select id="f-branch" name="branch_id">
-            <option value="">All branches</option>
-            @foreach ($branches as $b)
-              <option value="{{ $b['id'] }}" @selected((string) ($f['branch_id'] ?? '') === (string) $b['id'])>{{ $b['code'] }} &middot; {{ $b['name'] }}</option>
+          <label for="f-division">Division</label>
+          <select id="f-division" name="division_id">
+            <option value="">All divisiones</option>
+            @foreach ($divisions as $b)
+              <option value="{{ $b['id'] }}" @selected((string) ($f['division_id'] ?? '') === (string) $b['id'])>{{ $b['code'] }} &middot; {{ $b['name'] }}</option>
             @endforeach
           </select>
         </div>
@@ -70,13 +70,13 @@
       @if (count($rows))
         <div class="tbl-wrap">
           <table class="tbl">
-            <thead><tr><th>University ID</th><th>Name</th><th>Branch</th><th>Admission</th><th>Semester</th><th>Graduation year</th><th>Pending reviews</th><th><span class="sr">Action</span></th></tr></thead>
+            <thead><tr><th>University ID</th><th>Name</th><th>Division</th><th>Admission</th><th>Semester</th><th>Graduation year</th><th>Pending reviews</th><th><span class="sr">Action</span></th></tr></thead>
             <tbody>
               @foreach ($rows as $r)
                 <tr>
                   <td data-l="University ID" class="nw">{{ $r['university_id'] }}</td>
                   <td data-l="Name"><b>{{ $r['full_name'] }}</b></td>
-                  <td data-l="Branch">{{ U::orDash($r['branch'] ?? null) }}</td>
+                  <td data-l="Division">{{ U::orDash($r['division'] ?? $r['branch'] ?? null) }}</td>
                   <td data-l="Admission">{{ U::admission($r['admission_type']) }}</td>
                   <td data-l="Semester" class="num">{{ $r['current_semester'] }}</td>
                   <td data-l="Graduation year" class="num">{{ $r['graduation_year'] }}</td>
