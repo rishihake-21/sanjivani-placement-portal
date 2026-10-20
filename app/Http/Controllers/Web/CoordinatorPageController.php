@@ -148,7 +148,7 @@ class CoordinatorPageController extends Controller
             'pg' => $pg,
             'filters' => $request->only(['drive_id', 'stage', 'division_id', 'search']),
             'drives' => $this->driveOptions($request),
-            'branches' => $this->branches($request),
+            'divisions' => $this->divisions($request),
         ]));
     }
 
@@ -169,7 +169,7 @@ class CoordinatorPageController extends Controller
             'rows' => $rows,
             'pg' => $pg,
             'filters' => $request->only(['status', 'division_id', 'graduation_year', 'company_id']),
-            'branches' => $this->branches($request),
+            'divisions' => $this->divisions($request),
             'companies' => $this->companyOptions($request),
         ]));
     }
