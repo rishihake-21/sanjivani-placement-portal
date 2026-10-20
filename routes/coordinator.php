@@ -19,6 +19,7 @@ Route::middleware('role:tp_coordinator')->prefix('coordinator')->group(function 
 
     Route::get('dashboard', [Coordinator\DashboardController::class, 'dashboard']);
     Route::get('reports/branch-summary', [Coordinator\DashboardController::class, 'branchSummary']);
+    Route::get('reports/division-summary', [Coordinator\DashboardController::class, 'divisionSummary']);
     Route::get('reports/students.csv', [Coordinator\ReportController::class, 'students']);
     Route::get('reports/placements.csv', [Coordinator\ReportController::class, 'placements']);
 
