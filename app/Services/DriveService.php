@@ -20,7 +20,7 @@ use Illuminate\Validation\ValidationException;
 /**
  * Drive lifecycle:  DRAFT -> PUBLISHED -> CLOSED   (or CANCELLED from DRAFT/PUBLISHED)
  *
- * While DRAFT everything is editable. After publishing, criteria and target branches are LOCKED
+ * While DRAFT everything is editable. After publishing, criteria and target departments are LOCKED
  * (students already saw them and applied against them); only schedule/description fields may change.
  */
 class DriveService
