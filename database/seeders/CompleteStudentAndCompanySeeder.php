@@ -239,6 +239,7 @@ class CompleteStudentAndCompanySeeder extends Seeder
                     'full_name' => $data['full_name'],
                     'department_id' => $data['department_id'],
                     'branch_id' => $data['branch_id'],
+                    'division_id' => $divisionId,
                     'admission_type' => $data['admission_type']->value,
                     'admission_year' => $data['admission_year'],
                     'graduation_year' => $data['graduation_year'],
