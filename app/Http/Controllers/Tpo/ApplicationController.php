@@ -29,16 +29,18 @@ class ApplicationController extends Controller
             'company_id' => ['sometimes', 'integer'],
             'stage' => ['sometimes', Rule::enum(ApplicationStage::class)],
             'department_id' => ['sometimes', 'integer'],
+            'division_id' => ['sometimes', 'integer'],
             'branch_id' => ['sometimes', 'integer'],
             'search' => ['sometimes', 'string', 'max:100'],
         ]);
 
         $applications = Application::query()
-            ->with(['student:id,university_id,full_name,branch_id,department_id', 'student.branch:id,code', 'drive:id,title,company_id', 'drive.company:id,name'])
+            ->with(['student:id,university_id,full_name,branch_id,department_id,division_id', 'student.branch:id,code', 'student.division:id,code,name', 'drive:id,title,company_id', 'drive.company:id,name'])
             ->when($request->filled('drive_id'), fn ($q) => $q->where('drive_id', $request->integer('drive_id')))
             ->when($request->filled('company_id'), fn ($q) => $q->whereHas('drive', fn ($d) => $d->where('company_id', $request->integer('company_id'))))
             ->when($request->filled('stage'), fn ($q) => $q->where('stage', $request->string('stage')->toString()))
             ->when($request->filled('department_id'), fn ($q) => $q->whereHas('student', fn ($s) => $s->where('department_id', $request->integer('department_id'))))
+            ->when($request->filled('division_id'), fn ($q) => $q->whereHas('student', fn ($s) => $s->where('division_id', $request->integer('division_id'))))
             ->when($request->filled('branch_id'), fn ($q) => $q->whereHas('student', fn ($s) => $s->where('branch_id', $request->integer('branch_id'))))
             ->when($request->filled('search'), function ($q) use ($request) {
                 $term = '%' . addcslashes($request->string('search')->toString(), '%_\\') . '%';
@@ -51,7 +53,7 @@ class ApplicationController extends Controller
 
     public function show(int $id): JsonResponse
     {
-        $application = Application::query()->with(['student.branch:id,code,name', 'drive.company', 'history.changedBy:id,name'])->findOrFail($id);
+        $application = Application::query()->with(['student.branch:id,code,name', 'student.division:id,code,name', 'drive.company', 'history.changedBy:id,name'])->findOrFail($id);
         $placement = Placement::query()->where('application_id', $application->id)->first();
 
         return response()->json(['data' => $this->row($application) + [
@@ -70,7 +72,7 @@ class ApplicationController extends Controller
             $request->validated('remarks'), (bool) $request->validated('force', false),
         );
 
-        return response()->json(['data' => $this->row($application->load('student.branch:id,code', 'drive.company'))]);
+        return response()->json(['data' => $this->row($application->load('student.branch:id,code', 'student.division:id,code,name', 'drive.company'))]);
     }
 
     public function bulkChangeStage(BulkStageRequest $request, int $driveId): JsonResponse
@@ -98,7 +100,9 @@ class ApplicationController extends Controller
             'id' => $a->id,
             'student' => [
                 'id' => $a->student->id, 'university_id' => $a->student->university_id,
-                'full_name' => $a->student->full_name, 'branch' => $a->student->branch?->code,
+                'full_name' => $a->student->full_name,
+                'division' => $a->student->division?->code ?? $a->student->branch?->code,
+                'branch' => $a->student->division?->code ?? $a->student->branch?->code,
             ],
             'company' => $a->drive->company?->name,
             'drive' => ['id' => $a->drive->id, 'title' => $a->drive->title],
