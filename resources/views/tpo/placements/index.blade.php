@@ -15,7 +15,7 @@
       <x-ui.select filter name="status" label="Status" placeholder="All"
         :options="['OFFERED' => 'Offered, not verified', 'PLACED' => 'Placed', 'DECLINED' => 'Declined']" />
       <x-ui.select filter name="company_id" label="Company" placeholder="All" :options="$companies->pluck('name', 'id')->all()" />
-      <x-ui.select filter name="department_id" label="Department" placeholder="All" :options="$departments->pluck('name', 'id')->all()" />
+      <x-ui.select filter name="department_id" label="Department" placeholder="All" :options="$departments->mapWithKeys(fn ($d) => [$d->id => ($d->program?->name ? $d->program->name . ' · ' : '') . $d->code . ' — ' . $d->name])->all()" />
       <x-ui.select filter name="graduation_year" label="Batch" placeholder="All" :options="array_combine($years, $years)" />
     </x-ui.filter-bar>
 
@@ -42,7 +42,7 @@
         const res = await api('/tpo/placements', { query: Object.assign({}, f, { page }) });
         items = res.data;
         fillRows($('#pl-rows'), items, (p) => [
-          `<span class="name">${esc(p.student.full_name)}</span><span class="sub">${esc(p.student.university_id)} &middot; ${esc(p.student.branch || '')}</span>`,
+          `<span class="name">${esc(p.student.full_name)}</span><span class="sub">${esc(p.student.university_id)} &middot; ${esc(p.student.division || p.student.branch || '')}</span>`,
           esc(p.company || ''), esc(p.role_title), lpa(p.ctc_lpa), p.offer_date ? fmtDate(p.offer_date) : dash,
           `<div class="stk">${badge('placement', p.status)}${p.application_id ? '' : '<span class="tag">Off-campus</span>'}</div>`,
           { html: actions(p), cls: 'act' },
@@ -135,7 +135,7 @@
             try {
               const r = await api('/tpo/students', { query: { search: q } });
               list.hidden = false;
-              list.innerHTML = r.data.length ? r.data.slice(0, 8).map((s) => `<div class="li" role="option" tabindex="0" data-pick="${s.id}" data-name="${esc(s.full_name)}" data-uid="${esc(s.university_id)}"><div class="l"><div class="t">${esc(s.full_name)}</div><div class="meta">${esc(s.university_id)} &middot; ${esc(s.branch || '')}</div></div></div>`).join('') : '<p class="empty" style="padding:8px 12px">No student found.</p>';
+              list.innerHTML = r.data.length ? r.data.slice(0, 8).map((s) => `<div class="li" role="option" tabindex="0" data-pick="${s.id}" data-name="${esc(s.full_name)}" data-uid="${esc(s.university_id)}"><div class="l"><div class="t">${esc(s.full_name)}</div><div class="meta">${esc(s.university_id)} &middot; ${esc(s.division || s.branch || '')}</div></div></div>`).join('') : '<p class="empty" style="padding:8px 12px">No student found.</p>';
             } catch (err) { fail(err); }
           }, 300));
           el.addEventListener('click', async (ev) => {
