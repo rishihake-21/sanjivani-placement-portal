@@ -198,7 +198,7 @@ class CoordinatorPageController extends Controller
 
     private function profileData(Request $request): array
     {
-        $coordinator = Coordinator::query()->with(['user:id,name,email', 'department:id,name,code'])
+        $coordinator = Coordinator::query()->with(['user:id,name,email', 'department:id,name,code,program_id', 'department.program:id,name,code'])
             ->where('user_id', $request->user()->id)->firstOrFail();
 
         return [
@@ -208,7 +208,7 @@ class CoordinatorPageController extends Controller
             'employee_id' => $coordinator->employee_id,
             'phone' => $coordinator->phone,
             'designation' => $coordinator->designation,
-            'department' => $coordinator->department->only(['id', 'name', 'code']),
+            'department' => $coordinator->department->only(['id', 'name', 'code']) + ['program' => $coordinator->department->program?->only(['id', 'name', 'code'])],
             'active_from' => $coordinator->active_from?->toDateString(),
         ];
     }
