@@ -333,13 +333,16 @@
   const masterListForm = $('#master-list-form');
   let coordinators = [];
   let editingId = null;
+  const programDialog = $('#program-dialog');
+  const programForm = $('#program-form');
   const departmentDialog = $('#department-dialog');
   const departmentForm = $('#department-form');
-  const branchDialog = $('#branch-dialog');
-  const branchForm = $('#branch-form');
-  let structureRows = [];
+  const divisionDialog = $('#division-dialog');
+  const divisionForm = $('#division-form');
+  let structure = { programs: [], departments: [], divisions: [] };
+  let editingProgramId = null;
   let editingDepartmentId = null;
-  let editingBranchId = null;
+  let editingDivisionId = null;
 
   function statusBadge(active) {
     return active
@@ -348,160 +351,248 @@
   }
 
   function syncStructureSelects() {
-    const previousDepartmentFilter = $('#branch-filter-department').value;
-    const previousBranchDepartment = $('#branch-department').value;
-    const activeDepartments = structureRows.filter((department) => department.is_active);
-    $('#branch-filter-department').innerHTML = '<option value="">All departments</option>' + structureRows.map((department) =>
+    const selectedProgram = $('#department-program').value;
+    const selectedDepartment = $('#division-department').value;
+    const selectedFilterDepartment = $('#division-filter-department').value;
+    $('#department-program').innerHTML = '<option value="">Choose an active programme</option>' + structure.programs.map((program) =>
+      '<option value="' + esc(program.id) + '"' + (program.is_active ? '' : ' disabled') + '>' +
+      esc(program.code + ' — ' + program.name + (program.is_active ? '' : ' (inactive)')) + '</option>'
+    ).join('');
+    if (structure.programs.some((program) => String(program.id) === selectedProgram)) {
+      $('#department-program').value = selectedProgram;
+    }
+
+    $('#division-department').innerHTML = '<option value="">Choose an active department</option>' + structure.departments.map((department) => {
+      const active = department.is_active && department.program && department.program.is_active;
+      return '<option value="' + esc(department.id) + '"' + (active ? '' : ' disabled') + '>' +
+        esc(department.code + ' — ' + department.name + ' (' + (department.program ? department.program.name : 'Programme') + ')' + (active ? '' : ' (inactive)')) + '</option>';
+    }).join('');
+    if (structure.departments.some((department) => String(department.id) === selectedDepartment)) {
+      $('#division-department').value = selectedDepartment;
+    }
+
+    $('#division-filter-department').innerHTML = '<option value="">All departments</option>' + structure.departments.map((department) =>
       '<option value="' + esc(department.id) + '">' + esc(department.code + ' — ' + department.name) + '</option>'
     ).join('');
-    if (structureRows.some((department) => String(department.id) === previousDepartmentFilter)) {
-      $('#branch-filter-department').value = previousDepartmentFilter;
+    if (structure.departments.some((department) => String(department.id) === selectedFilterDepartment)) {
+      $('#division-filter-department').value = selectedFilterDepartment;
     }
-    $('#branch-department').innerHTML = '<option value="">Choose an active department</option>' + activeDepartments.map((department) =>
-      '<option value="' + esc(department.id) + '">' + esc(department.code + ' — ' + department.name) + '</option>'
-    ).join('');
-    if (activeDepartments.some((department) => String(department.id) === previousBranchDepartment)) {
-      $('#branch-department').value = previousBranchDepartment;
-    }
-    $('#add-branch').disabled = activeDepartments.length === 0;
+    $('#add-department').disabled = !structure.programs.some((program) => program.is_active);
+    $('#add-division').disabled = !structure.departments.some((department) => department.is_active && department.program && department.program.is_active);
   }
 
   function renderStructure() {
-    fillRows($('#department-admin-rows'), structureRows, (department) => {
+    fillRows($('#program-admin-rows'), structure.programs, (program) => {
+      const edit = '<button type="button" class="btn btn-secondary" data-program-action="edit" data-id="' + esc(program.id) + '">Edit</button>';
+      const toggle = program.is_active
+        ? '<button type="button" class="btn btn-danger" data-program-action="deactivate" data-id="' + esc(program.id) + '">Deactivate</button>'
+        : '<button type="button" class="btn btn-secondary" data-program-action="reactivate" data-id="' + esc(program.id) + '">Reactivate</button>';
+      return [
+        '<span class="admin-account-cell"><b>' + esc(program.name) + '</b><span class="sub">' + esc(program.code) + '</span></span>',
+        '<span class="num">' + esc(program.active_departments_count) + '</span>',
+        statusBadge(program.is_active),
+        { html: '<div class="admin-actions">' + edit + toggle + '</div>', cls: 'act' }
+      ];
+    }, 'No programmes found.');
+
+    fillRows($('#department-admin-rows'), structure.departments, (department) => {
       const edit = '<button type="button" class="btn btn-secondary" data-department-action="edit" data-id="' + esc(department.id) + '">Edit</button>';
       const toggle = department.is_active
         ? '<button type="button" class="btn btn-danger" data-department-action="deactivate" data-id="' + esc(department.id) + '">Deactivate</button>'
         : '<button type="button" class="btn btn-secondary" data-department-action="reactivate" data-id="' + esc(department.id) + '">Reactivate</button>';
       return [
         '<span class="admin-account-cell"><b>' + esc(department.name) + '</b><span class="sub">' + esc(department.code) + '</span></span>',
-        '<span class="num">' + esc(department.active_branches_count) + '</span>',
+        '<span class="admin-account-cell"><b>' + esc(department.program ? department.program.name : '—') + '</b><span class="sub">' + esc(department.program ? department.program.code : '') + '</span></span>',
+        '<span class="num">' + esc(department.active_divisions_count) + '</span>',
         statusBadge(department.is_active),
         { html: '<div class="admin-actions">' + edit + toggle + '</div>', cls: 'act' }
       ];
     }, 'No departments found.');
 
-    const query = $('#branch-search').value.trim().toLowerCase();
-    const departmentFilter = $('#branch-filter-department').value;
-    const statusFilter = $('#branch-filter-status').value;
-    const branches = structureRows.flatMap((department) => (department.branches || []).map((branch) => ({
-      ...branch,
-      department: { id: department.id, name: department.name, code: department.code, is_active: department.is_active }
-    }))).filter((branch) => {
-      if (departmentFilter && String(branch.department_id) !== departmentFilter) return false;
-      if (statusFilter === 'active' && !branch.is_active) return false;
-      if (statusFilter === 'inactive' && branch.is_active) return false;
-      if (query && !(branch.name + ' ' + branch.code).toLowerCase().includes(query)) return false;
+    const query = $('#division-search').value.trim().toLowerCase();
+    const departmentFilter = $('#division-filter-department').value;
+    const statusFilter = $('#division-filter-status').value;
+    const divisions = structure.divisions.filter((division) => {
+      if (departmentFilter && String(division.department_id) !== departmentFilter) return false;
+      if (statusFilter === 'active' && !division.is_active) return false;
+      if (statusFilter === 'inactive' && division.is_active) return false;
+      if (query && !(division.name + ' ' + division.code).toLowerCase().includes(query)) return false;
       return true;
     });
 
-    fillRows($('#branch-admin-rows'), branches, (branch) => {
-      const edit = '<button type="button" class="btn btn-secondary" data-branch-action="edit" data-id="' + esc(branch.id) + '">Edit</button>';
-      const toggle = branch.is_active
-        ? '<button type="button" class="btn btn-danger" data-branch-action="deactivate" data-id="' + esc(branch.id) + '">Deactivate</button>'
-        : '<button type="button" class="btn btn-secondary" data-branch-action="reactivate" data-id="' + esc(branch.id) + '">Reactivate</button>';
+    fillRows($('#division-admin-rows'), divisions, (division) => {
+      const edit = '<button type="button" class="btn btn-secondary" data-division-action="edit" data-id="' + esc(division.id) + '">Edit</button>';
+      const toggle = division.is_active
+        ? '<button type="button" class="btn btn-danger" data-division-action="deactivate" data-id="' + esc(division.id) + '">Deactivate</button>'
+        : '<button type="button" class="btn btn-secondary" data-division-action="reactivate" data-id="' + esc(division.id) + '">Reactivate</button>';
+      const department = division.department || {};
+      const program = department.program || {};
       return [
-        '<span class="admin-account-cell"><b>' + esc(branch.name) + '</b><span class="sub">' + esc(branch.code) + '</span></span>',
-        '<span class="admin-account-cell"><b>' + esc(branch.department.code) + '</b><span class="sub">' + esc(branch.department.name) + '</span></span>',
-        statusBadge(branch.is_active),
+        '<span class="admin-account-cell"><b>' + esc(division.name) + '</b><span class="sub">' + esc(division.code) + '</span></span>',
+        '<span class="admin-account-cell"><b>' + esc(department.code || '—') + ' · ' + esc(department.name || 'Unknown department') + '</b><span class="sub">' + esc(program.name || 'Unknown programme') + '</span></span>',
+        statusBadge(division.is_active),
         { html: '<div class="admin-actions">' + edit + toggle + '</div>', cls: 'act' }
       ];
-    }, 'No branches match these filters.');
+    }, 'No divisions match these filters.');
   }
 
   async function loadStructure() {
     try {
-      const response = await api('/admin/departments');
-      structureRows = response.data || [];
+      const response = await api('/admin/structure');
+      structure = response.data || { programs: [], departments: [], divisions: [] };
       syncStructureSelects();
       renderStructure();
     } catch (error) {
       fail(error);
+      fillRows($('#program-admin-rows'), [], () => [], 'Could not load programmes.');
       fillRows($('#department-admin-rows'), [], () => [], 'Could not load departments.');
-      fillRows($('#branch-admin-rows'), [], () => [], 'Could not load branches.');
+      fillRows($('#division-admin-rows'), [], () => [], 'Could not load divisions.');
     }
   }
 
+  function openCreateProgram() {
+    editingProgramId = null;
+    programForm.reset();
+    clearErrors(programForm);
+    $('#program-dialog-title').textContent = 'Add programme';
+    $('#program-dialog-subtitle').textContent = 'Create a university programme with a unique name and code.';
+    $('#program-save').textContent = 'Create programme';
+    programDialog.showModal();
+    $('#program-name').focus();
+  }
+
+  function openEditProgram(program) {
+    editingProgramId = program.id;
+    programForm.reset();
+    clearErrors(programForm);
+    $('#program-dialog-title').textContent = 'Edit programme';
+    $('#program-dialog-subtitle').textContent = 'Existing departments remain associated with this programme.';
+    $('#program-name').value = program.name || '';
+    $('#program-code').value = program.code || '';
+    $('#program-save').textContent = 'Save changes';
+    programDialog.showModal();
+    $('#program-name').focus();
+  }
+
   function openCreateDepartment() {
+    if (!structure.programs.some((program) => program.is_active)) {
+      toast('Create or reactivate a programme before adding a department.', 'info');
+      return;
+    }
     editingDepartmentId = null;
     departmentForm.reset();
     clearErrors(departmentForm);
+    syncStructureSelects();
     $('#department-dialog-title').textContent = 'Add department';
-    $('#department-dialog-subtitle').textContent = 'Create a department with a unique name and code.';
+    $('#department-dialog-subtitle').textContent = 'Create a department within an active programme.';
+    $('#department-program').disabled = false;
+    $('#department-program').required = true;
     $('#department-save').textContent = 'Create department';
     departmentDialog.showModal();
-    $('#department-name').focus();
+    $('#department-program').focus();
   }
 
   function openEditDepartment(department) {
     editingDepartmentId = department.id;
     departmentForm.reset();
     clearErrors(departmentForm);
+    syncStructureSelects();
     $('#department-dialog-title').textContent = 'Edit department';
-    $('#department-dialog-subtitle').textContent = 'Changing a code can affect future CSV roster imports.';
+    $('#department-dialog-subtitle').textContent = 'Change the department name, code or parent programme.';
     $('#department-name').value = department.name || '';
     $('#department-code').value = department.code || '';
+    $('#department-program').value = String(department.program_id);
+    $('#department-program').disabled = false;
+    $('#department-program').required = true;
     $('#department-save').textContent = 'Save changes';
     departmentDialog.showModal();
     $('#department-name').focus();
   }
 
-  function openCreateBranch() {
-    if (!structureRows.some((department) => department.is_active)) {
-      toast('Create or reactivate a department before adding a branch.', 'info');
+  function openCreateDivision() {
+    if (!structure.departments.some((department) => department.is_active && department.program && department.program.is_active)) {
+      toast('Create or reactivate a department under an active programme first.', 'info');
       return;
     }
-    editingBranchId = null;
-    branchForm.reset();
-    clearErrors(branchForm);
+    editingDivisionId = null;
+    divisionForm.reset();
+    clearErrors(divisionForm);
     syncStructureSelects();
-    $('#branch-dialog-title').textContent = 'Add branch';
-    $('#branch-dialog-subtitle').textContent = 'Create a branch inside an active department.';
-    $('#branch-department-field').hidden = false;
-    $('#branch-current-department-field').hidden = true;
-    $('#branch-department').disabled = false;
-    $('#branch-department').required = true;
-    $('#branch-save').textContent = 'Create branch';
-    branchDialog.showModal();
-    $('#branch-department').focus();
+    $('#division-dialog-title').textContent = 'Add division';
+    $('#division-dialog-subtitle').textContent = 'Create a class/section within an active department.';
+    $('#division-department-field').hidden = false;
+    $('#division-current-department-field').hidden = true;
+    $('#division-department').disabled = false;
+    $('#division-department').required = true;
+    $('#division-save').textContent = 'Create division';
+    divisionDialog.showModal();
+    $('#division-department').focus();
   }
 
-  function openEditBranch(branch) {
-    editingBranchId = branch.id;
-    branchForm.reset();
-    clearErrors(branchForm);
-    $('#branch-dialog-title').textContent = 'Edit branch';
-    $('#branch-dialog-subtitle').textContent = 'Update the branch name or code.';
-    $('#branch-department-field').hidden = true;
-    $('#branch-current-department-field').hidden = false;
-    $('#branch-current-department').textContent = branch.department.code + ' — ' + branch.department.name;
-    $('#branch-department').disabled = true;
-    $('#branch-department').required = false;
-    $('#branch-name').value = branch.name || '';
-    $('#branch-code').value = branch.code || '';
-    $('#branch-save').textContent = 'Save changes';
-    branchDialog.showModal();
-    $('#branch-name').focus();
+  function openEditDivision(division) {
+    editingDivisionId = division.id;
+    divisionForm.reset();
+    clearErrors(divisionForm);
+    $('#division-dialog-title').textContent = 'Edit division';
+    $('#division-dialog-subtitle').textContent = 'Update the division/section name or code.';
+    $('#division-department-field').hidden = true;
+    $('#division-current-department-field').hidden = false;
+    const department = division.department || {};
+    const program = department.program || {};
+    $('#division-current-department').textContent = (program.name || 'Programme') + ' · ' + (department.code || '') + ' — ' + (department.name || '');
+    $('#division-department').disabled = true;
+    $('#division-department').required = false;
+    $('#division-name').value = division.name || '';
+    $('#division-code').value = division.code || '';
+    $('#division-save').textContent = 'Save changes';
+    divisionDialog.showModal();
+    $('#division-name').focus();
   }
 
+  $('#add-program').addEventListener('click', openCreateProgram);
   $('#add-department').addEventListener('click', openCreateDepartment);
-  $('#add-branch').addEventListener('click', openCreateBranch);
+  $('#add-division').addEventListener('click', openCreateDivision);
+  document.querySelectorAll('[data-close-program]').forEach((button) => button.addEventListener('click', () => programDialog.close()));
   document.querySelectorAll('[data-close-department]').forEach((button) => button.addEventListener('click', () => departmentDialog.close()));
-  document.querySelectorAll('[data-close-branch]').forEach((button) => button.addEventListener('click', () => branchDialog.close()));
+  document.querySelectorAll('[data-close-division]').forEach((button) => button.addEventListener('click', () => divisionDialog.close()));
+
+  programForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    clearErrors(programForm);
+    const body = { name: $('#program-name').value.trim(), code: $('#program-code').value.trim().toUpperCase() };
+    const button = $('#program-save');
+    button.disabled = true;
+    try {
+      await api(editingProgramId === null ? '/admin/programs' : '/admin/programs/' + editingProgramId, {
+        method: editingProgramId === null ? 'POST' : 'PATCH', body
+      });
+      flash(editingProgramId === null ? 'Programme created.' : 'Programme updated.');
+      window.location.reload();
+    } catch (error) {
+      fail(error, programForm);
+    } finally {
+      button.disabled = false;
+    }
+  });
 
   departmentForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     clearErrors(departmentForm);
+    const programId = $('#department-program').value;
+    if (!programId) {
+      toast('Choose a programme.', 'info');
+      return;
+    }
     const body = {
       name: $('#department-name').value.trim(),
-      code: $('#department-code').value.trim().toUpperCase()
+      code: $('#department-code').value.trim().toUpperCase(),
+      program_id: Number(programId)
     };
     const button = $('#department-save');
     button.disabled = true;
     try {
-      await api(editingDepartmentId === null ? '/admin/departments' : '/admin/departments/' + editingDepartmentId, {
-        method: editingDepartmentId === null ? 'POST' : 'PATCH',
-        body
-      });
+      const url = editingDepartmentId === null ? '/admin/programs/' + programId + '/departments' : '/admin/departments/' + editingDepartmentId;
+      await api(url, { method: editingDepartmentId === null ? 'POST' : 'PATCH', body });
       flash(editingDepartmentId === null ? 'Department created.' : 'Department updated.');
       window.location.reload();
     } catch (error) {
@@ -511,29 +602,48 @@
     }
   });
 
-  branchForm.addEventListener('submit', async (event) => {
+  divisionForm.addEventListener('submit', async (event) => {
     event.preventDefault();
-    clearErrors(branchForm);
-    const body = {
-      name: $('#branch-name').value.trim(),
-      code: $('#branch-code').value.trim().toUpperCase()
-    };
-    if (editingBranchId === null && !$('#branch-department').value) {
+    clearErrors(divisionForm);
+    const departmentId = $('#division-department').value;
+    if (editingDivisionId === null && !departmentId) {
       toast('Choose a parent department.', 'info');
       return;
     }
-    const url = editingBranchId === null
-      ? '/admin/departments/' + $('#branch-department').value + '/branches'
-      : '/admin/branches/' + editingBranchId;
-    const button = $('#branch-save');
+    const body = {
+      name: $('#division-name').value.trim(),
+      code: $('#division-code').value.trim().toUpperCase()
+    };
+    const url = editingDivisionId === null ? '/admin/departments/' + departmentId + '/divisions' : '/admin/divisions/' + editingDivisionId;
+    const button = $('#division-save');
     button.disabled = true;
     try {
-      await api(url, { method: editingBranchId === null ? 'POST' : 'PATCH', body });
-      flash(editingBranchId === null ? 'Branch created.' : 'Branch updated.');
+      await api(url, { method: editingDivisionId === null ? 'POST' : 'PATCH', body });
+      flash(editingDivisionId === null ? 'Division created.' : 'Division updated.');
       window.location.reload();
     } catch (error) {
-      fail(error, branchForm);
+      fail(error, divisionForm);
     } finally {
+      button.disabled = false;
+    }
+  });
+
+  $('#program-admin-rows').addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-program-action]');
+    if (!button) return;
+    const program = structure.programs.find((item) => String(item.id) === button.dataset.id);
+    if (!program) return;
+    const action = button.dataset.programAction;
+    if (action === 'edit') { openEditProgram(program); return; }
+    if (action === 'deactivate' && !window.confirm('Deactivate ' + program.name + '? Active departments must be deactivated first. Existing data is retained.')) return;
+    if (action === 'reactivate' && !window.confirm('Reactivate ' + program.name + '? Departments remain in their current states.')) return;
+    button.disabled = true;
+    try {
+      await api('/admin/programs/' + program.id + '/' + action, { method: 'POST', body: {} });
+      flash(action === 'deactivate' ? 'Programme deactivated.' : 'Programme reactivated.');
+      window.location.reload();
+    } catch (error) {
+      fail(error);
       button.disabled = false;
     }
   });
@@ -541,15 +651,12 @@
   $('#department-admin-rows').addEventListener('click', async (event) => {
     const button = event.target.closest('[data-department-action]');
     if (!button) return;
-    const department = structureRows.find((item) => String(item.id) === button.dataset.id);
+    const department = structure.departments.find((item) => String(item.id) === button.dataset.id);
     if (!department) return;
     const action = button.dataset.departmentAction;
-    if (action === 'edit') {
-      openEditDepartment(department);
-      return;
-    }
-    if (action === 'deactivate' && !window.confirm('Deactivate ' + department.name + '? All its branches and its active coordinator must be deactivated first. Existing records will be retained.')) return;
-    if (action === 'reactivate' && !window.confirm('Reactivate ' + department.name + '? Its branches and coordinator remain in their current states.')) return;
+    if (action === 'edit') { openEditDepartment(department); return; }
+    if (action === 'deactivate' && !window.confirm('Deactivate ' + department.name + '? Active divisions and its active coordinator must be deactivated first. Existing students remain assigned.')) return;
+    if (action === 'reactivate' && !window.confirm('Reactivate ' + department.name + '? Its divisions and coordinator keep their current status.')) return;
     button.disabled = true;
     try {
       await api('/admin/departments/' + department.id + '/' + action, { method: 'POST', body: {} });
@@ -561,23 +668,19 @@
     }
   });
 
-  $('#branch-admin-rows').addEventListener('click', async (event) => {
-    const button = event.target.closest('[data-branch-action]');
+  $('#division-admin-rows').addEventListener('click', async (event) => {
+    const button = event.target.closest('[data-division-action]');
     if (!button) return;
-    const department = structureRows.find((item) => (item.branches || []).some((branch) => String(branch.id) === button.dataset.id));
-    const branch = department && department.branches.find((item) => String(item.id) === button.dataset.id);
-    if (!branch || !department) return;
-    const action = button.dataset.branchAction;
-    if (action === 'edit') {
-      openEditBranch(Object.assign({}, branch, { department: { id: department.id, name: department.name, code: department.code } }));
-      return;
-    }
-    if (action === 'deactivate' && !window.confirm('Deactivate branch ' + branch.name + ' (' + branch.code + ')? Existing records will be retained.')) return;
-    if (action === 'reactivate' && !window.confirm('Reactivate branch ' + branch.name + '? Its parent department must be active.')) return;
+    const division = structure.divisions.find((item) => String(item.id) === button.dataset.id);
+    if (!division) return;
+    const action = button.dataset.divisionAction;
+    if (action === 'edit') { openEditDivision(division); return; }
+    if (action === 'deactivate' && !window.confirm('Deactivate division ' + division.name + '? Existing students and historical references are retained.')) return;
+    if (action === 'reactivate' && !window.confirm('Reactivate division ' + division.name + '? Its parent department and programme must be active.')) return;
     button.disabled = true;
     try {
-      await api('/admin/branches/' + branch.id + '/' + action, { method: 'POST', body: {} });
-      flash(action === 'deactivate' ? 'Branch deactivated.' : 'Branch reactivated.');
+      await api('/admin/divisions/' + division.id + '/' + action, { method: 'POST', body: {} });
+      flash(action === 'deactivate' ? 'Division deactivated.' : 'Division reactivated.');
       window.location.reload();
     } catch (error) {
       fail(error);
@@ -585,9 +688,9 @@
     }
   });
 
-  $('#branch-search').addEventListener('input', renderStructure);
-  $('#branch-filter-department').addEventListener('change', renderStructure);
-  $('#branch-filter-status').addEventListener('change', renderStructure);
+  $('#division-search').addEventListener('input', renderStructure);
+  $('#division-filter-department').addEventListener('change', renderStructure);
+  $('#division-filter-status').addEventListener('change', renderStructure);
 
   function setText(id, value) {
     const element = $('#' + id);
