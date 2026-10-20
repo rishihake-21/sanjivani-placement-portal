@@ -307,7 +307,7 @@ class StudentSeeder extends Seeder
 
         foreach ($students as $data) {
             $departmentCode = Department::query()->whereKey($data['department_id'])->value('code');
-            $divisionId = Division::query()->where('code', strtoupper((string) $departmentCode) . '-UNASSIGNED')->value('id')
+            $divisionId = Division::query()->where('code', substr(strtoupper((string) $departmentCode), 0, 18) . '-UNASSIGNED')->value('id')
                 ?? Division::query()->where('department_id', $data['department_id'])->where('is_active', true)->value('id');
 
             // Create or update master list entry
