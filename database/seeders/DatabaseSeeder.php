@@ -62,6 +62,13 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Artificial Intelligence and Machine Learning', 'program_id' => $programs['BTECH']->id, 'is_active' => true]
         );
 
+        // Preserve the old branch code for older clients but make its canonical parent AI/ML.
+        // This is also required on fresh installs, where the migration ran before seed data existed.
+        Branch::query()->where('code', 'CSE-AIML')->update([
+            'department_id' => $departments['AIML']->id,
+            'updated_at' => now(),
+        ]);
+
         // Seed a neutral placeholder for legacy students. The real section/division cannot be
         // inferred from their old branch row; the master-list import can assign SY/DSY divisions.
         foreach (Department::query()->with('program')->get() as $department) {
