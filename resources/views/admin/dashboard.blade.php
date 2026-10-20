@@ -162,7 +162,6 @@
       </div>
     </x-ui.card>
   </div>
-@endsection
 
 <dialog class="admin-dialog" id="coordinator-dialog" aria-labelledby="coord-dialog-title">
   <form id="coordinator-form" novalidate>
@@ -232,6 +231,7 @@
     </div>
   </form>
 </dialog>
+@endsection
 
 @push('scripts')
 <script>
