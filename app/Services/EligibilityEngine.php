@@ -15,6 +15,7 @@ use Illuminate\Support\Collection;
  * Pure rule check: student x drive -> EligibilityResult (with a reason for every failed or unverified criterion).
  *
  *  - Uses VERIFIED academic values only (via VerifiedAcademicProfileService).
+ *  - Placement drives target departments and automatically cover all divisions within each selected department.
  *  - Only criteria the drive actually sets are checked; a drive that only needs CGPA does not wait for 10th.
  *  - Never frozen: callers evaluate when a student views a drive and again when they apply.
  *  - Lateral entry: min 12th falls back to the diploma percentage (drive_eligibility.diploma_counts_as_twelfth);
