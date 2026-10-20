@@ -14,9 +14,10 @@ use Illuminate\Validation\ValidationException;
 /**
  * All-or-nothing CSV import of the official student roster.
  *
- * New columns: university_id, full_name, institutional_email, program_code, department_code,
- * division_code, admission_type, admission_year, graduation_year, current_semester.
- * Legacy branch_code-only files remain accepted during rollout.
+ * Canonical columns: university_id, full_name, institutional_email, program_code,
+ * department_code, division_code, admission_type, admission_year, graduation_year,
+ * current_semester.
+ * Legacy branch_code-only files are still accepted during rollout.
  */
 class MasterListImporter
 {
@@ -43,16 +44,13 @@ class MasterListImporter
                     'institutional_email' => $row['institutional_email'] ?: null,
                     'department_id' => $row['_department_id'],
                     'division_id' => $row['_division_id'],
+                    'branch_id' => $row['_branch_id'],
                     'admission_type' => $row['admission_type'],
                     'admission_year' => (int) $row['admission_year'],
                     'graduation_year' => (int) $row['graduation_year'],
                     'current_semester' => (int) $row['current_semester'],
                     'import_batch' => $batch,
                 ];
-
-                // Keep old branch IDs only when supplied by a legacy import. Canonical division
-                // imports clear the old alias so it cannot conflict with a new department assignment.
-                $attributes['branch_id'] = $row['_branch_id'];
 
                 $entry = MasterListEntry::query()
                     ->where('university_id', $row['university_id'])
@@ -125,9 +123,11 @@ class MasterListImporter
             throw ValidationException::withMessages(['file' => ['Missing column(s): ' . implode(', ', $missing)]]);
         }
 
-        $departments = Department::query()->with('program:id,code')->get(['id', 'code', 'program_id'])->keyBy('code');
-        $divisions = Division::query()->get(['id', 'code', 'department_id', 'is_active'])->keyBy('code');
-        $legacyBranches = Branch::query()->get(['id', 'code', 'department_id', 'is_active'])->keyBy('code');
+        // Do not key by code: department codes may legitimately repeat in separate programmes,
+        // and division codes may repeat in separate departments.
+        $departments = Department::query()->with('program:id,code')->get(['id', 'code', 'program_id', 'is_active']);
+        $divisions = Division::query()->get(['id', 'code', 'department_id', 'is_active']);
+        $legacyBranches = Branch::query()->get(['id', 'code', 'department_id', 'is_active']);
 
         $rows = [];
         $errors = [];
@@ -179,61 +179,91 @@ class MasterListImporter
             $legacyBranch = null;
 
             if ($rowErrors === []) {
-                $department = $departments->get($row['department_code']);
-
-                if ($department === null) {
-                    $rowErrors[] = "unknown department_code '{$row['department_code']}'";
-                }
-
-                if ($department !== null && $row['program_code'] !== '' && $department->program?->code !== $row['program_code']) {
-                    $rowErrors[] = "department_code '{$row['department_code']}' does not belong to program_code '{$row['program_code']}'";
-                }
-
                 if ($row['division_code'] !== '') {
-                    $division = $divisions->get($row['division_code']);
-                    if ($division === null) {
-                        $rowErrors[] = "unknown division_code '{$row['division_code']}'";
-                    } elseif ($department !== null && (int) $division->department_id !== (int) $department->id) {
-                        $rowErrors[] = "division_code '{$row['division_code']}' does not belong to department '{$row['department_code']}'";
-                    } elseif ($division !== null && ! $division->is_active) {
-                        $rowErrors[] = "division_code '{$row['division_code']}' is inactive";
+                    // Canonical input identifies the department by both its code and programme.
+                    $department = $departments->first(fn (Department $candidate) =>
+                        $candidate->code === $row['department_code']
+                        && $candidate->program?->code === $row['program_code']
+                    );
+
+                    if ($department === null) {
+                        $sameCode = $departments->first(fn (Department $candidate) => $candidate->code === $row['department_code']);
+                        $rowErrors[] = $sameCode === null
+                            ? "unknown department_code '{$row['department_code']}'"
+                            : "department_code '{$row['department_code']}' does not belong to program_code '{$row['program_code']}'";
+                    } elseif (! $department->is_active) {
+                        $rowErrors[] = "department_code '{$row['department_code']}' is inactive";
                     }
 
+                    if ($department !== null) {
+                        $division = $divisions->first(fn (Division $candidate) =>
+                            $candidate->code === $row['division_code']
+                            && (int) $candidate->department_id === (int) $department->id
+                        );
+
+                        if ($division === null) {
+                            $rowErrors[] = "division_code '{$row['division_code']}' does not belong to department '{$row['department_code']}' in programme '{$row['program_code']}'";
+                        } elseif (! $division->is_active) {
+                            $rowErrors[] = "division_code '{$row['division_code']}' is inactive";
+                        }
+                    }
+
+                    // A legacy alias, if provided alongside canonical columns, must still point
+                    // to the same department rather than overriding the canonical assignment.
                     if ($hasLegacyBranchCode && $row['branch_code'] !== '') {
-                        $legacyBranch = $legacyBranches->get($row['branch_code']);
+                        $legacyBranch = $legacyBranches->firstWhere('code', $row['branch_code']);
                         if ($legacyBranch === null) {
                             $rowErrors[] = "unknown legacy branch_code '{$row['branch_code']}'";
                         } elseif (! $legacyBranch->is_active) {
                             $rowErrors[] = "legacy branch_code '{$row['branch_code']}' is inactive";
                         } elseif ($department !== null && (int) $legacyBranch->department_id !== (int) $department->id) {
-                            $rowErrors[] = "legacy branch_code '{$row['branch_code']}' does not belong to department '{$row['department_code']}'";
+                            $rowErrors[] = "legacy branch_code '{$row['branch_code']}' does not belong to canonical department '{$row['department_code']}'";
                         }
                     }
                 } else {
-                    $legacyBranch = $legacyBranches->get($row['branch_code']);
+                    // Legacy input only provides branch_code. Resolve the department from that
+                    // branch's real parent, not by the department code alone.
+                    $legacyBranch = $legacyBranches->firstWhere('code', $row['branch_code']);
                     if ($legacyBranch === null) {
                         $rowErrors[] = "unknown legacy branch_code '{$row['branch_code']}'";
                     } elseif (! $legacyBranch->is_active) {
                         $rowErrors[] = "legacy branch_code '{$row['branch_code']}' is inactive";
-                    } elseif ($legacyBranch->code === 'CSE-AIML' && $departments->has('AIML')) {
-                        // Previous files treated AI/ML as a CSE branch. Map it to the new AIML department.
-                        $department = $departments->get('AIML');
-                        $divisionCode = substr(strtoupper((string) $department->code), 0, 18) . '-UNASSIGNED';
-                        $division = $divisions->get($divisionCode);
-                    } elseif ($department !== null && (int) $legacyBranch->department_id !== (int) $department->id) {
-                        $rowErrors[] = "branch_code '{$row['branch_code']}' does not belong to department '{$row['department_code']}'";
                     } else {
-                        $divisionCode = substr(strtoupper((string) $department?->code), 0, 18) . '-UNASSIGNED';
-                        $division = $divisions->get($divisionCode);
-                    }
+                        $department = $departments->firstWhere('id', $legacyBranch->department_id);
 
-                    if ($division === null && $department !== null) {
-                        $division = $divisions->first(fn ($candidate) =>
-                            (int) $candidate->department_id === (int) $department->id && $candidate->is_active
-                        );
-                    }
-                    if ($division === null) {
-                        $rowErrors[] = "no active division exists for department '{$department?->code}'";
+                        if ($department === null) {
+                            $rowErrors[] = "legacy branch_code '{$row['branch_code']}' has no department";
+                        } else {
+                            // Old CSE-AIML files labelled this child branch as CSE. After the
+                            // hierarchy migration its canonical department is AIML; accept either
+                            // old or new label only for this exact compatibility alias.
+                            $legacyAimlAlias = $legacyBranch->code === 'CSE-AIML';
+                            $departmentLabelMatches = $row['department_code'] === $department->code
+                                || ($legacyAimlAlias && $row['department_code'] === 'CSE');
+
+                            if (! $departmentLabelMatches) {
+                                $rowErrors[] = "branch_code '{$row['branch_code']}' does not belong to department_code '{$row['department_code']}'";
+                            }
+                            if ($row['program_code'] !== '' && $department->program?->code !== $row['program_code']) {
+                                $rowErrors[] = "department_code '{$department->code}' does not belong to program_code '{$row['program_code']}'";
+                            }
+                            if (! $department->is_active) {
+                                $rowErrors[] = "department_code '{$department->code}' is inactive";
+                            }
+
+                            $defaultCode = substr(strtoupper((string) $department->code), 0, 18) . '-UNASSIGNED';
+                            $division = $divisions->first(fn (Division $candidate) =>
+                                (int) $candidate->department_id === (int) $department->id
+                                && $candidate->code === $defaultCode
+                                && $candidate->is_active
+                            ) ?? $divisions->first(fn (Division $candidate) =>
+                                (int) $candidate->department_id === (int) $department->id && $candidate->is_active
+                            );
+
+                            if ($division === null) {
+                                $rowErrors[] = "no active division exists for department '{$department->code}'";
+                            }
+                        }
                     }
                 }
 
