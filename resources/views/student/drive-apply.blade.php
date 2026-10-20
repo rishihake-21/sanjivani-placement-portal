@@ -37,7 +37,7 @@
                 <a href="{{ route('student.applications') }}" class="btn btn-primary" style="margin-top:12px">View my applications</a>
             </section>
         @else
-            @php($uiCanSubmit = $eligibility?->isEligible() && $resume && $resume->status === 'APPROVED' && $drive->status->value === 'PUBLISHED' && $drive->application_deadline && $drive->application_deadline->gt(now()))
+            @php($uiCanSubmit = $eligibility?->isEligible() && $resume && $resume->status->value === 'APPROVED' && $drive->status->value === 'PUBLISHED' && $drive->application_deadline && $drive->application_deadline->gt(now()))
             <section class="card">
                 <div class="card-h"><h2>Eligibility review</h2></div>
                 <p class="meta">Eligibility is evaluated using verified academic information. Pending verification is different from failing a criterion.</p>
@@ -81,9 +81,9 @@
                             <strong>{{ $resume->original_name }}</strong>
                             <p class="meta" style="margin:5px 0 0">Version {{ $resume->version }} · {{ $resume->status }}</p>
                         </div>
-                        <span class="badge b-{{ $resume->status === 'APPROVED' ? 'ok' : ($resume->status === 'PENDING' ? 'wait' : 'no') }}">{{ $resume->status }}</span>
+                        <span class="badge b-{{ $resume->status->value === 'APPROVED' ? 'ok' : ($resume->status->value === 'PENDING' ? 'wait' : 'no') }}">{{ $resume->status }}</span>
                     </div>
-                    @if ($resume->status === 'APPROVED')
+                    @if ($resume->status->value === 'APPROVED')
                         <p class="meta" style="margin-top:12px">This is your current primary resume. The server will verify that the required resume is approved before accepting the application.</p>
                     @else
                         <div class="notice wait" style="margin-top:12px">Your primary resume is not approved yet. You can review the page, but submission will be blocked until your profile meets the requirements.</div>
