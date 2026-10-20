@@ -73,6 +73,7 @@ return new class extends Migration
 
         Schema::table('students', function (Blueprint $table) {
             $table->foreignId('division_id')->nullable()->constrained('divisions')->restrictOnDelete();
+            $table->index('division_id');
         });
 
         // branch_id stays temporarily as a nullable compatibility column for legacy clients.
