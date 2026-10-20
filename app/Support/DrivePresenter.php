@@ -32,11 +32,7 @@ final class DrivePresenter
 
         // Compatibility for legacy code/tests that attached branches directly without the new pivot.
         if ($departments->isEmpty()) {
-            $ids = $drive->branches->map(function ($branch) {
-                return $branch->code === 'CSE-AIML'
-                    ? Department::query()->where('code', 'AIML')->value('id')
-                    : $branch->department_id;
-            })->filter()->unique()->values();
+            $ids = $drive->branches->pluck('department_id')->filter()->unique()->values();
 
             $departments = Department::query()
                 ->whereIn('id', $ids)
@@ -78,6 +74,8 @@ final class DrivePresenter
                     'department_id' => $department->id,
                     'department_code' => $department->code,
                     'department_name' => $department->name,
+                    'program_code' => $department->program?->code,
+                    'program_name' => $department->program?->name,
                 ]))->values(),
         ];
     }
