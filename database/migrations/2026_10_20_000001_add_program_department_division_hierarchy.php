@@ -72,6 +72,10 @@ return new class extends Migration
             $table->foreignId('division_id')->nullable()->constrained('divisions')->restrictOnDelete();
         });
 
+        // branch_id stays temporarily as a nullable compatibility column for legacy clients.
+        DB::statement('ALTER TABLE student_master_list ALTER COLUMN branch_id DROP NOT NULL');
+        DB::statement('ALTER TABLE students ALTER COLUMN branch_id DROP NOT NULL');
+
         // Keep legacy branch_id intact for backwards compatibility, but promote legacy CSE-AIML
         // roster rows to the dedicated AI/ML department so coordinator scope matches the domain.
         $legacyAimlBranchId = DB::table('branches')->where('code', 'CSE-AIML')->value('id');
@@ -94,7 +98,7 @@ return new class extends Migration
         // Admin/TPO can replace this assignment from the master-list import without losing IDs.
         $defaultDivisionByDepartment = [];
         foreach (DB::table('departments')->orderBy('id')->get(['id', 'code']) as $department) {
-            $code = strtoupper((string) $department->code) . '-UNASSIGNED';
+            $code = substr(strtoupper((string) $department->code), 0, 18) . '-UNASSIGNED';
             $existing = DB::table('divisions')->where('code', $code)->first();
             if ($existing) {
                 $divisionId = (int) $existing->id;
@@ -147,6 +151,14 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('drive_departments');
+
+        $fallbackBranchId = DB::table('branches')->orderBy('id')->value('id');
+        if ($fallbackBranchId !== null) {
+            DB::table('student_master_list')->whereNull('branch_id')->update(['branch_id' => $fallbackBranchId]);
+            DB::table('students')->whereNull('branch_id')->update(['branch_id' => $fallbackBranchId]);
+            DB::statement('ALTER TABLE student_master_list ALTER COLUMN branch_id SET NOT NULL');
+            DB::statement('ALTER TABLE students ALTER COLUMN branch_id SET NOT NULL');
+        }
 
         Schema::table('students', function (Blueprint $table) {
             $table->dropConstrainedForeignId('division_id');
