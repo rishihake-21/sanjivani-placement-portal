@@ -36,7 +36,7 @@ class ApplicationService
         try {
             return DB::transaction(function () use ($student, $drive, $actor) {
                 $drive = PlacementDrive::query()->whereKey($drive->id)->lockForUpdate()->firstOrFail();
-                $drive->load(['company', 'eligibility', 'branches']);
+                $drive->load(['company', 'eligibility', 'branches', 'departments']);
 
                 abort_unless($drive->status === DriveStatus::PUBLISHED, 409, 'This drive is not accepting applications.');
                 abort_if($drive->application_deadline === null || $drive->application_deadline->lte(now()), 409, 'The application deadline has passed.');
@@ -48,6 +48,7 @@ class ApplicationService
                 );
 
                 // Evaluated NOW against verified data - never trust an earlier "eligible".
+                $student->loadMissing(['department.program', 'division']);
                 $result = $this->engine->evaluate($student, $drive);
                 if (! $result->isEligible()) {
                     throw ValidationException::withMessages(['eligibility' => $result->reasons() ?: ['You are not eligible for this drive.']]);
