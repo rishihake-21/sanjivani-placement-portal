@@ -23,8 +23,8 @@ class CoordinatorAccountService
     {
         try {
             return DB::transaction(function () use ($admin, $data) {
-                $department = Department::query()->lockForUpdate()->findOrFail($data['department_id']);
-                abort_unless($department->is_active, 409, 'Activate this department before assigning a coordinator.');
+                $department = Department::query()->with('program')->lockForUpdate()->findOrFail($data['department_id']);
+                abort_unless($department->is_active && $department->program?->is_active, 409, 'Activate the programme and department before assigning a coordinator.');
 
                 abort_if(
                     Coordinator::query()->where('department_id', $department->id)->where('is_active', true)->exists(),
@@ -55,7 +55,7 @@ class CoordinatorAccountService
                     'user_id' => $user->id, 'department_id' => $department->id, 'email' => $user->email,
                 ], $admin);
 
-                return $coordinator->load('user', 'department');
+                return $coordinator->load('user', 'department.program');
             });
         } catch (UniqueConstraintViolationException) {
             abort(409, 'The email or employee ID is already in use, or the department already has an active coordinator.');
@@ -132,8 +132,8 @@ class CoordinatorAccountService
             return DB::transaction(function () use ($admin, $coordinator) {
                 $coordinator = Coordinator::query()->whereKey($coordinator->id)->lockForUpdate()->firstOrFail();
                 abort_if($coordinator->is_active, 409, 'This coordinator is already active.');
-                $department = Department::query()->whereKey($coordinator->department_id)->lockForUpdate()->firstOrFail();
-                abort_unless($department->is_active, 409, 'Reactivate the department before reactivating its coordinator.');
+                $department = Department::query()->with('program')->whereKey($coordinator->department_id)->lockForUpdate()->firstOrFail();
+                abort_unless($department->is_active && $department->program?->is_active, 409, 'Reactivate the programme and department before reactivating its coordinator.');
                 abort_if(
                     Coordinator::query()->where('department_id', $coordinator->department_id)->where('is_active', true)->exists(),
                     409,
