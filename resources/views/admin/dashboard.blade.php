@@ -333,6 +333,86 @@
   let editingDepartmentId = null;
   let editingBranchId = null;
 
+  function statusBadge(active) {
+    return active
+      ? '<span class="admin-status active">Active</span>'
+      : '<span class="admin-status inactive">Inactive</span>';
+  }
+
+  function syncStructureSelects() {
+    const previousDepartmentFilter = $('#branch-filter-department').value;
+    const previousBranchDepartment = $('#branch-department').value;
+    const activeDepartments = structureRows.filter((department) => department.is_active);
+    $('#branch-filter-department').innerHTML = '<option value="">All departments</option>' + structureRows.map((department) =>
+      '<option value="' + esc(department.id) + '">' + esc(department.code + ' — ' + department.name) + '</option>'
+    ).join('');
+    if (structureRows.some((department) => String(department.id) === previousDepartmentFilter)) {
+      $('#branch-filter-department').value = previousDepartmentFilter;
+    }
+    $('#branch-department').innerHTML = '<option value="">Choose an active department</option>' + activeDepartments.map((department) =>
+      '<option value="' + esc(department.id) + '">' + esc(department.code + ' — ' + department.name) + '</option>'
+    ).join('');
+    if (activeDepartments.some((department) => String(department.id) === previousBranchDepartment)) {
+      $('#branch-department').value = previousBranchDepartment;
+    }
+    $('#add-branch').disabled = activeDepartments.length === 0;
+  }
+
+  function renderStructure() {
+    fillRows($('#department-admin-rows'), structureRows, (department) => {
+      const edit = '<button type="button" class="btn btn-secondary" data-department-action="edit" data-id="' + esc(department.id) + '">Edit</button>';
+      const toggle = department.is_active
+        ? '<button type="button" class="btn btn-danger" data-department-action="deactivate" data-id="' + esc(department.id) + '">Deactivate</button>'
+        : '<button type="button" class="btn btn-secondary" data-department-action="reactivate" data-id="' + esc(department.id) + '">Reactivate</button>';
+      return [
+        '<span class="admin-account-cell"><b>' + esc(department.name) + '</b><span class="sub">' + esc(department.code) + '</span></span>',
+        '<span class="num">' + esc(department.active_branches_count) + '</span>',
+        statusBadge(department.is_active),
+        { html: '<div class="admin-actions">' + edit + toggle + '</div>', cls: 'act' }
+      ];
+    }, 'No departments found.');
+
+    const query = $('#branch-search').value.trim().toLowerCase();
+    const departmentFilter = $('#branch-filter-department').value;
+    const statusFilter = $('#branch-filter-status').value;
+    const branches = structureRows.flatMap((department) => (department.branches || []).map((branch) => ({
+      ...branch,
+      department: { id: department.id, name: department.name, code: department.code, is_active: department.is_active }
+    }))).filter((branch) => {
+      if (departmentFilter && String(branch.department_id) !== departmentFilter) return false;
+      if (statusFilter === 'active' && !branch.is_active) return false;
+      if (statusFilter === 'inactive' && branch.is_active) return false;
+      if (query && !(branch.name + ' ' + branch.code).toLowerCase().includes(query)) return false;
+      return true;
+    });
+
+    fillRows($('#branch-admin-rows'), branches, (branch) => {
+      const edit = '<button type="button" class="btn btn-secondary" data-branch-action="edit" data-id="' + esc(branch.id) + '">Edit</button>';
+      const toggle = branch.is_active
+        ? '<button type="button" class="btn btn-danger" data-branch-action="deactivate" data-id="' + esc(branch.id) + '">Deactivate</button>'
+        : '<button type="button" class="btn btn-secondary" data-branch-action="reactivate" data-id="' + esc(branch.id) + '">Reactivate</button>';
+      return [
+        '<span class="admin-account-cell"><b>' + esc(branch.name) + '</b><span class="sub">' + esc(branch.code) + '</span></span>',
+        '<span class="admin-account-cell"><b>' + esc(branch.department.code) + '</b><span class="sub">' + esc(branch.department.name) + '</span></span>',
+        statusBadge(branch.is_active),
+        { html: '<div class="admin-actions">' + edit + toggle + '</div>', cls: 'act' }
+      ];
+    }, 'No branches match these filters.');
+  }
+
+  async function loadStructure() {
+    try {
+      const response = await api('/admin/departments');
+      structureRows = response.data || [];
+      syncStructureSelects();
+      renderStructure();
+    } catch (error) {
+      fail(error);
+      fillRows($('#department-admin-rows'), [], () => [], 'Could not load departments.');
+      fillRows($('#branch-admin-rows'), [], () => [], 'Could not load branches.');
+    }
+  }
+
   function setText(id, value) {
     const element = $('#' + id);
     if (element) element.textContent = String(value == null ? 0 : value);
