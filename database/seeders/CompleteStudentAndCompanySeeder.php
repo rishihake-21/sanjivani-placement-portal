@@ -10,6 +10,7 @@ use App\Enums\Role;
 use App\Models\Branch;
 use App\Models\Company;
 use App\Models\Department;
+use App\Models\Division;
 use App\Models\PlacementDrive;
 use App\Models\Student;
 use App\Models\StudentMasterList;
@@ -195,6 +196,10 @@ class CompleteStudentAndCompanySeeder extends Seeder
 
         // Create complete students with academic records, experience, and documents
         foreach ($completeStudents as $data) {
+            $departmentCode = Department::query()->whereKey($data['department_id'])->value('code');
+            $divisionId = Division::query()->where('code', strtoupper((string) $departmentCode) . '-UNASSIGNED')->value('id')
+                ?? Division::query()->where('department_id', $data['department_id'])->where('is_active', true)->value('id');
+
             // Create master list entry
             $masterList = StudentMasterList::firstOrCreate(
                 ['university_id' => $data['university_id']],
@@ -203,6 +208,7 @@ class CompleteStudentAndCompanySeeder extends Seeder
                     'institutional_email' => $data['institutional_email'],
                     'department_id' => $data['department_id'],
                     'branch_id' => $data['branch_id'],
+                    'division_id' => $divisionId,
                     'admission_type' => $data['admission_type']->value,
                     'admission_year' => $data['admission_year'],
                     'graduation_year' => $data['graduation_year'],
@@ -565,6 +571,14 @@ class CompleteStudentAndCompanySeeder extends Seeder
             // Attach branches
             $branchIds = Branch::whereIn('code', $branches)->pluck('id');
             $drive->branches()->sync($branchIds);
+            $targetDepartmentIds = Branch::query()->whereIn('id', $branchIds)->get(['code', 'department_id'])->map(function ($branch) {
+                if ($branch->code === 'CSE-AIML') {
+                    return Department::query()->where('code', 'AIML')->value('id');
+                }
+
+                return $branch->department_id;
+            })->filter()->unique()->values()->all();
+            $drive->departments()->sync($targetDepartmentIds);
         }
 
         $this->command->info('Created ' . count($completeStudents) . ' complete students, ' . count($companies) . ' companies, and ' . count($drives) . ' drives.');
