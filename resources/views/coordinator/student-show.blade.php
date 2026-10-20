@@ -74,7 +74,7 @@
   <div class="ph">
     <div>
       <h1>{{ $student['full_name'] }}</h1>
-      <p class="meta">{{ $student['university_id'] }} &middot; {{ $student['branch']['name'] }} &middot; Semester {{ $student['current_semester'] }} &middot; {{ U::admission($student['admission_type']) }} &middot; Graduating {{ $student['graduation_year'] }}</p>
+      <p class="meta">{{ $student['university_id'] }} &middot; {{ $student['department']['program']['name'] ?? 'Programme not assigned' }} &middot; {{ $student['division']['name'] ?? ($student['branch']['name'] ?? 'Division not assigned') }} &middot; Semester {{ $student['current_semester'] }} &middot; {{ U::admission($student['admission_type']) }} &middot; Graduating {{ $student['graduation_year'] }}</p>
     </div>
     <div class="row wrap">
       <a class="btn btn-secondary" href="{{ route('coordinator.students') }}">Back to students</a>
@@ -120,8 +120,9 @@
       <dl class="dl">
         <div><dt>University ID</dt><dd>{{ $student['university_id'] }}</dd></div>
         <div><dt>Full name</dt><dd>{{ $student['full_name'] }}</dd></div>
+        <div><dt>Programme</dt><dd>{{ $student['department']['program']['name'] ?? '–' }}</dd></div>
         <div><dt>Department</dt><dd>{{ $student['department']['name'] }}</dd></div>
-        <div><dt>Branch</dt><dd>{{ $student['branch']['name'] }}</dd></div>
+        <div><dt>Division</dt><dd>{{ $student['division']['name'] ?? ($student['branch']['name'] ?? 'Not assigned') }}</dd></div>
         <div><dt>Admission type</dt><dd>{{ U::admission($student['admission_type']) }}</dd></div>
         <div><dt>Admission year</dt><dd>{{ $student['admission_year'] }}</dd></div>
         <div><dt>Graduation year</dt><dd>{{ $student['graduation_year'] }}</dd></div>
