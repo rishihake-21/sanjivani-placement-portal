@@ -357,6 +357,81 @@
     }, function (err) { failed(form, err, false); });
   };
 
+
+  /* Live document status refresh: coordinator decisions happen in a separate session. */
+  function initDocumentRefresh() {
+    var section = $('[data-documents-refresh]');
+    if (!section) return;
+    var content = $('[data-documents-content]', section);
+    if (!content) return;
+    var endpoint = section.dataset.documentsUrl;
+    var showHistory = section.dataset.history === '1';
+    var refreshing = false;
+    var types = {
+      RESUME: 'Resume', MARKSHEET_10TH: '10th marksheet', MARKSHEET_12TH: '12th marksheet',
+      MARKSHEET_DIPLOMA: 'Diploma marksheet', MARKSHEET_SEMESTER: 'Semester marksheet',
+      CERT_INTERNSHIP: 'Internship certificate', CERT_EXPERIENCE: 'Experience certificate',
+      CERT_OTHER: 'Other certificate'
+    };
+    var statuses = { APPROVED: 'Approved', PENDING: 'In review', REJECTED: 'Rejected', SUPERSEDED: 'Superseded' };
+    var statusClasses = { APPROVED: 'b-ok', PENDING: 'b-wait', REJECTED: 'b-no', SUPERSEDED: 'b-neutral' };
+    function esc(value) {
+      return String(value == null ? '' : value).replace(/[&<>"']/g, function (ch) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+      });
+    }
+    function size(bytes) {
+      return Number(bytes) < 1048576 ? Math.round(Number(bytes) / 1024) + ' KB' : (Number(bytes) / 1048576).toFixed(1) + ' MB';
+    }
+    function date(value) {
+      if (!value) return '–';
+      var d = new Date(value);
+      return isNaN(d.getTime()) ? '–' : d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' });
+    }
+    function render(items) {
+      if (!items.length) {
+        content.innerHTML = '<p class="empty">No documents uploaded yet.</p>';
+        return;
+      }
+      var rows = items.map(function (d) {
+        var status = String(d.status || 'PENDING');
+        var why = d.rejection
+          ? '<span class="why">' + esc(d.rejection.label || 'Rejected') + (d.rejection.text ? ': ' + esc(d.rejection.text) : '') + '</span>'
+          : '';
+        var primary = d.is_primary ? ' <span class="tag">Primary</span>' : '';
+        var href = d.download_url || ('/api/documents/' + encodeURIComponent(d.uuid) + '/download');
+        return '<tr>' +
+          '<td data-l="Document"><b>' + esc(types[d.document_type] || d.document_type) + '</b>' + primary + '<span class="sub">' + esc(d.original_name) + '</span></td>' +
+          '<td data-l="Version" class="num">' + esc(d.version) + '</td>' +
+          '<td data-l="Size" class="num">' + esc(size(d.size_bytes)) + '</td>' +
+          '<td data-l="Status"><div class="stk"><span class="badge ' + esc(statusClasses[status] || 'b-neutral') + '">' + esc(statuses[status] || status) + '</span>' + why + '</div></td>' +
+          '<td data-l="Uploaded">' + esc(date(d.uploaded_at)) + '</td>' +
+          '<td class="act"><a class="btn btn-secondary" href="' + esc(href) + '">' + iconSvg('down', 'sm') + ' Download</a></td>' +
+          '</tr>';
+      }).join('');
+      content.innerHTML = '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Document</th><th>Version</th><th>Size</th><th>Status</th><th>Uploaded</th><th><span class="sr">Action</span></th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+    }
+    function refresh() {
+      if (refreshing || document.visibilityState !== 'visible') return;
+      refreshing = true;
+      var url = endpoint + (showHistory ? '?history=1' : '');
+      fetch(url, { credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, cache: 'no-store' })
+        .then(function (response) {
+          if (!response.ok) throw new Error('Document refresh failed');
+          return response.json();
+        })
+        .then(function (payload) {
+          if (Array.isArray(payload.data)) render(payload.data);
+        })
+        .catch(function () { /* Preserve the last state if the network is temporarily unavailable. */ })
+        .finally(function () { refreshing = false; });
+    }
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') refresh(); });
+    window.setInterval(refresh, 12000);
+    refresh();
+  }
+
   document.addEventListener('submit', function (e) {
     var form = e.target;
     if (!form || !form.matches || !form.matches('form[data-ajax]')) { return; }
@@ -594,6 +669,7 @@
   function boot() {
     syncNavToggle();
     restoreAfterReload();
+    initDocumentRefresh();
   }
   if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', boot); } else { boot(); }
 })();
