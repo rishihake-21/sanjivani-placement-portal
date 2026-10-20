@@ -44,7 +44,7 @@ class DatabaseSeeder extends Seeder
         $departments = [];
         foreach ($structure as [$code, $name, $branches]) {
             $departments[$code] = Department::firstOrCreate(
-                ['code' => $code],
+                ['program_id' => $programs['BTECH']->id, 'code' => $code],
                 ['name' => $name, 'program_id' => $programs['BTECH']->id, 'is_active' => true]
             );
             foreach ($branches as [$branchCode, $branchName]) {
@@ -58,7 +58,7 @@ class DatabaseSeeder extends Seeder
         // The legacy seed grouped CSE (AI & ML) under CSE. Keep its old branch row for
         // compatibility, but create AI/ML as its own B.Tech department in the new hierarchy.
         $departments['AIML'] = Department::firstOrCreate(
-            ['code' => 'AIML'],
+            ['program_id' => $programs['BTECH']->id, 'code' => 'AIML'],
             ['name' => 'Artificial Intelligence and Machine Learning', 'program_id' => $programs['BTECH']->id, 'is_active' => true]
         );
 
@@ -73,7 +73,7 @@ class DatabaseSeeder extends Seeder
         // inferred from their old branch row; the master-list import can assign SY/DSY divisions.
         foreach (Department::query()->with('program')->get() as $department) {
             Division::firstOrCreate(
-                ['code' => substr(strtoupper($department->code), 0, 18) . '-UNASSIGNED'],
+                ['department_id' => $department->id, 'code' => substr(strtoupper($department->code), 0, 18) . '-UNASSIGNED'],
                 ['department_id' => $department->id, 'name' => 'Unassigned (migrated records)', 'is_active' => true]
             );
         }
