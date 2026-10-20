@@ -64,7 +64,9 @@ class PlacementDrive extends Model
 
         return $this->branches->map(function (Branch $branch) {
             if ($branch->code === 'CSE-AIML') {
-                return Department::query()->where('code', 'AIML')->value('id');
+                $programId = Department::query()->whereKey($branch->department_id)->value('program_id');
+
+                return Department::query()->where('program_id', $programId)->where('code', 'AIML')->value('id');
             }
 
             return $branch->department_id;
