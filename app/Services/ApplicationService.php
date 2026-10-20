@@ -70,6 +70,9 @@ class ApplicationService
                     // Frozen proof of what the decision was based on, even if data changes later.
                     'data_snapshot' => [
                         'student' => [
+                            'program_code' => $student->department?->program?->code,
+                            'department_id' => $student->department_id,
+                            'division_id' => $student->division_id,
                             'branch_id' => $student->branch_id,
                             'current_semester' => $student->current_semester,
                             'admission_type' => $student->admission_type->value,
