@@ -36,11 +36,8 @@ class AdminAcademicStructureTest extends TestCase
 
     public function test_department_codes_are_unique_per_programme_not_globally(): void
     {
-        $integrated = Program::create([
-            'name' => 'Integrated B.Tech',
-            'code' => 'IBTECH',
-            'is_active' => true,
-        ]);
+        // The hierarchy migration pre-seeds the standard programme catalogue.
+        $integrated = Program::query()->where('code', 'IBTECH')->firstOrFail();
 
         $this->postJson("/api/admin/programs/{$integrated->id}/departments", [
             'name' => 'Computer Science',
