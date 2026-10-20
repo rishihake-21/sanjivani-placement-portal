@@ -11,9 +11,5 @@ class StudentMasterList extends Model
 
     protected $table = 'student_master_list';
 
-    protected $fillable = [
-        'university_id',
-        'full_name',
-        'institutional_email',
-    ];
+    protected $guarded = [];
 }
