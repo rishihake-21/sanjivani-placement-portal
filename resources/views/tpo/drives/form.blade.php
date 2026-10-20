@@ -136,7 +136,7 @@
       const open = status === 'PUBLISHED';
       $$('[data-f]', root).forEach((el) => { el.disabled = !(open && EDITABLE_AFTER_PUBLISH.includes(el.dataset.f)); });
       departmentBoxes().forEach((b) => { b.disabled = true; });
-      $('[data-toggle-program]', root).forEach((b) => { b.disabled = true; });
+      $$('[data-toggle-program]', root).forEach((b) => { b.disabled = true; });
       note.innerHTML = open
         ? notice('wait', 'lock', 'This drive is published. Criteria, company, batch and target departments are locked because students have already seen them. You can still change the description, requirements, location, drive date and deadline. To change anything else, cancel the drive and create a new one.')
         : notice('no', 'lock', 'This drive is ' + status.toLowerCase() + ' and can no longer be edited.');
