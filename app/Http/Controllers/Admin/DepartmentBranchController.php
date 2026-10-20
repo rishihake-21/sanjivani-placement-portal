@@ -233,17 +233,19 @@ class DepartmentBranchController extends Controller
             'code' => $department->code,
             'is_active' => (bool) $department->is_active,
             'active_branches_count' => $department->branches->where('is_active', true)->count(),
-            'branches' => $department->branches->map(fn (Branch $branch) => $this->branchRow($branch))->values(),
+            'branches' => $department->branches->map(fn (Branch $branch) => $this->branchRow($branch, $department))->values(),
         ];
     }
 
-    private function branchRow(Branch $branch): array
+    private function branchRow(Branch $branch, ?Department $parent = null): array
     {
+        $department = $parent ?? ($branch->relationLoaded('department') ? $branch->getRelation('department') : null);
+
         return [
             'id' => $branch->id,
             'department_id' => $branch->department_id,
-            'department' => $branch->relationLoaded('department') && $branch->department
-                ? ['id' => $branch->department->id, 'name' => $branch->department->name, 'code' => $branch->department->code, 'is_active' => (bool) $branch->department->is_active]
+            'department' => $department
+                ? ['id' => $department->id, 'name' => $department->name, 'code' => $department->code, 'is_active' => (bool) $department->is_active]
                 : null,
             'name' => $branch->name,
             'code' => $branch->code,
