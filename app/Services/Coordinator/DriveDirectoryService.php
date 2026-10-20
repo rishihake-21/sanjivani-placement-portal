@@ -3,13 +3,14 @@
 namespace App\Services\Coordinator;
 
 use App\Models\Application;
+use App\Models\Division;
 use App\Models\PlacementDrive;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 
 /**
  * READ-ONLY read model for the coordinator drives screens. Drives are created and published by the
- * TPO; a coordinator sees published/closed drives that target at least one branch of their own
+ * TPO; a coordinator sees published/closed drives that target their department (across its divisions)
  * department, with THEIR department's applicants.
  */
 class DriveDirectoryService
@@ -41,11 +42,23 @@ class DriveDirectoryService
         $byStage = Application::query()->where('drive_id', $drive->id)->forDepartment($departmentId)
             ->selectRaw('stage, count(*) as n')->groupBy('stage')->pluck('n', 'stage');
 
+        $divisionRows = Division::query()
+            ->where('department_id', $departmentId)
+            ->where('is_active', true)
+            ->orderBy('code')
+            ->get(['id', 'code', 'name'])
+            ->map->only(['id', 'code', 'name'])
+            ->values();
+
+        $legacyBranchRows = $drive->branches->map->only(['id', 'code', 'name'])->values();
+
         return $this->summary($drive) + [
             'description' => $drive->description,
             'additional_requirements' => $drive->additional_requirements,
             'eligibility' => $drive->eligibility,
-            'department_branches' => $drive->branches->map->only(['id', 'code', 'name'])->values(),
+            'department_divisions' => $divisionRows,
+            // Legacy alias for older coordinator screens/clients during the transition.
+            'department_branches' => $legacyBranchRows,
             'department_applications_by_stage' => $byStage,
         ];
     }
