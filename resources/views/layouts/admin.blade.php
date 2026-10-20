@@ -20,7 +20,7 @@
   $dashboard = route('admin.dashboard');
   $nav = [
     ['dashboard', 'Dashboard', 'dash', $dashboard],
-    ['structure', 'Departments & branches', 'building', $dashboard . '#structure'],
+    ['structure', 'Programmes & divisions', 'building', $dashboard . '#structure'],
     ['coordinators', 'Coordinator accounts', 'user', $dashboard . '#coordinators'],
     ['master-list', 'Master list import', 'up', $dashboard . '#master-list'],
   ];
