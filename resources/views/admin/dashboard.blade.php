@@ -298,7 +298,7 @@
     <div class="admin-dialog-body"><div class="admin-form-grid">
       <div class="field full" data-field="program_id"><label for="department-program">Programme <span aria-hidden="true">*</span></label><select id="department-program" name="program_id" data-f="program_id" required><option value="">Choose an active programme</option></select><span class="err" role="alert" hidden></span></div>
       <div class="field" data-field="name"><label for="department-name">Department name <span aria-hidden="true">*</span></label><input id="department-name" name="name" data-f="name" type="text" maxlength="120" required><span class="err" role="alert" hidden></span></div>
-      <div class="field" data-field="code"><label for="department-code">Department code <span aria-hidden="true">*</span></label><input id="department-code" name="code" data-f="code" type="text" maxlength="20" pattern="[A-Za-z0-9_-]+" placeholder="e.g. CSE" required><span class="hint">Letters, numbers, hyphens and underscores; saved in uppercase.</span><span class="err" role="alert" hidden></span></div>
+      <div class="field" data-field="code"><label for="department-code">Department code <span aria-hidden="true">*</span></label><input id="department-code" name="code" data-f="code" type="text" maxlength="20" pattern="[A-Za-z0-9_-]+" placeholder="e.g. CSE" required><span class="hint">Unique within the selected programme. Letters, numbers, hyphens and underscores; saved in uppercase.</span><span class="err" role="alert" hidden></span></div>
     </div></div>
     <div class="admin-dialog-foot"><button type="button" class="btn btn-secondary" data-close-department>Cancel</button><button type="submit" class="btn btn-primary" id="department-save">Create department</button></div>
   </form>
@@ -311,7 +311,7 @@
       <div class="field full" data-field="department_id" id="division-department-field"><label for="division-department">Parent department <span aria-hidden="true">*</span></label><select id="division-department" name="department_id" data-f="department_id" required><option value="">Choose an active department</option></select><span class="err" role="alert" hidden></span></div>
       <div class="field full" id="division-current-department-field" hidden><label>Parent department</label><p class="admin-note" id="division-current-department"></p><span class="hint">The parent department cannot be changed after creation.</span></div>
       <div class="field" data-field="name"><label for="division-name">Division name <span aria-hidden="true">*</span></label><input id="division-name" name="name" data-f="name" type="text" maxlength="120" placeholder="e.g. SY CSE-A" required><span class="err" role="alert" hidden></span></div>
-      <div class="field" data-field="code"><label for="division-code">Division code <span aria-hidden="true">*</span></label><input id="division-code" name="code" data-f="code" type="text" maxlength="30" pattern="[A-Za-z0-9_-]+" placeholder="e.g. SYCSE-A" required><span class="hint">Unique across the university; saved in uppercase.</span><span class="err" role="alert" hidden></span></div>
+      <div class="field" data-field="code"><label for="division-code">Division code <span aria-hidden="true">*</span></label><input id="division-code" name="code" data-f="code" type="text" maxlength="30" pattern="[A-Za-z0-9_-]+" placeholder="e.g. SYCSE-A" required><span class="hint">Unique within the selected department; saved in uppercase.</span><span class="err" role="alert" hidden></span></div>
     </div></div>
     <div class="admin-dialog-foot"><button type="button" class="btn btn-secondary" data-close-division>Cancel</button><button type="submit" class="btn btn-primary" id="division-save">Create division</button></div>
   </form>
@@ -837,7 +837,7 @@
     $('#coord-dialog-subtitle').textContent = 'Update account details. Department reassignment is not supported in edit mode.';
     $('#coord-create-department').hidden = true;
     $('#coord-edit-department').hidden = false;
-    $('#coord-current-department').textContent = row.department.code + ' — ' + row.department.name;
+    $('#coord-current-department').textContent = (row.department.program ? row.department.program.name + ' · ' : '') + row.department.code + ' — ' + row.department.name;
     $('#coord-department').required = false;
     $('#coord-name').value = row.name || '';
     $('#coord-email').value = row.email || '';
