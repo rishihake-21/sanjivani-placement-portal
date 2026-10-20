@@ -61,10 +61,36 @@ Keep Laravel's default users migration: migration `...000002` extends it (its `0
 
 ```bash
 php artisan migrate
-php artisan db:seed                                  # programmes, departments, divisions, admin, TPO, one coordinator per dept
+php artisan db:seed                                  # programmes, departments, divisions, demo accounts
 php artisan tpms:import-master-list roster.csv --batch=2026-odd
 php artisan test
 ```
+
+### Local hierarchy demo reset (destructive)
+
+For a **local development database only**, this recreates the schema and seeds a complete sample hierarchy. It deletes every table and row in the database configured by `.env`; back it up first and never run it against a shared or production database.
+
+PowerShell:
+
+```powershell
+$env:TPMS_SEED_PASSWORD = "LocalDemoPass123!"
+php artisan migrate:fresh --seed
+```
+
+The demo catalogue contains 6 programmes, 17 departments, real section/division codes (including SY CSE-A, SY CSE-B, and DSY CSE), one seeded T&P coordinator account per department, demo students across all 6 programmes, and department-targeted placement drives. Legacy branch rows remain only for compatibility.
+
+Seeded sign-in accounts use the password assigned to `TPMS_SEED_PASSWORD`:
+- System Admin: `admin@tpms.local`
+- TPO: `tpo@tpms.local`
+- B.Tech CSE coordinator: `btech-cse.coordinator@tpms.local`
+- M.Tech CSE coordinator: `mtech-cse.coordinator@tpms.local`
+
+After seeding, verify the counts and division assignments before UI testing:
+
+```powershell
+php artisan tinker --execute="dump(['programmes' => \\App\\Models\\Program::count(), 'departments' => \\App\\Models\\Department::count(), 'divisions' => \\App\\Models\\Division::count(), 'students_without_division' => \\Illuminate\\Support\\Facades\\DB::table('students')->whereNull('division_id')->count(), 'master_list_without_division' => \\Illuminate\\Support\\Facades\\DB::table('student_master_list')->whereNull('division_id')->count()]);"
+```
+Expected clean demo counts: 6 programmes, 17 departments, 61 divisions, and zero student/master-list rows without a division.
 
 Roster CSV header:
 `university_id,full_name,institutional_email,program_code,department_code,division_code,admission_type,admission_year,graduation_year,current_semester`
