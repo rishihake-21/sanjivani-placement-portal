@@ -66,7 +66,7 @@ class DatabaseSeeder extends Seeder
         // inferred from their old branch row; the master-list import can assign SY/DSY divisions.
         foreach (Department::query()->with('program')->get() as $department) {
             Division::firstOrCreate(
-                ['code' => strtoupper($department->code) . '-UNASSIGNED'],
+                ['code' => substr(strtoupper($department->code), 0, 18) . '-UNASSIGNED'],
                 ['department_id' => $department->id, 'name' => 'Unassigned (migrated records)', 'is_active' => true]
             );
         }
