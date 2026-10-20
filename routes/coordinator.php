@@ -55,4 +55,14 @@ Route::middleware('role:system_admin')->prefix('admin')->group(function () {
     Route::patch('coordinators/{coordinator}', [Admin\CoordinatorController::class, 'update'])->whereNumber('coordinator');
     Route::post('coordinators/{coordinator}/deactivate', [Admin\CoordinatorController::class, 'deactivate'])->whereNumber('coordinator');
     Route::post('coordinators/{coordinator}/reactivate', [Admin\CoordinatorController::class, 'reactivate'])->whereNumber('coordinator');
+    // Department and branch structure (metadata only; no student records are exposed).
+    Route::get('departments', [Admin\DepartmentBranchController::class, 'index']);
+    Route::post('departments', [Admin\DepartmentBranchController::class, 'storeDepartment']);
+    Route::patch('departments/{department}', [Admin\DepartmentBranchController::class, 'updateDepartment'])->whereNumber('department');
+    Route::post('departments/{department}/deactivate', [Admin\DepartmentBranchController::class, 'deactivateDepartment'])->whereNumber('department');
+    Route::post('departments/{department}/reactivate', [Admin\DepartmentBranchController::class, 'reactivateDepartment'])->whereNumber('department');
+    Route::post('departments/{department}/branches', [Admin\DepartmentBranchController::class, 'storeBranch'])->whereNumber('department');
+    Route::patch('branches/{branch}', [Admin\DepartmentBranchController::class, 'updateBranch'])->whereNumber('branch');
+    Route::post('branches/{branch}/deactivate', [Admin\DepartmentBranchController::class, 'deactivateBranch'])->whereNumber('branch');
+    Route::post('branches/{branch}/reactivate', [Admin\DepartmentBranchController::class, 'reactivateBranch'])->whereNumber('branch');
 });
