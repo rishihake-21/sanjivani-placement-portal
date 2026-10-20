@@ -197,11 +197,31 @@ class CompleteStudentAndCompanySeeder extends Seeder
             ],
         ];
 
+        // Put complete demo profiles into real sections rather than the migration's
+        // temporary UNASSIGNED divisions. This gives drive eligibility multiple sections
+        // within each targeted department to compare.
+        $divisionCodes = [
+            '2126UCEM1001' => 'SY-CSE-B',
+            '2126UITF1002' => 'SY-IT-B',
+            '2126UECM1003' => 'SY-ECE-B',
+        ];
+
         // Create complete students with academic records, experience, and documents
         foreach ($completeStudents as $data) {
-            $departmentCode = Department::query()->whereKey($data['department_id'])->value('code');
-            $divisionId = Division::query()->where('department_id', $data['department_id'])->where('code', substr(strtoupper((string) $departmentCode), 0, 18) . '-UNASSIGNED')->value('id')
-                ?? Division::query()->where('department_id', $data['department_id'])->where('is_active', true)->value('id');
+            $divisionCode = $divisionCodes[$data['university_id']] ?? null;
+            $divisionId = $divisionCode
+                ? Division::query()
+                    ->where('department_id', $data['department_id'])
+                    ->where('code', $divisionCode)
+                    ->where('is_active', true)
+                    ->value('id')
+                : null;
+
+            if ($divisionId === null) {
+                throw new \\RuntimeException(
+                    "No seeded division {$divisionCode} for complete demo student {$data['university_id']}."
+                );
+            }
 
             // Create master list entry
             $masterList = StudentMasterList::firstOrCreate(
