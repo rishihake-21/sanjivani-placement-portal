@@ -51,9 +51,9 @@
               <option value="VERIFICATION_PENDING">Verification pending</option>
               <option value="NOT_ELIGIBLE">Not eligible</option>
             </select></div>
-          <div class="field"><label for="elig-branch">Branch</label><select id="elig-branch"><option value="">All</option></select></div>
+          <div class="field"><label for="elig-division">Division</label><select id="elig-division"><option value="">All</option></select></div>
         </x-ui.filter-bar>
-        <x-ui.table id="elig-rows" :cols="['Student', 'Branch', 'Semester', 'Outcome', 'Application']" />
+        <x-ui.table id="elig-rows" :cols="['Student', 'Division', 'Semester', 'Outcome', 'Application']" />
         <div class="pager" id="elig-pager"></div>
       </div>
     </x-ui.card>
@@ -81,7 +81,7 @@
       </div>
       <div id="bulk-errors"></div>
 
-      <x-ui.table id="app-rows" selectable :cols="['Student', 'Branch', 'Stage', 'Applied', 'Updated', '']" />
+      <x-ui.table id="app-rows" selectable :cols="['Student', 'Division', 'Stage', 'Applied', 'Updated', '']" />
       <div class="pager" id="app-pager"></div>
     </x-ui.card>
   </div>
@@ -104,7 +104,7 @@
     };
     const FAILED_LABEL = {
       min_cgpa: 'CGPA', min_tenth_percentage: '10th %', min_twelfth_percentage: '12th %', min_diploma_percentage: 'Diploma %',
-      max_active_backlogs: 'Active backlogs', max_total_backlogs: 'Total backlogs', branch: 'Branch', graduation_year: 'Batch',
+      max_active_backlogs: 'Active backlogs', max_total_backlogs: 'Total backlogs', department: 'Department', branch: 'Division', graduation_year: 'Batch',
       placement_opt_out: 'Opted out', already_placed: 'Already placed',
     };
     const num = (v) => Number(v).toFixed(2);
@@ -116,9 +116,9 @@
     async function loadDrive() {
       try { drive = (await api('/tpo/drives/' + id)).data; } catch (e) { fail(e); return; }
       render();
-      if (drive.branches.length) { loadSummary(); loadEligible(); } else {
+      if ((drive.departments || []).length) { loadSummary(); loadEligible(); } else {
         $('#e-candidates').textContent = '0'; ['e-eligible', 'e-pending', 'e-not'].forEach((x) => { $('#' + x).textContent = '0'; });
-        fillRows($('#elig-rows'), [], null, 'Select target branches to see who is eligible.');
+        fillRows($('#elig-rows'), [], null, 'Select target departments to see who is eligible.');
       }
       loadApplications();
     }
@@ -136,7 +136,7 @@
 
       $('#cancel-note').innerHTML = d.status === 'CANCELLED' ? `<div style="margin-bottom:24px">${notice('no', 'info', 'This drive was cancelled: ' + esc(d.cancel_reason || ''))}</div>` : '';
       $('#draft-note').innerHTML = d.status === 'DRAFT'
-        ? notice('wait', 'info', 'Draft. Students cannot see this drive yet. Publishing needs at least one target branch and a deadline in the future.') : '';
+        ? notice('wait', 'info', 'Draft. Students cannot see this drive yet. Publishing needs at least one target department and a deadline in the future.') : '';
 
       $('#overview-dl').innerHTML = [
         dl('Company', esc(d.company ? d.company.name : '')), dl('Employment', esc(EMPLOYMENT[d.employment_type] || d.employment_type)),
@@ -144,19 +144,19 @@
         dl('Location', esc(d.location || '')),
         dl('Drive date', d.drive_date ? fmtDate(d.drive_date) : ''), dl('Application deadline', d.application_deadline ? fmtDT(d.application_deadline) : ''),
         dl('Published', d.published_at ? fmtDT(d.published_at) : ''), dl('Placed students may apply', d.allow_placed_students ? 'Yes' : 'No'),
-        `<div style="grid-column:1/-1"><dt>Target branches</dt><dd>${d.branches.length ? d.branches.map((b) => `<span class="tag">${esc(b.name)}</span>`).join(' ') : '&ndash;'}</dd></div>`,
+        `<div style="grid-column:1/-1"><dt>Target departments</dt><dd>${d.departments.length ? d.departments.map((department) => `<span class="tag">${esc(department.program ? department.program.name + ' · ' : '')}${esc(department.code)} — ${esc(department.name)}</span>`).join(' ') : '&ndash;'}</dd></div>`,
       ].join('');
 
       const e = d.eligibility || {};
       const rows = Object.entries(CRITERIA).filter(([k]) => e[k] != null).map(([k, [name, f]]) => kv(name, esc(f(e[k]))));
       if (e.min_twelfth_percentage != null) rows.push(kv('Lateral entry', e.diploma_counts_as_twelfth ? 'Diploma % counts as 12th' : 'Real 12th marks required'));
-      $('#criteria-dl').innerHTML = rows.length ? rows.join('') : '<dt></dt><dd class="meta">No marks criteria. Only batch and branch are checked.</dd>';
+      $('#criteria-dl').innerHTML = rows.length ? rows.join('') : '<dt></dt><dd class="meta">No marks criteria. Only batch and target department are checked.</dd>';
 
       $('#text-body').innerHTML = `<p class="cap">Job description</p><p class="prose" style="margin:4px 0 16px">${d.description ? esc(d.description) : '<span class="meta">Not provided.</span>'}</p>
         <p class="cap">Additional requirements</p><p class="prose" style="margin-top:4px">${d.additional_requirements ? esc(d.additional_requirements) : '<span class="meta">None.</span>'}</p>`;
 
-      const sel = $('#elig-branch');
-      sel.innerHTML = '<option value="">All</option>' + d.branches.map((b) => `<option value="${b.id}">${esc(b.name)}</option>`).join('');
+      const sel = $('#elig-division');
+      sel.innerHTML = '<option value="">All divisions</option>' + (d.divisions || []).map((division) => `<option value="${division.id}">${esc(division.code)} — ${esc(division.name)}</option>`).join('');
       $('#app-stage').innerHTML = '<option value="">All stages</option>' + Object.keys(T.NEXT).map((s) => `<option value="${s}">${esc(label('stage', s))}</option>`).join('');
       $('#bulk-stage').innerHTML = SETTABLE.map((s) => `<option value="${s}">${esc(label('stage', s))}</option>`).join('');
       $('#applications').hidden = d.status === 'DRAFT';
@@ -169,7 +169,7 @@
       if (!b) return;
       const act = b.dataset.do;
       const cfg = {
-        publish: { title: 'Publish drive', kind: 'wait', message: `Eligible students of the ${esc(drive.graduation_year)} batch in the selected branches are notified. After publishing, the criteria and target branches are locked.`, confirmLabel: 'Publish', path: '/publish', method: 'POST', done: 'Drive published.' },
+        publish: { title: 'Publish drive', kind: 'wait', message: `Eligible students of the ${esc(drive.graduation_year)} batch in the selected departments are notified across every division. After publishing, the criteria and target departments are locked.`, confirmLabel: 'Publish', path: '/publish', method: 'POST', done: 'Drive published.' },
         close: { title: 'Close applications', kind: 'wait', message: 'Students can no longer apply. Existing applications keep moving through the rounds.', confirmLabel: 'Close applications', path: '/close', method: 'POST', done: 'Applications closed.' },
         cancel: { title: 'Cancel drive', kind: 'no', message: 'Students who are still in the process are told the drive is cancelled. This cannot be undone.', confirmLabel: 'Cancel drive', danger: true, reason: { label: 'Reason shown to students', required: true, min: 10 }, path: '/cancel', method: 'POST', done: 'Drive cancelled.' },
         delete: { title: 'Delete draft', kind: 'no', message: 'This draft was never published and will be removed.', confirmLabel: 'Delete draft', danger: true, path: '', method: 'DELETE', done: 'Draft deleted.' },
@@ -203,9 +203,9 @@
     async function loadEligible() {
       try {
         const res = await api('/tpo/drives/' + id + '/eligible-students', { query: {
-          status: $('#elig-status').value, branch_id: $('#elig-branch').value, search: $('#elig-search').value.trim(), page: eligPage } });
+          status: $('#elig-status').value, division_id: $('#elig-division').value, search: $('#elig-search').value.trim(), page: eligPage } });
         fillRows($('#elig-rows'), res.data, (s) => [
-          `<span class="name">${esc(s.full_name)}</span><span class="sub">${esc(s.university_id)}</span>`, esc(s.branch || ''), n(s.current_semester),
+          `<span class="name">${esc(s.full_name)}</span><span class="sub">${esc(s.university_id)}</span>`, esc(s.division || s.branch || ''), n(s.current_semester),
           `<div class="stk">${badge('elig', s.eligibility.status)}${s.eligibility.reasons.length ? `<ul class="reasons">${s.eligibility.reasons.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>` : ''}</div>`,
           s.application_stage ? badge('stage', s.application_stage) : dash,
         ], 'No students match these filters.');
@@ -215,7 +215,7 @@
     const reEligible = () => { eligPage = 1; loadEligible(); };
     $('#elig-search').addEventListener('input', debounce(reEligible, 300));
     $('#elig-status').addEventListener('change', reEligible);
-    $('#elig-branch').addEventListener('change', reEligible);
+    $('#elig-division').addEventListener('change', reEligible);
 
     /* ---------------- applications + bulk stage change ---------------- */
     let appPage = 1;
@@ -228,7 +228,7 @@
         const rows = res.data;
         fillRows($('#app-rows'), rows, (a) => [
           { html: `<input type="checkbox" data-sel="${a.id}" aria-label="Select ${esc(a.student.full_name)}"${selected.has(a.id) ? ' checked' : ''}>`, cls: 'sel' },
-          `<span class="name">${esc(a.student.full_name)}</span><span class="sub">${esc(a.student.university_id)}</span>`, esc(a.student.branch || ''),
+          `<span class="name">${esc(a.student.full_name)}</span><span class="sub">${esc(a.student.university_id)}</span>`, esc(a.student.division || a.student.branch || ''),
           badge('stage', a.stage), fmtDate(a.applied_at), fmtDate(a.stage_updated_at),
           { html: `<a class="btn btn-secondary" href="${appUrl}/${a.id}">Open</a>`, cls: 'act' },
         ], 'No applications yet.');
