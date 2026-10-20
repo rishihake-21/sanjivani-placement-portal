@@ -108,7 +108,7 @@
     let status = 'DRAFT';
 
     const field = (name) => root.querySelector('[data-f="' + name + '"]');
-    const departmentBoxes = () => $('[data-department]', root);
+    const departmentBoxes = () => $$('[data-department]', root);
 
     function fill(d) {
       status = d.status;
