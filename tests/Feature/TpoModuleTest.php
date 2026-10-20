@@ -10,6 +10,7 @@ use App\Models\AcademicRecord;
 use App\Models\Application;
 use App\Models\Company;
 use App\Models\Document;
+use App\Models\Division;
 use App\Models\DriveEligibility;
 use App\Models\Placement;
 use App\Models\PlacementDrive;
@@ -166,13 +167,37 @@ class TpoModuleTest extends TestCase
         $this->assertContains('max_active_backlogs', $this->engine()->evaluate($backlog, $drive)->failedCriteria());
         $this->assertSame(EligibilityResult::PENDING, $this->engine()->evaluate($unverified, $drive)->status); // nothing verified yet
         $this->assertContains('placement_opt_out', $this->engine()->evaluate($optedOut, $drive)->failedCriteria());
-        $this->assertContains('branch', $this->engine()->evaluate($otherBranch, $drive)->failedCriteria());
+        $this->assertContains('department', $this->engine()->evaluate($otherBranch, $drive)->failedCriteria());
 
         // bulk evaluation agrees with single evaluation
         $bulk = $this->engine()->evaluateMany(collect([$good, $lowCgpa, $unverified]), $drive);
         $this->assertSame(EligibilityResult::ELIGIBLE, $bulk[$good->id]->status);
         $this->assertSame(EligibilityResult::NOT_ELIGIBLE, $bulk[$lowCgpa->id]->status);
         $this->assertSame(EligibilityResult::PENDING, $bulk[$unverified->id]->status);
+    }
+
+    public function test_department_target_includes_students_across_all_divisions(): void
+    {
+        $divisionB = Division::create([
+            'department_id' => $this->cse->id,
+            'name' => 'SY CSE-B',
+            'code' => 'SYCSE-B',
+            'is_active' => true,
+        ]);
+
+        $studentA = $this->makeReady($this->makeStudent('DIV-A'));
+        $studentB = $this->makeReady($this->makeStudent('DIV-B'));
+        $studentB->forceFill(['division_id' => $divisionB->id])->save();
+        \App\Models\MasterListEntry::query()->whereKey($studentB->master_list_id)->update(['division_id' => $divisionB->id]);
+
+        $drive = $this->drive(['min_cgpa' => 7]);
+        $drive->departments()->sync([$this->cse->id]);
+
+        $candidateIds = $this->engine()->candidateQuery($drive)->pluck('id')->all();
+        $this->assertContains($studentA->id, $candidateIds);
+        $this->assertContains($studentB->id, $candidateIds);
+        $this->assertSame(EligibilityResult::ELIGIBLE, $this->engine()->evaluate($studentA, $drive)->status);
+        $this->assertSame(EligibilityResult::ELIGIBLE, $this->engine()->evaluate($studentB, $drive)->status);
     }
 
     public function test_engine_handles_lateral_entry_diploma_and_placed_students(): void
