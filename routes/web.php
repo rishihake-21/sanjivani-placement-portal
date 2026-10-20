@@ -220,6 +220,7 @@ Route::get('/dashboard', [StudentPageController::class, 'dashboard'])->name('das
         Route::get('/drives', function (Request $request) {
 
             $student = $request->user()->student;
+            $student->load(['division', 'branch']);
 
             $drives = \App\Models\PlacementDrive::query()
                 ->where('status', \App\Enums\DriveStatus::PUBLISHED)
@@ -240,7 +241,7 @@ Route::get('/dashboard', [StudentPageController::class, 'dashboard'])->name('das
 
             $student = $request->user()->student;
 
-            $drive->load('branches.department');
+            $drive->load(['branches.department', 'departments.program', 'departments.divisions']);
 
             $engine = app(\App\Services\EligibilityEngine::class);
             $eligibility = $engine->evaluate($student, $drive);
