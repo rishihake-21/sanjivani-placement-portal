@@ -331,7 +331,7 @@ class StudentSeeder extends Seeder
                 : null;
 
             if ($divisionId === null) {
-                throw new \\RuntimeException(
+                throw new \RuntimeException(
                     "No seeded division {$divisionCode} for demo student {$data['university_id']}."
                 );
             }
