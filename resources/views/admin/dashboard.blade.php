@@ -230,7 +230,7 @@
           <select id="coord-department" name="department_id" data-f="department_id" required>
             <option value="">Choose an available department</option>
             @foreach ($departmentOptions as $department)
-              <option value="{{ $department['id'] }}" data-base-label="{{ $department['code'] }} &middot; {{ $department['name'] }}">{{ $department['code'] }} &middot; {{ $department['name'] }}</option>
+              <option value="{{ $department['id'] }}" data-base-label="{{ $department['program_code'] }} &middot; {{ $department['code'] }} — {{ $department['name'] }}">{{ $department['program_code'] }} &middot; {{ $department['code'] }} — {{ $department['name'] }}</option>
             @endforeach
           </select>
           <span class="hint">Departments with an active coordinator are unavailable until that account is deactivated.</span>
@@ -938,7 +938,7 @@
   });
 
   $('#download-csv-template').addEventListener('click', () => {
-    const header = 'university_id,full_name,institutional_email,department_code,branch_code,admission_type,admission_year,graduation_year,current_semester\r\n';
+    const header = 'university_id,full_name,institutional_email,program_code,department_code,division_code,admission_type,admission_year,graduation_year,current_semester\\r\\n';
     const blob = new Blob([header], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
