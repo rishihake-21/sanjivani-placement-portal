@@ -13,8 +13,18 @@ class StudentResource extends JsonResource
             'id' => $this->id,
             'university_id' => $this->university_id,
             'full_name' => $this->full_name,
-            'department' => $this->whenLoaded('department', fn () => ['id' => $this->department->id, 'name' => $this->department->name, 'code' => $this->department->code]),
-            'branch' => $this->whenLoaded('branch', fn () => ['id' => $this->branch->id, 'name' => $this->branch->name, 'code' => $this->branch->code]),
+            'department' => $this->whenLoaded('department', fn () => [
+                'id' => $this->department->id,
+                'name' => $this->department->name,
+                'code' => $this->department->code,
+                'program' => $this->department->relationLoaded('program') && $this->department->program
+                    ? ['id' => $this->department->program->id, 'name' => $this->department->program->name, 'code' => $this->department->program->code]
+                    : null,
+            ]),
+            'division' => $this->whenLoaded('division', fn () => $this->division
+                ? ['id' => $this->division->id, 'name' => $this->division->name, 'code' => $this->division->code]
+                : null),
+            'branch' => $this->whenLoaded('branch', fn () => $this->branch ? ['id' => $this->branch->id, 'name' => $this->branch->name, 'code' => $this->branch->code] : null),
             'admission_type' => $this->admission_type->value,
             'admission_year' => $this->admission_year,
             'graduation_year' => $this->graduation_year,
