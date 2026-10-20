@@ -83,7 +83,13 @@ class PlacementDrive extends Model
             ->whereIn('status', [DriveStatus::PUBLISHED->value, DriveStatus::CLOSED->value])
             ->where(function (Builder $target) use ($departmentId) {
                 $target->whereHas('departments', fn (Builder $d) => $d->where('departments.id', $departmentId))
-                    ->orWhereHas('branches', fn (Builder $b) => $b->where('branches.department_id', $departmentId));
+                    ->orWhere(function (Builder $legacy) use ($departmentId) {
+                        $legacy->whereDoesntHave('departments')
+                            ->whereHas('branches', function (Builder $branch) use ($departmentId) {
+                                $branch->where('branches.department_id', $departmentId)
+                                    ->where('branches.code', '<>', 'CSE-AIML');
+                            });
+                    });
             });
     }
 }
