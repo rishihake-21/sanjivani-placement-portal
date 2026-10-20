@@ -8,6 +8,7 @@ use App\Http\Controllers\Web\AuthPageController;
 use App\Http\Controllers\Web\CoordinatorPageController;
 use App\Http\Controllers\Web\StudentPageController;
 use App\Http\Controllers\Web\TpoPageController;
+use App\Http\Controllers\Web\AdminPageController;
 use App\Http\Controllers\Student\AcademicRecordController;
 use App\Http\Controllers\Student\DocumentController;
 use App\Http\Controllers\Student\ExperienceController;
@@ -414,8 +415,6 @@ Route::middleware(['auth', 'role:system_admin'])
     ->name('admin.')
     ->group(function () {
 
-        Route::get('/dashboard', function () {
-            return view('admin.dashboard');
-        })->name('dashboard');
+        Route::get('/dashboard', [AdminPageController::class, 'dashboard'])->name('dashboard');
 
     });
