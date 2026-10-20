@@ -34,7 +34,7 @@ class DatabaseSeeder extends Seeder
         }
 
         $structure = [
-            ['CSE', 'Computer Science and Engineering', [['CSE', 'Computer Engineering']],
+            ['CSE', 'Computer Science and Engineering', [['CSE', 'Computer Engineering']]],
             ['IT', 'Information Technology', [['IT', 'Information Technology']]],
             ['ECE', 'Electronics and Telecommunication', [['ECE', 'Electronics and Telecommunication']]],
             ['ME', 'Mechanical Engineering', [['ME', 'Mechanical Engineering']]],
