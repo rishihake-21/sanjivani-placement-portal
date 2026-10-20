@@ -79,7 +79,8 @@ class UniversityStatsService
         $yearFilter = fn (Builder $query) => $query->when($year, fn (Builder $filtered) => $filtered->where('s.graduation_year', $year));
 
         $base = DB::table('students as s')
-            ->join('departments as d', 'd.id', '=', 's.department_id');
+            ->join('departments as d', 'd.id', '=', 's.department_id')
+            ->join('programs as pr', 'pr.id', '=', 'd.program_id');
 
         if ($isDivision) {
             $base->leftJoin('divisions as dv', 'dv.id', '=', 's.division_id')
@@ -89,14 +90,14 @@ class UniversityStatsService
         if ($isDivision) {
             $rows = $yearFilter($base)
                 ->selectRaw($groupColumn . ' as group_key')
-                ->selectRaw('s.division_id, s.branch_id, COALESCE(dv.code, b.code, \'UNASSIGNED\') as code, COALESCE(dv.name, b.name, \'Unassigned\') as name, d.code as department')
+                ->selectRaw('s.division_id, s.branch_id, COALESCE(dv.code, b.code, \'UNASSIGNED\') as code, COALESCE(dv.name, b.name, \'Unassigned\') as name, d.code as department, d.name as department_name, pr.code as program_code, pr.name as program')
                 ->selectRaw('count(*) as students, sum(case when s.opted_out_of_placement then 1 else 0 end) as opted_out')
-                ->groupByRaw($groupColumn . ', s.division_id, s.branch_id, COALESCE(dv.code, b.code, \'UNASSIGNED\'), COALESCE(dv.name, b.name, \'Unassigned\'), d.code')
+                ->groupByRaw($groupColumn . ', s.division_id, s.branch_id, COALESCE(dv.code, b.code, \'UNASSIGNED\'), COALESCE(dv.name, b.name, \'Unassigned\'), d.code, d.name, pr.code, pr.name')
                 ->orderBy('code')->get();
         } else {
             $rows = $yearFilter($base)
-                ->selectRaw('d.id as id, d.code as code, d.name as name, count(*) as students, sum(case when s.opted_out_of_placement then 1 else 0 end) as opted_out')
-                ->groupBy('d.id', 'd.code', 'd.name')
+                ->selectRaw('d.id as id, d.code as code, d.name as name, pr.code as program_code, pr.name as program, count(*) as students, sum(case when s.opted_out_of_placement then 1 else 0 end) as opted_out')
+                ->groupBy('d.id', 'd.code', 'd.name', 'pr.code', 'pr.name')
                 ->orderBy('code')->get();
         }
 
@@ -123,7 +124,10 @@ class UniversityStatsService
                 'branch_id' => $branchId,
                 'code' => $row->code,
                 'name' => $row->name,
+                'program' => $row->program,
+                'program_code' => $row->program_code,
                 'department' => $isDivision ? $row->department : null,
+                'department_name' => $isDivision ? $row->department_name : null,
                 'students' => (int) $row->students,
                 'opted_out' => (int) $row->opted_out,
                 'applied' => (int) ($applied[$key] ?? 0),
@@ -132,7 +136,7 @@ class UniversityStatsService
                 'placement_percentage' => $eligible > 0 ? round($placedCount / $eligible * 100, 2) : null,
                 'highest_ctc_lpa' => $placement?->highest !== null ? (float) $placement->highest : null,
                 'average_ctc_lpa' => $placement?->average !== null ? round((float) $placement->average, 2) : null,
-            ], fn ($value, $field) => ! in_array($field, ['division_id', 'branch_id', 'department'], true) || $value !== null, ARRAY_FILTER_USE_BOTH);
+            ], fn ($value, $field) => ! in_array($field, ['division_id', 'branch_id', 'department', 'department_name'], true) || $value !== null, ARRAY_FILTER_USE_BOTH);
         })->values()->all();
     }
 
