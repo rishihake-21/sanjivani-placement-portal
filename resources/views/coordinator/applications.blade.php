@@ -59,7 +59,7 @@
         <div class="field">
           <label for="f-division">Division</label>
           <select id="f-division" name="division_id">
-            <option value="">All divisiones</option>
+            <option value="">All divisions</option>
             @foreach ($divisions as $b)
               <option value="{{ $b['id'] }}" @selected((string) ($f['division_id'] ?? '') === (string) $b['id'])>{{ $b['code'] }} &middot; {{ $b['name'] }}</option>
             @endforeach
