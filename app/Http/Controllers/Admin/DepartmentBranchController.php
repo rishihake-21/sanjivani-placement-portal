@@ -133,8 +133,8 @@ class DepartmentBranchController extends Controller
         $parent = Program::query()->findOrFail($program);
         $this->normalizeFields($request);
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:120', Rule::unique('departments', 'name')],
-            'code' => ['required', 'string', 'max:20', 'alpha_dash:ascii', Rule::unique('departments', 'code')],
+            'name' => ['required', 'string', 'max:120', Rule::unique('departments', 'name')->where('program_id', $parent->id)],
+            'code' => ['required', 'string', 'max:20', 'alpha_dash:ascii', Rule::unique('departments', 'code')->where('program_id', $parent->id)],
         ]);
 
         try {
@@ -148,7 +148,7 @@ class DepartmentBranchController extends Controller
                 return $department->load('program')->loadCount(['divisions as active_divisions_count' => fn ($q) => $q->where('is_active', true)]);
             });
         } catch (UniqueConstraintViolationException) {
-            abort(409, 'A department with that name or code already exists.');
+            abort(409, 'A department with that name or code already exists in this programme.');
         }
 
         return response()->json(['data' => $this->departmentRow($department)], 201);
@@ -157,10 +157,11 @@ class DepartmentBranchController extends Controller
     public function updateDepartment(Request $request, int $department): JsonResponse
     {
         $model = Department::query()->findOrFail($department);
+        $targetProgramId = $request->filled('program_id') ? (int) $request->input('program_id') : (int) $model->program_id;
         $this->normalizeFields($request);
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:120', Rule::unique('departments', 'name')->ignore($model->id)],
-            'code' => ['required', 'string', 'max:20', 'alpha_dash:ascii', Rule::unique('departments', 'code')->ignore($model->id)],
+            'name' => ['required', 'string', 'max:120', Rule::unique('departments', 'name')->where('program_id', $targetProgramId)->ignore($model->id)],
+            'code' => ['required', 'string', 'max:20', 'alpha_dash:ascii', Rule::unique('departments', 'code')->where('program_id', $targetProgramId)->ignore($model->id)],
             'program_id' => ['sometimes', 'integer', Rule::exists('programs', 'id')->where('is_active', true)],
         ]);
 
@@ -181,7 +182,7 @@ class DepartmentBranchController extends Controller
                 return $model->load('program')->loadCount(['divisions as active_divisions_count' => fn ($q) => $q->where('is_active', true)]);
             });
         } catch (UniqueConstraintViolationException) {
-            abort(409, 'A department with that name or code already exists.');
+            abort(409, 'A department with that name or code already exists in this programme.');
         }
 
         return response()->json(['data' => $this->departmentRow($model)]);
@@ -229,7 +230,7 @@ class DepartmentBranchController extends Controller
         $this->normalizeFields($request);
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120', Rule::unique('divisions', 'name')->where('department_id', $parent->id)],
-            'code' => ['required', 'string', 'max:30', 'alpha_dash:ascii', Rule::unique('divisions', 'code')],
+            'code' => ['required', 'string', 'max:30', 'alpha_dash:ascii', Rule::unique('divisions', 'code')->where('department_id', $parent->id)],
         ]);
 
         try {
@@ -243,7 +244,7 @@ class DepartmentBranchController extends Controller
                 return $division->load('department.program');
             });
         } catch (UniqueConstraintViolationException) {
-            abort(409, 'A division with that name in this department or that code already exists.');
+            abort(409, 'A division with that name or code already exists in this department.');
         }
 
         return response()->json(['data' => $this->divisionRow($division)], 201);
@@ -255,7 +256,7 @@ class DepartmentBranchController extends Controller
         $this->normalizeFields($request);
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120', Rule::unique('divisions', 'name')->where('department_id', $model->department_id)->ignore($model->id)],
-            'code' => ['required', 'string', 'max:30', 'alpha_dash:ascii', Rule::unique('divisions', 'code')->ignore($model->id)],
+            'code' => ['required', 'string', 'max:30', 'alpha_dash:ascii', Rule::unique('divisions', 'code')->where('department_id', $model->department_id)->ignore($model->id)],
         ]);
 
         try {
