@@ -56,12 +56,19 @@ class PlacementDrive extends Model
     {
         $this->loadMissing(['departments', 'branches']);
 
-        return $this->departments->pluck('id')
-            ->merge($this->branches->pluck('department_id'))
-            ->map(fn ($id) => (int) $id)
-            ->unique()
-            ->values()
-            ->all();
+        // The new department pivot is authoritative for modern drives. Legacy branch-only
+        // drives are resolved below for compatibility with old clients and existing tests.
+        if ($this->departments->isNotEmpty()) {
+            return $this->departments->pluck('id')->map(fn ($id) => (int) $id)->unique()->values()->all();
+        }
+
+        return $this->branches->map(function (Branch $branch) {
+            if ($branch->code === 'CSE-AIML') {
+                return Department::query()->where('code', 'AIML')->value('id');
+            }
+
+            return $branch->department_id;
+        })->filter()->map(fn ($id) => (int) $id)->unique()->values()->all();
     }
 
     public function applications(): HasMany
