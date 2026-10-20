@@ -119,7 +119,6 @@
 
   <div class="stack">
     <x-ui.card id="coordinators" title="Coordinator accounts">
-    <x-ui.card id="coordinators" title="Coordinator accounts">
       <x-slot:actions>
         <button type="button" class="btn btn-primary" data-add-coordinator>
           <svg class="icon sm" aria-hidden="true"><use href="#i-plus"/></svg> Add account
@@ -282,37 +281,39 @@
   </form>
 </dialog>
 
+<dialog id="program-dialog" class="admin-dialog" aria-labelledby="program-dialog-title">
+  <form id="program-form" novalidate>
+    <div class="admin-dialog-head"><div><h2 id="program-dialog-title">Add programme</h2><p class="meta" id="program-dialog-subtitle">Create a university programme.</p></div><button type="button" class="icon-btn" data-close-program aria-label="Close programme form">&times;</button></div>
+    <div class="admin-dialog-body"><div class="admin-form-grid">
+      <div class="field" data-field="name"><label for="program-name">Programme name <span aria-hidden="true">*</span></label><input id="program-name" name="name" data-f="name" type="text" maxlength="120" required><span class="err" role="alert" hidden></span></div>
+      <div class="field" data-field="code"><label for="program-code">Programme code <span aria-hidden="true">*</span></label><input id="program-code" name="code" data-f="code" type="text" maxlength="20" pattern="[A-Za-z0-9_-]+" placeholder="e.g. BTECH" required><span class="hint">Saved in uppercase.</span><span class="err" role="alert" hidden></span></div>
+    </div></div>
+    <div class="admin-dialog-foot"><button type="button" class="btn btn-secondary" data-close-program>Cancel</button><button type="submit" class="btn btn-primary" id="program-save">Create programme</button></div>
+  </form>
+</dialog>
+
 <dialog id="department-dialog" class="admin-dialog" aria-labelledby="department-dialog-title">
   <form id="department-form" novalidate>
-    <div class="admin-dialog-head">
-      <div><h2 id="department-dialog-title">Add department</h2><p class="meta" id="department-dialog-subtitle">Create a department record.</p></div>
-      <button type="button" class="icon-btn" data-close-department aria-label="Close department form">&times;</button>
-    </div>
-    <div class="admin-dialog-body">
-      <div class="admin-form-grid">
-        <div class="field" data-field="name"><label for="department-name">Department name <span aria-hidden="true">*</span></label><input id="department-name" name="name" data-f="name" type="text" maxlength="120" required><span class="err" role="alert" hidden></span></div>
-        <div class="field" data-field="code"><label for="department-code">Department code <span aria-hidden="true">*</span></label><input id="department-code" name="code" data-f="code" type="text" maxlength="20" pattern="[A-Za-z0-9_-]+" placeholder="e.g. CSE" required><span class="hint">Letters, numbers, hyphens and underscores; saved in uppercase.</span><span class="err" role="alert" hidden></span></div>
-      </div>
-    </div>
+    <div class="admin-dialog-head"><div><h2 id="department-dialog-title">Add department</h2><p class="meta" id="department-dialog-subtitle">Create a department within a programme.</p></div><button type="button" class="icon-btn" data-close-department aria-label="Close department form">&times;</button></div>
+    <div class="admin-dialog-body"><div class="admin-form-grid">
+      <div class="field full" data-field="program_id"><label for="department-program">Programme <span aria-hidden="true">*</span></label><select id="department-program" name="program_id" data-f="program_id" required><option value="">Choose an active programme</option></select><span class="err" role="alert" hidden></span></div>
+      <div class="field" data-field="name"><label for="department-name">Department name <span aria-hidden="true">*</span></label><input id="department-name" name="name" data-f="name" type="text" maxlength="120" required><span class="err" role="alert" hidden></span></div>
+      <div class="field" data-field="code"><label for="department-code">Department code <span aria-hidden="true">*</span></label><input id="department-code" name="code" data-f="code" type="text" maxlength="20" pattern="[A-Za-z0-9_-]+" placeholder="e.g. CSE" required><span class="hint">Letters, numbers, hyphens and underscores; saved in uppercase.</span><span class="err" role="alert" hidden></span></div>
+    </div></div>
     <div class="admin-dialog-foot"><button type="button" class="btn btn-secondary" data-close-department>Cancel</button><button type="submit" class="btn btn-primary" id="department-save">Create department</button></div>
   </form>
 </dialog>
 
-<dialog id="branch-dialog" class="admin-dialog" aria-labelledby="branch-dialog-title">
-  <form id="branch-form" novalidate>
-    <div class="admin-dialog-head">
-      <div><h2 id="branch-dialog-title">Add branch</h2><p class="meta" id="branch-dialog-subtitle">Add a branch beneath a department.</p></div>
-      <button type="button" class="icon-btn" data-close-branch aria-label="Close branch form">&times;</button>
-    </div>
-    <div class="admin-dialog-body">
-      <div class="admin-form-grid">
-        <div class="field full" data-field="department_id" id="branch-department-field"><label for="branch-department">Parent department <span aria-hidden="true">*</span></label><select id="branch-department" name="department_id" data-f="department_id" required><option value="">Choose an active department</option></select><span class="err" role="alert" hidden></span></div>
-        <div class="field full" id="branch-current-department-field" hidden><label>Parent department</label><p class="admin-note" id="branch-current-department"></p><span class="hint">The branch parent cannot be changed after creation to protect existing records.</span></div>
-        <div class="field" data-field="name"><label for="branch-name">Branch name <span aria-hidden="true">*</span></label><input id="branch-name" name="name" data-f="name" type="text" maxlength="120" required><span class="err" role="alert" hidden></span></div>
-        <div class="field" data-field="code"><label for="branch-code">Branch code <span aria-hidden="true">*</span></label><input id="branch-code" name="code" data-f="code" type="text" maxlength="20" pattern="[A-Za-z0-9_-]+" placeholder="e.g. CSE" required><span class="hint">Must be unique across all branches; saved in uppercase.</span><span class="err" role="alert" hidden></span></div>
-      </div>
-    </div>
-    <div class="admin-dialog-foot"><button type="button" class="btn btn-secondary" data-close-branch>Cancel</button><button type="submit" class="btn btn-primary" id="branch-save">Create branch</button></div>
+<dialog id="division-dialog" class="admin-dialog" aria-labelledby="division-dialog-title">
+  <form id="division-form" novalidate>
+    <div class="admin-dialog-head"><div><h2 id="division-dialog-title">Add division</h2><p class="meta" id="division-dialog-subtitle">Add a division beneath a department.</p></div><button type="button" class="icon-btn" data-close-division aria-label="Close division form">&times;</button></div>
+    <div class="admin-dialog-body"><div class="admin-form-grid">
+      <div class="field full" data-field="department_id" id="division-department-field"><label for="division-department">Parent department <span aria-hidden="true">*</span></label><select id="division-department" name="department_id" data-f="department_id" required><option value="">Choose an active department</option></select><span class="err" role="alert" hidden></span></div>
+      <div class="field full" id="division-current-department-field" hidden><label>Parent department</label><p class="admin-note" id="division-current-department"></p><span class="hint">The parent department cannot be changed after creation.</span></div>
+      <div class="field" data-field="name"><label for="division-name">Division name <span aria-hidden="true">*</span></label><input id="division-name" name="name" data-f="name" type="text" maxlength="120" placeholder="e.g. SY CSE-A" required><span class="err" role="alert" hidden></span></div>
+      <div class="field" data-field="code"><label for="division-code">Division code <span aria-hidden="true">*</span></label><input id="division-code" name="code" data-f="code" type="text" maxlength="30" pattern="[A-Za-z0-9_-]+" placeholder="e.g. SYCSE-A" required><span class="hint">Unique across the university; saved in uppercase.</span><span class="err" role="alert" hidden></span></div>
+    </div></div>
+    <div class="admin-dialog-foot"><button type="button" class="btn btn-secondary" data-close-division>Cancel</button><button type="submit" class="btn btn-primary" id="division-save">Create division</button></div>
   </form>
 </dialog>
 @endsection
