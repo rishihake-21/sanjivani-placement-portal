@@ -413,6 +413,123 @@
     }
   }
 
+  function openCreateDepartment() {
+    editingDepartmentId = null;
+    departmentForm.reset();
+    clearErrors(departmentForm);
+    $('#department-dialog-title').textContent = 'Add department';
+    $('#department-dialog-subtitle').textContent = 'Create a department with a unique name and code.';
+    $('#department-save').textContent = 'Create department';
+    departmentDialog.showModal();
+    $('#department-name').focus();
+  }
+
+  function openEditDepartment(department) {
+    editingDepartmentId = department.id;
+    departmentForm.reset();
+    clearErrors(departmentForm);
+    $('#department-dialog-title').textContent = 'Edit department';
+    $('#department-dialog-subtitle').textContent = 'Changing a code can affect future CSV roster imports.';
+    $('#department-name').value = department.name || '';
+    $('#department-code').value = department.code || '';
+    $('#department-save').textContent = 'Save changes';
+    departmentDialog.showModal();
+    $('#department-name').focus();
+  }
+
+  function openCreateBranch() {
+    if (!structureRows.some((department) => department.is_active)) {
+      toast('Create or reactivate a department before adding a branch.', 'info');
+      return;
+    }
+    editingBranchId = null;
+    branchForm.reset();
+    clearErrors(branchForm);
+    syncStructureSelects();
+    $('#branch-dialog-title').textContent = 'Add branch';
+    $('#branch-dialog-subtitle').textContent = 'Create a branch inside an active department.';
+    $('#branch-department-field').hidden = false;
+    $('#branch-current-department-field').hidden = true;
+    $('#branch-department').disabled = false;
+    $('#branch-department').required = true;
+    $('#branch-save').textContent = 'Create branch';
+    branchDialog.showModal();
+    $('#branch-department').focus();
+  }
+
+  function openEditBranch(branch) {
+    editingBranchId = branch.id;
+    branchForm.reset();
+    clearErrors(branchForm);
+    $('#branch-dialog-title').textContent = 'Edit branch';
+    $('#branch-dialog-subtitle').textContent = 'Update the branch name or code.';
+    $('#branch-department-field').hidden = true;
+    $('#branch-current-department-field').hidden = false;
+    $('#branch-current-department').textContent = branch.department.code + ' — ' + branch.department.name;
+    $('#branch-department').disabled = true;
+    $('#branch-department').required = false;
+    $('#branch-name').value = branch.name || '';
+    $('#branch-code').value = branch.code || '';
+    $('#branch-save').textContent = 'Save changes';
+    branchDialog.showModal();
+    $('#branch-name').focus();
+  }
+
+  $('#add-department').addEventListener('click', openCreateDepartment);
+  $('#add-branch').addEventListener('click', openCreateBranch);
+  document.querySelectorAll('[data-close-department]').forEach((button) => button.addEventListener('click', () => departmentDialog.close()));
+  document.querySelectorAll('[data-close-branch]').forEach((button) => button.addEventListener('click', () => branchDialog.close()));
+
+  departmentForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    clearErrors(departmentForm);
+    const body = {
+      name: $('#department-name').value.trim(),
+      code: $('#department-code').value.trim().toUpperCase()
+    };
+    const button = $('#department-save');
+    button.disabled = true;
+    try {
+      await api(editingDepartmentId === null ? '/admin/departments' : '/admin/departments/' + editingDepartmentId, {
+        method: editingDepartmentId === null ? 'POST' : 'PATCH',
+        body
+      });
+      flash(editingDepartmentId === null ? 'Department created.' : 'Department updated.');
+      window.location.reload();
+    } catch (error) {
+      fail(error, departmentForm);
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  branchForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    clearErrors(branchForm);
+    const body = {
+      name: $('#branch-name').value.trim(),
+      code: $('#branch-code').value.trim().toUpperCase()
+    };
+    if (editingBranchId === null && !$('#branch-department').value) {
+      toast('Choose a parent department.', 'info');
+      return;
+    }
+    const url = editingBranchId === null
+      ? '/admin/departments/' + $('#branch-department').value + '/branches'
+      : '/admin/branches/' + editingBranchId;
+    const button = $('#branch-save');
+    button.disabled = true;
+    try {
+      await api(url, { method: editingBranchId === null ? 'POST' : 'PATCH', body });
+      flash(editingBranchId === null ? 'Branch created.' : 'Branch updated.');
+      window.location.reload();
+    } catch (error) {
+      fail(error, branchForm);
+    } finally {
+      button.disabled = false;
+    }
+  });
+
   function setText(id, value) {
     const element = $('#' + id);
     if (element) element.textContent = String(value == null ? 0 : value);
