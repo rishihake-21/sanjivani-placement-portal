@@ -141,18 +141,31 @@ class AcademicStructureSeeder extends Seeder
             // These branch rows are compatibility data for older APIs and existing demo records.
             // The canonical academic hierarchy and placement-drive targeting use departments.
             $legacyBranches = [
-                'CSE' => ['CSE', 'Computer Engineering'],
-                'CSE-AIML' => ['AIML', 'CSE (AI & ML)'],
-                'AIDS' => ['AIDS', 'Artificial Intelligence and Data Science'],
-                'IT' => ['IT', 'Information Technology'],
-                'ECE' => ['ECE', 'Electronics and Telecommunication'],
-                'ME' => ['ME', 'Mechanical Engineering'],
-                'CE' => ['CE', 'Civil Engineering'],
-                'CYBERSEC' => ['CYBERSEC', 'Cyber Security'],
+                // B.Tech codes preserve the existing API and sample-roster references.
+                'CSE' => ['BTECH', 'CSE', 'Computer Engineering'],
+                'CSE-AIML' => ['BTECH', 'AIML', 'CSE (AI & ML)'],
+                'AIDS' => ['BTECH', 'AIDS', 'Artificial Intelligence and Data Science'],
+                'IT' => ['BTECH', 'IT', 'Information Technology'],
+                'ECE' => ['BTECH', 'ECE', 'Electronics and Telecommunication'],
+                'ME' => ['BTECH', 'ME', 'Mechanical Engineering'],
+                'CE' => ['BTECH', 'CE', 'Civil Engineering'],
+                'CYBERSEC' => ['BTECH', 'CYBERSEC', 'Cyber Security'],
+
+                // Programme-qualified aliases avoid collisions where the same
+                // department code (for example CSE) appears in multiple programmes.
+                'BBA-BBA' => ['BBA', 'BBA', 'Business Administration'],
+                'MBA-MBA' => ['MBA', 'MBA', 'Management Studies'],
+                'MTECH-CSE' => ['MTECH', 'CSE', 'Computer Science and Engineering'],
+                'MTECH-VLSI' => ['MTECH', 'VLSI', 'VLSI Design'],
+                'MTECH-STRUCT' => ['MTECH', 'STRUCT', 'Structural Engineering'],
+                'IBTECH-CSE' => ['IBTECH', 'CSE', 'Computer Science and Engineering'],
+                'IBTECH-AIML' => ['IBTECH', 'AIML', 'Artificial Intelligence and Machine Learning'],
+                'IMTECH-CSE' => ['IMTECH', 'CSE', 'Computer Science and Engineering'],
+                'IMTECH-DS' => ['IMTECH', 'DS', 'Data Science'],
             ];
 
-            foreach ($legacyBranches as $branchCode => [$departmentCode, $branchName]) {
-                $department = $departments['BTECH:' . $departmentCode];
+            foreach ($legacyBranches as $branchCode => [$programCode, $departmentCode, $branchName]) {
+                $department = $departments[$programCode . ':' . $departmentCode];
 
                 Branch::query()->updateOrCreate(
                     ['code' => $branchCode],
