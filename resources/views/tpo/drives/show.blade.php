@@ -156,7 +156,7 @@
         <p class="cap">Additional requirements</p><p class="prose" style="margin-top:4px">${d.additional_requirements ? esc(d.additional_requirements) : '<span class="meta">None.</span>'}</p>`;
 
       const sel = $('#elig-division');
-      sel.innerHTML = '<option value="">All divisions</option>' + (d.divisions || []).map((division) => `<option value="${division.id}">${esc(division.program_code || '')} · ${esc(division.department_code || '')} — ${esc(division.department_name || '')} · ${esc(division.code)} — ${esc(division.name)}</option>`).join('');
+      sel.innerHTML = '<option value="">All divisions</option>' + (d.divisions || []).map((division) => `<option value="${division.id}">${esc(division.program_code || '')} · ${esc(division.department_code || '')} — ${esc(division.department_name || '')} · ${esc(division.code)} — ${esc(division.name)}${division.is_active ? '' : ' (inactive)'}</option>`).join('');
       $('#app-stage').innerHTML = '<option value="">All stages</option>' + Object.keys(T.NEXT).map((s) => `<option value="${s}">${esc(label('stage', s))}</option>`).join('');
       $('#bulk-stage').innerHTML = SETTABLE.map((s) => `<option value="${s}">${esc(label('stage', s))}</option>`).join('');
       $('#applications').hidden = d.status === 'DRAFT';
