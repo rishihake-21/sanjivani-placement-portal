@@ -325,6 +325,13 @@
   const masterListForm = $('#master-list-form');
   let coordinators = [];
   let editingId = null;
+  const departmentDialog = $('#department-dialog');
+  const departmentForm = $('#department-form');
+  const branchDialog = $('#branch-dialog');
+  const branchForm = $('#branch-form');
+  let structureRows = [];
+  let editingDepartmentId = null;
+  let editingBranchId = null;
 
   function setText(id, value) {
     const element = $('#' + id);
@@ -636,6 +643,7 @@
   renderRecentBatches();
   updateDepartmentOptions();
   loadCoordinators();
+  loadStructure();
 })();
 </script>
 @endpush
