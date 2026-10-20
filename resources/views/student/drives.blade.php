@@ -9,8 +9,8 @@
             <h1>Placement Drives</h1>
             <p class="meta">
                 Drives currently published for review.
-                @if ($student->branch)
-                    Your branch: {{ $student->branch->name }} · Batch {{ $student->graduation_year }}
+                @if ($student->division || $student->branch)
+                    Your division: {{ $student->division?->name ?? $student->branch?->name ?? 'Not assigned' }} · Batch {{ $student->graduation_year }}
                 @endif
             </p>
         </div>

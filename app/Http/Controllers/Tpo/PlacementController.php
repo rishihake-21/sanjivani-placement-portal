@@ -24,14 +24,16 @@ class PlacementController extends Controller
             'status' => ['sometimes', 'in:OFFERED,PLACED,DECLINED'],
             'company_id' => ['sometimes', 'integer'],
             'department_id' => ['sometimes', 'integer'],
+            'division_id' => ['sometimes', 'integer'],
             'branch_id' => ['sometimes', 'integer'],
             'graduation_year' => ['sometimes', 'integer'],
         ]);
 
-        $placements = Placement::query()->with(['student:id,university_id,full_name,branch_id', 'student.branch:id,code', 'company:id,name'])
+        $placements = Placement::query()->with(['student:id,university_id,full_name,branch_id,division_id', 'student.branch:id,code', 'student.division:id,code,name', 'company:id,name'])
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')->toString()))
             ->when($request->filled('company_id'), fn ($q) => $q->where('company_id', $request->integer('company_id')))
             ->when($request->filled('department_id'), fn ($q) => $q->whereHas('student', fn ($s) => $s->where('department_id', $request->integer('department_id'))))
+            ->when($request->filled('division_id'), fn ($q) => $q->whereHas('student', fn ($s) => $s->where('division_id', $request->integer('division_id'))))
             ->when($request->filled('branch_id'), fn ($q) => $q->whereHas('student', fn ($s) => $s->where('branch_id', $request->integer('branch_id'))))
             ->when($request->filled('graduation_year'), fn ($q) => $q->whereHas('student', fn ($s) => $s->where('graduation_year', $request->integer('graduation_year'))))
             ->orderByDesc('offer_date')->orderByDesc('id')->paginate(25);
@@ -65,12 +67,12 @@ class PlacementController extends Controller
 
     public static function row(Placement $p): array
     {
-        $p->loadMissing(['student.branch:id,code', 'company:id,name']);
+        $p->loadMissing(['student.branch:id,code', 'student.division:id,code,name', 'company:id,name']);
 
         return [
             'id' => $p->id,
             'application_id' => $p->application_id,
-            'student' => $p->student ? ['id' => $p->student->id, 'university_id' => $p->student->university_id, 'full_name' => $p->student->full_name, 'branch' => $p->student->branch?->code] : null,
+            'student' => $p->student ? ['id' => $p->student->id, 'university_id' => $p->student->university_id, 'full_name' => $p->student->full_name, 'division' => $p->student->division?->code ?? $p->student->branch?->code, 'branch' => $p->student->division?->code ?? $p->student->branch?->code] : null,
             'company' => $p->company?->name,
             'role_title' => $p->role_title,
             'ctc_lpa' => $p->ctc_lpa,

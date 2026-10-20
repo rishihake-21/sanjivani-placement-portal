@@ -61,13 +61,39 @@ Keep Laravel's default users migration: migration `...000002` extends it (its `0
 
 ```bash
 php artisan migrate
-php artisan db:seed                                  # departments, branches, admin, TPO, one coordinator per dept
+php artisan db:seed                                  # programmes, departments, divisions, demo accounts
 php artisan tpms:import-master-list roster.csv --batch=2026-odd
 php artisan test
 ```
 
+### Local hierarchy demo reset (destructive)
+
+For a **local development database only**, this recreates the schema and seeds a complete sample hierarchy. It deletes every table and row in the database configured by `.env`; back it up first and never run it against a shared or production database.
+
+PowerShell:
+
+```powershell
+$env:TPMS_SEED_PASSWORD = "LocalDemoPass123!"
+php artisan migrate:fresh --seed
+```
+
+The demo catalogue contains 6 programmes and 14 departments. B.Tech has exactly five departments (CSE, AI/ML, AI & Data Science, Cyber Security, and Mechanical Engineering); CSE has exactly two divisions (Final Year CSE-A and Final Year CSE-B), with 20 demo students assigned to Final Year CSE-A. Additional demo students cover the other programmes, and sample placement drives target departments. Legacy branch rows remain only for compatibility.
+
+Seeded sign-in accounts use the password assigned to `TPMS_SEED_PASSWORD`:
+- System Admin: `admin@tpms.local`
+- TPO: `tpo@tpms.local`
+- B.Tech CSE coordinator: `btech-cse.coordinator@tpms.local`
+- M.Tech CSE coordinator: `mtech-cse.coordinator@tpms.local`
+
+After seeding, verify the counts and division assignments before UI testing:
+
+```powershell
+php artisan tinker --execute="dump(['programmes' => \App\Models\Program::count(), 'departments' => \App\Models\Department::count(), 'divisions' => \App\Models\Division::count(), 'students' => \App\Models\Student::count(), 'cse_final_a_students' => \App\Models\Student::where('division_id', \App\Models\Division::where('code', 'FINAL-CSE-A')->value('id'))->count(), 'coordinators' => \App\Models\User::where('role', \App\Enums\Role::TP_COORDINATOR->value)->count(), 'students_without_division' => \Illuminate\Support\Facades\DB::table('students')->whereNull('division_id')->count(), 'master_list_without_division' => \Illuminate\Support\Facades\DB::table('student_master_list')->whereNull('division_id')->count()]);"
+```
+Expected clean demo counts: 6 programmes, 14 departments, 43 divisions, 28 students, 14 department coordinators, and zero student/master-list rows without a division. Final Year CSE-A should contain exactly 20 of the demo students.
+
 Roster CSV header:
-`university_id,full_name,institutional_email,department_code,branch_code,admission_type,admission_year,graduation_year,current_semester`
+`university_id,full_name,institutional_email,program_code,department_code,division_code,admission_type,admission_year,graduation_year,current_semester`
 
 ## 2. Storage architecture (one file-storage system)
 
@@ -87,7 +113,8 @@ download ► GET /api/documents/{uuid}/download ► DocumentPolicy ► stream (n
 
 | Table | Purpose |
 |---|---|
-| `departments`, `branches` | reference data |
+| `programs`, `departments`, `divisions` | canonical academic hierarchy; a coordinator is assigned to a department |
+| `branches`, `branch_id` | legacy compatibility for old roster/API records during migration |
 | `users` (+`role`, `department_id`, `is_active`) | all accounts; coordinator must have a department (CHECK) |
 | `student_master_list` | imported roster; registration only for unclaimed IDs |
 | `students` | sections A, B, D, F (identity, contact, skills/links, preferences) |
@@ -124,8 +151,8 @@ locked VERIFIED ─► edit refused (423) until the coordinator unlocks it (reas
 | Auth | `POST /api/auth/register`, `/login`, `/logout`; `GET /api/me` |
 | Student | `GET/PATCH /api/student/profile` · `GET/POST /api/student/academic-records` · `PATCH/DELETE …/{id}` · `POST …/{id}/document` · `POST …/{id}/submit` · same shape for `/experiences` (`…/{id}/certificate` attaches **and** submits) · `GET/POST /api/student/documents` (resume, other) · `GET /api/student/notifications` |
 | Coordinator (own dept) | `GET /api/coordinator/students[/{id}]` · `GET /api/coordinator/verification-queue` · `POST academic-records/{id}/approve|reject|unlock` · `experiences/{id}/approve|reject` · `documents/{uuid}/approve|reject` |
-| TPO (read-only) | `GET /api/tpo/students[/{id}]` (filters: department_id, branch_id, semester, admission_type, search, only_pending) |
-| TPO / Admin | `POST /api/master-list/import` (CSV) |
+| TPO (read-only) | `GET /api/tpo/students[/{id}]` (filters: department_id, division_id, branch_id (legacy), semester, admission_type, search, only_pending) |
+| TPO / Admin | `POST /api/master-list/import` (CSV; `division_code` is canonical, `branch_code` remains accepted for old files) |
 | Files | `GET /api/documents/{uuid}/download` |
 
 Reject body: `{"reason_code": "DATA_MISMATCH|UNREADABLE|WRONG_DOCUMENT|INCOMPLETE|INVALID_OR_EXPIRED|OTHER", "reason": "required for OTHER"}`.

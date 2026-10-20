@@ -14,12 +14,12 @@
       </div>
       <x-ui.select filter name="stage" label="Stage" placeholder="All stages" :options="$stages" />
       <x-ui.select filter name="company_id" label="Company" placeholder="All" :options="$companies->pluck('name', 'id')->all()" />
-      <x-ui.select filter name="department_id" label="Department" placeholder="All" :options="$departments->pluck('name', 'id')->all()" />
+      <x-ui.select filter name="department_id" label="Department" placeholder="All" :options="$departments->mapWithKeys(fn ($d) => [$d->id => ($d->program?->name ? $d->program->name . ' · ' : '') . $d->code . ' — ' . $d->name])->all()" />
       <input type="hidden" data-filter="drive_id" id="flt-drive_id">
     </x-ui.filter-bar>
     <div id="drive-chip" style="margin-bottom:16px"></div>
 
-    <x-ui.table id="app-rows" :cols="['Student', 'Drive', 'Branch', 'Stage', 'Applied', 'Updated', '']" />
+    <x-ui.table id="app-rows" :cols="['Student', 'Drive', 'Division', 'Stage', 'Applied', 'Updated', '']" />
     <div class="pager" id="pager"></div>
   </x-ui.card>
 @endsection
@@ -42,7 +42,7 @@
         fillRows($('#app-rows'), res.data, (a) => [
           `<span class="name">${esc(a.student.full_name)}</span><span class="sub">${esc(a.student.university_id)}</span>`,
           `<a class="linkbtn" href="${drivesBase}/${a.drive.id}">${esc(a.drive.title)}</a><span class="sub">${esc(a.company || '')}</span>`,
-          esc(a.student.branch || ''), badge('stage', a.stage), fmtDate(a.applied_at), fmtDate(a.stage_updated_at),
+          esc(a.student.division || a.student.branch || ''), badge('stage', a.stage), fmtDate(a.applied_at), fmtDate(a.stage_updated_at),
           { html: `<a class="btn btn-secondary" href="${base}/${a.id}">Open</a>`, cls: 'act' },
         ], 'No applications match these filters.');
         pager($('#pager'), res, (p) => { page = p; load(); });

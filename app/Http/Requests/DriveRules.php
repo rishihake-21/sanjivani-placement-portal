@@ -36,6 +36,11 @@ final class DriveRules
             'eligibility.max_total_backlogs' => ['nullable', 'integer', 'between:0,40'],
             'eligibility.diploma_counts_as_twelfth' => ['sometimes', 'boolean'],
 
+            // Preferred target: departments. All active divisions within each selected department are included.
+            'department_ids' => ['sometimes', 'array', 'max:100'],
+            'department_ids.*' => ['integer', 'distinct', Rule::exists('departments', 'id')->where('is_active', true)],
+
+            // Legacy API compatibility. Existing clients may still send branch_ids during rollout.
             'branch_ids' => ['sometimes', 'array', 'max:50'],
             'branch_ids.*' => ['integer', 'distinct', Rule::exists('branches', 'id')->where('is_active', true)],
         ];

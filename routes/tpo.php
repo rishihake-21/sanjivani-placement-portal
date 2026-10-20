@@ -52,6 +52,7 @@ Route::middleware('role:tpo')->prefix('tpo')->group(function () {
     Route::get('dashboard', [Tpo\DashboardController::class, 'dashboard']);
     Route::get('reports/departments', [Tpo\DashboardController::class, 'departments']);
     Route::get('reports/branches', [Tpo\DashboardController::class, 'branches']);
+    Route::get('reports/divisions', [Tpo\DashboardController::class, 'divisions']);
     Route::get('reports/companies', [Tpo\DashboardController::class, 'companies']);
     Route::get('reports/students.csv', [Tpo\ReportController::class, 'students']);
     Route::get('reports/placements.csv', [Tpo\ReportController::class, 'placements']);

@@ -8,6 +8,7 @@ use App\Http\Controllers\Web\AuthPageController;
 use App\Http\Controllers\Web\CoordinatorPageController;
 use App\Http\Controllers\Web\StudentPageController;
 use App\Http\Controllers\Web\TpoPageController;
+use App\Http\Controllers\Web\AdminPageController;
 use App\Http\Controllers\Student\AcademicRecordController;
 use App\Http\Controllers\Student\DocumentController;
 use App\Http\Controllers\Student\ExperienceController;
@@ -219,9 +220,21 @@ Route::get('/dashboard', [StudentPageController::class, 'dashboard'])->name('das
         Route::get('/drives', function (Request $request) {
 
             $student = $request->user()->student;
+            $student->load(['division', 'branch']);
 
             $drives = \App\Models\PlacementDrive::query()
                 ->where('status', \App\Enums\DriveStatus::PUBLISHED)
+                ->where('graduation_year', $student->graduation_year)
+                ->where(function ($target) use ($student) {
+                    $target->whereHas('departments', fn ($department) => $department->where('departments.id', $student->department_id))
+                        ->orWhere(function ($legacy) use ($student) {
+                            $legacy->whereDoesntHave('departments')
+                                ->whereHas('branches', function ($branch) use ($student) {
+                                    $branch->where('branches.department_id', $student->department_id);
+                                });
+                        });
+                })
+                ->with(['company', 'eligibility', 'departments.program'])
                 ->orderByDesc('created_at')
                 ->get();
 
@@ -238,8 +251,29 @@ Route::get('/dashboard', [StudentPageController::class, 'dashboard'])->name('das
         Route::get('/drives/{drive}', function (Request $request, \App\Models\PlacementDrive $drive) {
 
             $student = $request->user()->student;
+            $student->load(['department.program', 'division', 'branch']);
 
-            $drive->load('branches.department');
+            // Mirror the API detail endpoint: students may inspect published/closed drives
+            // targeted to their department, or drives they already applied to for history.
+            $drive = \App\Models\PlacementDrive::query()
+                ->whereIn('status', [\App\Enums\DriveStatus::PUBLISHED->value, \App\Enums\DriveStatus::CLOSED->value])
+                ->where(function ($visible) use ($student) {
+                    $visible->where(function ($target) use ($student) {
+                        $target->where('graduation_year', $student->graduation_year)
+                            ->where(function ($scope) use ($student) {
+                                $scope->whereHas('departments', fn ($department) => $department->where('departments.id', $student->department_id))
+                                    ->orWhere(function ($legacy) use ($student) {
+                                        $legacy->whereDoesntHave('departments')
+                                            ->whereHas('branches', function ($branch) use ($student) {
+                                                $branch->where('branches.department_id', $student->department_id)
+                                                    ->where('branches.code', '<>', 'CSE-AIML');
+                                            });
+                                    });
+                            });
+                    })->orWhereHas('applications', fn ($application) => $application->where('student_id', $student->id));
+                })
+                ->with(['branches.department', 'company', 'eligibility', 'departments.program', 'departments.divisions'])
+                ->findOrFail($drive->id);
 
             $engine = app(\App\Services\EligibilityEngine::class);
             $eligibility = $engine->evaluate($student, $drive);
@@ -414,8 +448,6 @@ Route::middleware(['auth', 'role:system_admin'])
     ->name('admin.')
     ->group(function () {
 
-        Route::get('/dashboard', function () {
-            return view('admin.dashboard');
-        })->name('dashboard');
+        Route::get('/dashboard', [AdminPageController::class, 'dashboard'])->name('dashboard');
 
     });

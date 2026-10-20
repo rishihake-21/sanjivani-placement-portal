@@ -6,6 +6,8 @@ use App\Enums\DriveStatus;
 use App\Jobs\NotifyEligibleStudents;
 use App\Models\Application;
 use App\Models\Company;
+use App\Models\Branch;
+use App\Models\Department;
 use App\Models\DriveEligibility;
 use App\Models\PlacementDrive;
 use App\Models\User;
@@ -18,7 +20,7 @@ use Illuminate\Validation\ValidationException;
 /**
  * Drive lifecycle:  DRAFT -> PUBLISHED -> CLOSED   (or CANCELLED from DRAFT/PUBLISHED)
  *
- * While DRAFT everything is editable. After publishing, criteria and target branches are LOCKED
+ * While DRAFT everything is editable. After publishing, criteria and target departments are LOCKED
  * (students already saw them and applied against them); only schedule/description fields may change.
  */
 class DriveService
@@ -51,7 +53,7 @@ class DriveService
             ]);
 
             DriveEligibility::create(['drive_id' => $drive->id] + Arr::only($data['eligibility'] ?? [], self::ELIGIBILITY_FIELDS));
-            $drive->branches()->sync($data['branch_ids'] ?? []);
+            $this->syncTargets($drive, $data);
 
             $this->audit->record('drive.created', $drive, null, null, $this->state($drive), $tpo);
 
@@ -88,8 +90,8 @@ class DriveService
             if (array_key_exists('eligibility', $data)) {
                 DriveEligibility::query()->updateOrCreate(['drive_id' => $drive->id], Arr::only($data['eligibility'] ?? [], self::ELIGIBILITY_FIELDS));
             }
-            if (array_key_exists('branch_ids', $data)) {
-                $drive->branches()->sync($data['branch_ids']);
+            if (array_key_exists('department_ids', $data) || array_key_exists('branch_ids', $data)) {
+                $this->syncTargets($drive, $data);
             }
 
             $this->audit->record('drive.updated', $drive, null, $before, $this->state($drive->refresh()), $tpo);
@@ -105,8 +107,8 @@ class DriveService
             abort_unless($drive->status === DriveStatus::DRAFT, 409, 'Only draft drives can be published.');
 
             $errors = [];
-            if ($drive->branches()->count() === 0) {
-                $errors[] = 'Select at least one target branch.';
+            if ($drive->targetDepartmentIds() === []) {
+                $errors[] = 'Select at least one target department.';
             }
             if ($drive->application_deadline === null || $drive->application_deadline->lte(now())) {
                 $errors[] = 'Set an application deadline in the future.';
@@ -175,6 +177,7 @@ class DriveService
 
             $snapshot = $this->state($drive);
             $drive->branches()->detach();
+            $drive->departments()->detach();
             DriveEligibility::query()->where('drive_id', $drive->id)->delete();
             $drive->delete();
 
@@ -224,6 +227,45 @@ class DriveService
         return $count;
     }
 
+    /**
+     * Sync current department targets. Legacy branch_ids requests are mapped to their parent
+     * departments so even old API clients receive the new department-wide eligibility behavior.
+     */
+    private function syncTargets(PlacementDrive $drive, array $data): void
+    {
+        if (array_key_exists('department_ids', $data)) {
+            $departmentIds = array_values(array_unique(array_map('intval', $data['department_ids'] ?? [])));
+            $drive->departments()->sync($departmentIds);
+
+            // Keep the old pivot populated for readers during the transition, but targeting and
+            // eligibility are determined by drive_departments.
+            $legacyBranchIds = Branch::query()
+                ->whereIn('department_id', $departmentIds)
+                ->where('is_active', true)
+                ->pluck('id')
+                ->all();
+            $drive->branches()->sync($legacyBranchIds);
+
+            return;
+        }
+
+        $branchIds = array_values(array_unique(array_map('intval', $data['branch_ids'] ?? [])));
+        $drive->branches()->sync($branchIds);
+
+        $branches = Branch::query()->whereIn('id', $branchIds)->get(['id', 'code', 'department_id']);
+        $departmentIds = $branches->map(function (Branch $branch) {
+            if ($branch->code === 'CSE-AIML') {
+                $programId = Department::query()->whereKey($branch->department_id)->value('program_id');
+
+                return Department::query()->where('program_id', $programId)->where('code', 'AIML')->value('id');
+            }
+
+            return $branch->department_id;
+        })->filter()->map(fn ($id) => (int) $id)->unique()->values()->all();
+
+        $drive->departments()->sync($departmentIds);
+    }
+
     private function assertCompanyActive(int $companyId): void
     {
         if (! Company::query()->whereKey($companyId)->where('is_active', true)->exists()) {
@@ -233,16 +275,17 @@ class DriveService
 
     private function loaded(PlacementDrive $drive): PlacementDrive
     {
-        return $drive->fresh(['company', 'eligibility', 'branches']);
+        return $drive->fresh(['company', 'eligibility', 'branches', 'departments.program']);
     }
 
     private function state(PlacementDrive $drive): array
     {
-        $drive->loadMissing(['eligibility', 'branches']);
+        $drive->loadMissing(['eligibility', 'branches', 'departments']);
 
         return AuditLogger::snapshot($drive) + [
             'eligibility' => $drive->eligibility?->only(self::ELIGIBILITY_FIELDS),
             'branch_ids' => $drive->branches->pluck('id')->sort()->values()->all(),
+            'department_ids' => $drive->departments->pluck('id')->sort()->values()->all(),
         ];
     }
 }

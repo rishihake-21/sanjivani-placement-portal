@@ -3,9 +3,9 @@
 @section('title', 'Reports')
 @section('nav', 'reports')
 
-{{-- Controller passes: $department, $years [int, ...]. Data: GET /api/coordinator/reports/branch-summary and the two CSV exports. --}}
+{{-- Controller passes: $department, $years [int, ...]. Data: GET /api/coordinator/reports/division-summary and the two CSV exports. --}}
 @section('content')
-  <x-ui.page-header title="Reports" :meta="e($department['name']) . ' results by branch, and CSV exports.'">
+  <x-ui.page-header title="Reports" :meta="e($department['name']) . ' results by division, and CSV exports.'">
     <div class="field" style="min-width:180px">
       <label for="flt-graduation_year">Batch (graduation year)</label>
       <select id="flt-graduation_year" data-filter="graduation_year">
@@ -30,8 +30,8 @@
       </div>
     </x-ui.card>
 
-    <x-ui.card id="sec-branches" title="By branch">
-      <x-ui.table id="branch-rows" :cols="['Branch', 'Students', 'Opted out', 'Applied', 'Placed', 'Unplaced', 'Placement %', 'Highest CTC', 'Average CTC']" />
+    <x-ui.card id="sec-divisions" title="By division">
+      <x-ui.table id="division-rows" :cols="['Division', 'Students', 'Opted out', 'Applied', 'Placed', 'Unplaced', 'Placement %', 'Highest CTC', 'Average CTC']" />
     </x-ui.card>
   </div>
 @endsection
@@ -46,8 +46,8 @@
       const f = filterValues(document);
       syncQuery(f);
       try {
-        const res = await api('/coordinator/reports/branch-summary', { query: { graduation_year: f.graduation_year } });
-        fillRows($('#branch-rows'), res.data, (r) => [
+        const res = await api('/coordinator/reports/division-summary', { query: { graduation_year: f.graduation_year } });
+        fillRows($('#division-rows'), res.data, (r) => [
           `<span class="name">${esc(r.code)}</span><span class="sub">${esc(r.name)}</span>`, n(r.students), n(r.opted_out), n(r.applied), n(r.placed), n(r.unplaced),
           r.placement_percentage == null ? dash : n(num2(r.placement_percentage) + '%'), lpa(r.highest_ctc_lpa), lpa(r.average_ctc_lpa),
         ], 'No students for this batch.');

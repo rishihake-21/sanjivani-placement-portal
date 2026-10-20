@@ -25,7 +25,7 @@
   <div class="ph">
     <div>
       <h1>Welcome, {{ $first }}</h1>
-      <p class="meta">{{ $student['university_id'] }} &middot; {{ $student['branch']['name'] }} &middot; Semester {{ $student['current_semester'] }} &middot; {{ U::admission($student['admission_type']) }} &middot; Graduating {{ $student['graduation_year'] }}</p>
+      <p class="meta">{{ $student['university_id'] }} &middot; {{ $student['department']['program']['name'] ?? 'Programme' }} &middot; {{ $student['department']['name'] ?? 'Department' }} &middot; {{ $student['division']['name'] ?? ($student['branch']['name'] ?? 'Division not assigned') }} &middot; Semester {{ $student['current_semester'] }} &middot; {{ U::admission($student['admission_type']) }} &middot; Graduating {{ $student['graduation_year'] }}</p>
     </div>
   </div>
 

@@ -140,7 +140,7 @@
       ], 'No drive closes in the next 7 days.');
 
       fillRows($('#dept-rows'), depts, (r) => [
-        `<span class="name">${esc(r.code)}</span><span class="sub">${esc(r.name)}</span>`, n(r.students), n(r.applied), n(r.placed), n(r.unplaced),
+        `<span class="name">${esc(r.code)} — ${esc(r.name)}</span><span class="sub">${esc(r.program_code || '')} · ${esc(r.program || '')}</span>`, n(r.students), n(r.applied), n(r.placed), n(r.unplaced),
         r.placement_percentage == null ? dash : n(num2(r.placement_percentage) + '%'), lpa(r.highest_ctc_lpa), lpa(r.average_ctc_lpa),
       ], 'No students for this batch.');
 

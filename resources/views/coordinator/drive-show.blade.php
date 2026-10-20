@@ -2,7 +2,7 @@
   One drive. Route: coordinator.drives.show
   $drive  GET /api/coordinator/drives/{id} -> data: the list fields plus description, additional_requirements,
           eligibility{min_cgpa, min_tenth_percentage, min_twelfth_percentage, min_diploma_percentage,
-          max_active_backlogs, max_total_backlogs} (each nullable), department_branches[{id,code,name}],
+          max_active_backlogs, max_total_backlogs} (each nullable), department_divisions[{id,code,name}],
           department_applications_by_stage {STAGE: count}
 --}}
 @extends('layouts.coordinator')
@@ -78,11 +78,11 @@
               @endforeach
             </tbody>
           </table>
-          <p class="sect-h">Branches from your department</p>
-          @if (! empty($drive['department_branches']))
-            <div>@foreach ($drive['department_branches'] as $b)<span class="tag">{{ $b['code'] }} &middot; {{ $b['name'] }}</span> @endforeach</div>
+          <p class="sect-h">Divisions covered in your department</p>
+          @if (! empty($drive['department_divisions']))
+            <div>@foreach ($drive['department_divisions'] as $division)<span class="tag">{{ $division['code'] }} &middot; {{ $division['name'] }}</span> @endforeach</div>
           @else
-            <p class="empty">None of your branches is eligible.</p>
+            <p class="empty">No active divisions are available in your department.</p>
           @endif
         </section>
       </div>

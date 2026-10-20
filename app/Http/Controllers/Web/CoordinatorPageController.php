@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\Concerns\PresentsStudentDetail;
 use App\Http\Controllers\Controller;
-use App\Models\Branch;
+use App\Models\Division;
 use App\Models\Company;
 use App\Models\Coordinator;
 use App\Models\Document;
@@ -72,8 +72,8 @@ class CoordinatorPageController extends Controller
         return view('coordinator.students', $this->context($request, 'coordinator.students', [
             'rows' => $rows,
             'pg' => $pg,
-            'filters' => $request->only(['search', 'branch_id', 'semester', 'admission_type', 'only_pending']),
-            'branches' => $this->branches($request),
+            'filters' => $request->only(['search', 'division_id', 'semester', 'admission_type', 'only_pending']),
+            'divisions' => $this->divisions($request),
         ]));
     }
 
@@ -146,9 +146,9 @@ class CoordinatorPageController extends Controller
         return view('coordinator.applications', $this->context($request, 'coordinator.applications', [
             'rows' => $rows,
             'pg' => $pg,
-            'filters' => $request->only(['drive_id', 'stage', 'branch_id', 'search']),
+            'filters' => $request->only(['drive_id', 'stage', 'division_id', 'search']),
             'drives' => $this->driveOptions($request),
-            'branches' => $this->branches($request),
+            'divisions' => $this->divisions($request),
         ]));
     }
 
@@ -168,8 +168,8 @@ class CoordinatorPageController extends Controller
         return view('coordinator.placements', $this->context($request, 'coordinator.placements', [
             'rows' => $rows,
             'pg' => $pg,
-            'filters' => $request->only(['status', 'branch_id', 'graduation_year', 'company_id']),
-            'branches' => $this->branches($request),
+            'filters' => $request->only(['status', 'division_id', 'graduation_year', 'company_id']),
+            'divisions' => $this->divisions($request),
             'companies' => $this->companyOptions($request),
         ]));
     }
@@ -179,7 +179,7 @@ class CoordinatorPageController extends Controller
         $year = $this->year($request);
 
         return view('coordinator.reports', $this->context($request, 'coordinator.reports', [
-            'rows' => $this->stats->branchSummary((int) $request->user()->department_id, $year),
+            'rows' => $this->stats->divisionSummary((int) $request->user()->department_id, $year),
             'graduationYear' => $year,
         ]));
     }
@@ -198,7 +198,7 @@ class CoordinatorPageController extends Controller
 
     private function profileData(Request $request): array
     {
-        $coordinator = Coordinator::query()->with(['user:id,name,email', 'department:id,name,code'])
+        $coordinator = Coordinator::query()->with(['user:id,name,email', 'department:id,name,code,program_id', 'department.program:id,name,code'])
             ->where('user_id', $request->user()->id)->firstOrFail();
 
         return [
@@ -208,7 +208,7 @@ class CoordinatorPageController extends Controller
             'employee_id' => $coordinator->employee_id,
             'phone' => $coordinator->phone,
             'designation' => $coordinator->designation,
-            'department' => $coordinator->department->only(['id', 'name', 'code']),
+            'department' => $coordinator->department->only(['id', 'name', 'code']) + ['program' => $coordinator->department->program?->only(['id', 'name', 'code'])],
             'active_from' => $coordinator->active_from?->toDateString(),
         ];
     }
@@ -287,13 +287,13 @@ class CoordinatorPageController extends Controller
             ->all();
     }
 
-    private function branches(Request $request): array
+    private function divisions(Request $request): array
     {
-        return Branch::query()
+        return Division::query()
             ->where('department_id', (int) $request->user()->department_id)
             ->orderBy('code')
-            ->get(['id', 'code', 'name'])
-            ->map->only(['id', 'code', 'name'])
+            ->get(['id', 'code', 'name', 'department_id'])
+            ->map->only(['id', 'code', 'name', 'department_id'])
             ->values()
             ->all();
     }

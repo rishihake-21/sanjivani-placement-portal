@@ -56,6 +56,7 @@ class RegistrationService
                 'full_name' => $entry->full_name,
                 'department_id' => $entry->department_id,
                 'branch_id' => $entry->branch_id,
+                'division_id' => $entry->division_id,
                 'admission_type' => $entry->admission_type,
                 'admission_year' => $entry->admission_year,
                 'graduation_year' => $entry->graduation_year,

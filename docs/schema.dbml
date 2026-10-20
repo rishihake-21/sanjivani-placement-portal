@@ -1,6 +1,31 @@
 // TPMS student module — paste into https://dbdiagram.io (DBML)
-Table departments { id bigint [pk] name varchar [unique] code varchar [unique] is_active bool }
-Table branches { id bigint [pk] department_id bigint [ref: > departments.id] name varchar code varchar [unique] }
+Table programs {
+  id bigint [pk]
+  name varchar [unique]
+  code varchar [unique]
+  is_active bool
+}
+Table departments {
+  id bigint [pk]
+  program_id bigint [not null, ref: > programs.id]
+  name varchar [unique]
+  code varchar [unique]
+  is_active bool
+}
+Table divisions {
+  id bigint [pk]
+  department_id bigint [not null, ref: > departments.id]
+  name varchar
+  code varchar [unique]
+  is_active bool
+}
+// Compatibility only: existing branch IDs stay during migration.
+Table branches {
+  id bigint [pk]
+  department_id bigint [ref: > departments.id]
+  name varchar
+  code varchar [unique]
+}
 Table users {
   id bigint [pk] name varchar email varchar [unique] password varchar
   role varchar [note: 'student|tp_coordinator|tpo|system_admin|hod|recruiter']
@@ -9,7 +34,7 @@ Table users {
 }
 Table student_master_list {
   id bigint [pk] university_id varchar [unique] full_name varchar institutional_email varchar
-  department_id bigint [ref: > departments.id] branch_id bigint [ref: > branches.id]
+  department_id bigint [ref: > departments.id] division_id bigint [ref: > divisions.id] branch_id bigint [ref: > branches.id, note: 'nullable legacy alias']
   admission_type varchar [note: 'REGULAR|LATERAL'] admission_year smallint graduation_year smallint
   current_semester smallint claimed_at timestamptz import_batch varchar
 }

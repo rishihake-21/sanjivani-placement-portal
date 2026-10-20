@@ -4,7 +4,7 @@
 @section('nav', 'reports')
 
 @section('content')
-  <x-ui.page-header title="Reports" meta="Department, branch and company results, and CSV exports. Only verified placements count as placed.">
+  <x-ui.page-header title="Reports" meta="Department, division and company results, and CSV exports. Only verified placements count as placed.">
     <div class="field" style="min-width:180px">
       <label for="flt-graduation_year">Batch (graduation year)</label>
       <select id="flt-graduation_year" data-filter="graduation_year">
@@ -25,7 +25,7 @@
           <select id="flt-department_id" data-filter="department_id">
             <option value="">All departments</option>
             @foreach ($departments as $department)
-              <option value="{{ $department->id }}">{{ $department->name }}</option>
+              <option value="{{ $department->id }}">{{ $department->program?->name }} &middot; {{ $department->code }} — {{ $department->name }}</option>
             @endforeach
           </select>
         </div>
@@ -42,8 +42,8 @@
       <x-ui.table id="dept-rows" :cols="['Department', 'Students', 'Applied', 'Placed', 'Unplaced', 'Placement %', 'Highest CTC', 'Average CTC']" />
     </x-ui.card>
 
-    <x-ui.card id="sec-branches" title="By branch">
-      <x-ui.table id="branch-rows" :cols="['Branch', 'Department', 'Students', 'Applied', 'Placed', 'Unplaced', 'Placement %', 'Highest CTC', 'Average CTC']" />
+    <x-ui.card id="sec-divisions" title="By division">
+      <x-ui.table id="division-rows" :cols="['Division', 'Department', 'Students', 'Applied', 'Placed', 'Unplaced', 'Placement %', 'Highest CTC', 'Average CTC']" />
     </x-ui.card>
 
     <x-ui.card id="sec-companies" title="By company">
@@ -64,9 +64,9 @@
       syncQuery(f);
       const q = { graduation_year: f.graduation_year };
       try {
-        const [d, b, c] = await Promise.all([api('/tpo/reports/departments', { query: q }), api('/tpo/reports/branches', { query: q }), api('/tpo/reports/companies', { query: q })]);
-        fillRows($('#dept-rows'), d.data, (r) => [`<span class="name">${esc(r.code)}</span><span class="sub">${esc(r.name)}</span>`, n(r.students), n(r.applied), n(r.placed), n(r.unplaced), pctCell(r.placement_percentage), lpa(r.highest_ctc_lpa), lpa(r.average_ctc_lpa)], 'No students for this batch.');
-        fillRows($('#branch-rows'), b.data, (r) => [`<span class="name">${esc(r.code)}</span><span class="sub">${esc(r.name)}</span>`, esc(r.department || ''), n(r.students), n(r.applied), n(r.placed), n(r.unplaced), pctCell(r.placement_percentage), lpa(r.highest_ctc_lpa), lpa(r.average_ctc_lpa)], 'No students for this batch.');
+        const [d, b, c] = await Promise.all([api('/tpo/reports/departments', { query: q }), api('/tpo/reports/divisions', { query: q }), api('/tpo/reports/companies', { query: q })]);
+        fillRows($('#dept-rows'), d.data, (r) => [`<span class="name">${esc(r.code)} — ${esc(r.name)}</span><span class="sub">${esc(r.program || '')}</span>`, n(r.students), n(r.applied), n(r.placed), n(r.unplaced), pctCell(r.placement_percentage), lpa(r.highest_ctc_lpa), lpa(r.average_ctc_lpa)], 'No students for this batch.');
+        fillRows($('#division-rows'), b.data, (r) => [`<span class="name">${esc(r.code)} — ${esc(r.name)}</span>`, `<span>${esc(r.program_code || '')} · ${esc(r.department || '')} — ${esc(r.department_name || '')}</span><span class="sub">${esc(r.program || '')}</span>`, n(r.students), n(r.applied), n(r.placed), n(r.unplaced), pctCell(r.placement_percentage), lpa(r.highest_ctc_lpa), lpa(r.average_ctc_lpa)], 'No students for this batch.');
         fillRows($('#company-rows'), c.data, (r) => [`<span class="name">${esc(r.company)}</span>`, n(r.drives), n(r.applications), n(r.students_selected), n(r.students_placed), lpa(r.highest_ctc_lpa), lpa(r.average_ctc_lpa)], 'No company has run a drive for this batch yet.');
       } catch (e) { fail(e); }
     }

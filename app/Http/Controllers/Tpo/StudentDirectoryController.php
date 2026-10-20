@@ -19,7 +19,7 @@ class StudentDirectoryController extends Controller
     public function index(Request $request)
     {
         $query = Student::query()
-            ->with(['department', 'branch'])
+            ->with(['department.program', 'branch', 'division'])
             ->when($request->filled('department_id'), fn ($q) => $q->where('department_id', $request->integer('department_id')))
             ->orderBy('department_id')->orderBy('university_id');
 

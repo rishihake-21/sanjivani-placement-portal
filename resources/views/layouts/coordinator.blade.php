@@ -64,7 +64,7 @@
     <div class="tb-r">
       <a class="who" href="{{ route('coordinator.profile') }}" style="text-decoration:none;color:inherit">
         <b>{{ auth()->user()->name }}</b>
-        <span>T&amp;P Coordinator @if (! empty($department)) &middot; {{ $department['code'] }} @endif</span>
+        <span>T&amp;P Coordinator @if (! empty($department)) &middot; {{ $department['program']['name'] ?? 'Programme' }} — {{ $department['code'] }} @endif</span>
       </a>
     </div>
   </header>

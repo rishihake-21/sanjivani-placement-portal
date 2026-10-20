@@ -34,7 +34,7 @@ class DriveController extends Controller
 
         $drives = $this->targetedDrives($student)
             ->where('status', DriveStatus::PUBLISHED->value)->where('application_deadline', '>', now())
-            ->with(['company:id,name', 'eligibility', 'branches'])->orderBy('application_deadline')->get();
+            ->with(['company:id,name', 'eligibility', 'branches', 'departments.program'])->orderBy('application_deadline')->get();
 
         $applied = Application::query()->where('student_id', $student->id)->pluck('stage', 'drive_id');
         $profileReady = $drives->isNotEmpty() ? $completeness->summarize($student)['can_apply'] : false;
@@ -65,7 +65,7 @@ class DriveController extends Controller
             ->where(fn (Builder $q) => $q
                 ->where(fn (Builder $t) => $this->scopeTargeted($t, $student))
                 ->orWhereHas('applications', fn (Builder $a) => $a->where('student_id', $student->id)))
-            ->with(['company', 'eligibility', 'branches'])
+            ->with(['company', 'eligibility', 'branches', 'departments.program'])
             ->findOrFail($id);
 
         $result = $this->engine->evaluate($student, $drive);
@@ -97,10 +97,18 @@ class DriveController extends Controller
         return PlacementDrive::query()->where(fn (Builder $q) => $this->scopeTargeted($q, $student));
     }
 
-    /** Same graduation year and a target branch that includes the student's branch. */
+    /** Same graduation year and a target department that includes every one of its divisions. */
     private function scopeTargeted(Builder $query, Student $student): Builder
     {
         return $query->where('graduation_year', $student->graduation_year)
-            ->whereHas('branches', fn (Builder $b) => $b->where('branches.id', $student->branch_id));
+            ->where(function (Builder $target) use ($student) {
+                $target->whereHas('departments', fn (Builder $d) => $d->where('departments.id', $student->department_id))
+                    ->orWhere(function (Builder $legacy) use ($student) {
+                        $legacy->whereDoesntHave('departments')
+                            ->whereHas('branches', function (Builder $branch) use ($student) {
+                                $branch->where('branches.department_id', $student->department_id);
+                            });
+                    });
+            });
     }
 }

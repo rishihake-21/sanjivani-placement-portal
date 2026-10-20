@@ -24,7 +24,7 @@ class DashboardController extends Controller
         ]);
     }
 
-    /** GET /coordinator/reports/branch-summary?graduation_year=2029 */
+    /** GET /coordinator/reports/division-summary?graduation_year=2029 */
     public function branchSummary(Request $request): JsonResponse
     {
         $year = $this->year($request);
@@ -32,6 +32,17 @@ class DashboardController extends Controller
         return response()->json([
             'graduation_year' => $year,
             'data' => $this->stats->branchSummary((int) $request->user()->department_id, $year),
+        ]);
+    }
+
+    /** GET /coordinator/reports/division-summary?graduation_year=2029 */
+    public function divisionSummary(Request $request): JsonResponse
+    {
+        $year = $this->year($request);
+
+        return response()->json([
+            'graduation_year' => $year,
+            'data' => $this->stats->divisionSummary((int) $request->user()->department_id, $year),
         ]);
     }
 

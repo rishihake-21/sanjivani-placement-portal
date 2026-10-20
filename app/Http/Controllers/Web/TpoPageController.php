@@ -39,7 +39,7 @@ class TpoPageController extends Controller
         return view('tpo.drives.form', [
             'driveId' => null,
             'companies' => $this->companyOptions(true),
-            'departments' => Department::query()->where('is_active', true)->with(['branches' => fn ($q) => $q->where('is_active', true)->orderBy('name')])->orderBy('name')->get(),
+            'departments' => Department::query()->where('is_active', true)->with('program')->orderBy('program_id')->orderBy('name')->get(),
             'years' => $this->futureYears(),
         ]);
     }
@@ -51,7 +51,7 @@ class TpoPageController extends Controller
         return view('tpo.drives.form', [
             'driveId' => $id,
             'companies' => $this->companyOptions(false),   // an existing drive may point at a company that was deactivated later
-            'departments' => Department::query()->with(['branches' => fn ($q) => $q->orderBy('name')])->orderBy('name')->get(),
+            'departments' => Department::query()->with('program')->orderBy('program_id')->orderBy('name')->get(),
             'years' => $this->futureYears(PlacementDrive::query()->whereKey($id)->value('graduation_year')),
         ]);
     }
@@ -67,7 +67,7 @@ class TpoPageController extends Controller
     {
         return view('tpo.applications.index', [
             'companies' => $this->companyOptions(),
-            'departments' => Department::query()->orderBy('name')->get(['id', 'name']),
+            'departments' => Department::query()->with('program:id,name,code')->orderBy('program_id')->orderBy('name')->get(['id', 'name', 'code', 'program_id']),
             'stages' => self::STAGES,
         ]);
     }
@@ -81,7 +81,7 @@ class TpoPageController extends Controller
     {
         return view('tpo.placements.index', [
             'companies' => $this->companyOptions(),
-            'departments' => Department::query()->orderBy('name')->get(['id', 'name']),
+            'departments' => Department::query()->with('program:id,name,code')->orderBy('program_id')->orderBy('name')->get(['id', 'name', 'code', 'program_id']),
             'years' => $this->years(),
         ]);
     }
@@ -90,7 +90,7 @@ class TpoPageController extends Controller
     {
         return view('tpo.reports.index', [
             'years' => $this->years(),
-            'departments' => Department::query()->orderBy('name')->get(['id', 'name']),
+            'departments' => Department::query()->with('program:id,name,code')->orderBy('program_id')->orderBy('name')->get(['id', 'name', 'code', 'program_id']),
         ]);
     }
 

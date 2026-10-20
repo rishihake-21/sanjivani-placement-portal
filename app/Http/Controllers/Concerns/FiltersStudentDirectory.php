@@ -7,11 +7,12 @@ use Illuminate\Http\Request;
 
 trait FiltersStudentDirectory
 {
-    /** Shared list filters: search, branch, semester, admission type, "has items awaiting review". */
+    /** Shared list filters: search, division, semester, admission type, "has items awaiting review". */
     protected function applyDirectoryFilters(Builder $query, Request $request): Builder
     {
         $request->validate([
             'search' => ['sometimes', 'string', 'max:100'],
+            'division_id' => ['sometimes', 'integer'],
             'branch_id' => ['sometimes', 'integer'],
             'department_id' => ['sometimes', 'integer'],
             'semester' => ['sometimes', 'integer', 'between:1,8'],
@@ -24,6 +25,7 @@ trait FiltersStudentDirectory
                 $term = '%' . addcslashes($request->string('search')->toString(), '%_\\') . '%';
                 $q->where(fn (Builder $w) => $w->where('full_name', 'ilike', $term)->orWhere('university_id', 'ilike', $term));
             })
+            ->when($request->filled('division_id'), fn (Builder $q) => $q->where('division_id', $request->integer('division_id')))
             ->when($request->filled('branch_id'), fn (Builder $q) => $q->where('branch_id', $request->integer('branch_id')))
             ->when($request->filled('semester'), fn (Builder $q) => $q->where('current_semester', $request->integer('semester')))
             ->when($request->filled('admission_type'), fn (Builder $q) => $q->where('admission_type', $request->string('admission_type')->toString()))

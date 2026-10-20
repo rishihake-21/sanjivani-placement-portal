@@ -29,8 +29,9 @@
         <dl class="dl" style="margin:0 0 16px">
           <div><dt>University ID</dt><dd>{{ $student['university_id'] }}</dd></div>
           <div><dt>Full name</dt><dd>{{ $student['full_name'] }}</dd></div>
+          <div><dt>Programme</dt><dd>{{ $student['department']['program']['name'] ?? '–' }}</dd></div>
           <div><dt>Department</dt><dd>{{ $student['department']['name'] }}</dd></div>
-          <div><dt>Branch</dt><dd>{{ $student['branch']['name'] }}</dd></div>
+          <div><dt>Division</dt><dd>{{ $student['division']['name'] ?? ($student['branch']['name'] ?? 'Not assigned') }}</dd></div>
           <div><dt>Admission type</dt><dd>{{ U::admission($student['admission_type']) }}</dd></div>
           <div><dt>Admission year</dt><dd>{{ $student['admission_year'] }}</dd></div>
           <div><dt>Graduation year</dt><dd>{{ $student['graduation_year'] }}</dd></div>

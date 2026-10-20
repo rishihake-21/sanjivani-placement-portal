@@ -13,7 +13,7 @@ trait PresentsStudentDetail
     protected function studentDetail(Student $student): array
     {
         $student->load([
-            'department', 'branch',
+            'department.program', 'branch', 'division',
             'academicRecords' => fn ($q) => $q->live()->with('document')->orderByRaw("array_position(ARRAY['TENTH','TWELFTH','DIPLOMA','DEGREE_SEM']::text[], level::text)")->orderBy('semester')->orderByDesc('version'),
             'experiences' => fn ($q) => $q->live()->with('certificate')->orderByDesc('start_date'),
             'documents' => fn ($q) => $q->where('status', '<>', 'SUPERSEDED')->orderBy('document_type'),

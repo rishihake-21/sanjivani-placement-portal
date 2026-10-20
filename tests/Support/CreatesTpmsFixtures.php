@@ -7,6 +7,8 @@ use App\Enums\Role;
 use App\Models\Branch;
 use App\Models\Department;
 use App\Models\MasterListEntry;
+use App\Models\Program;
+use App\Models\Division;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
@@ -18,6 +20,8 @@ trait CreatesTpmsFixtures
     protected Department $mech;
     protected Branch $cseBranch;
     protected Branch $mechBranch;
+    protected Division $cseDivision;
+    protected Division $mechDivision;
 
     protected function setUpTpms(): void
     {
@@ -25,10 +29,13 @@ trait CreatesTpmsFixtures
         config(['filesystems.disks.tpms_test' => ['driver' => 'local', 'root' => storage_path('framework/testing/disks/tpms_test')]]);
         Storage::fake('tpms_test');
 
-        $this->cse = Department::create(['name' => 'Computer Science', 'code' => 'CSE']);
-        $this->mech = Department::create(['name' => 'Mechanical', 'code' => 'ME']);
+        $program = Program::firstOrCreate(['code' => 'BTECH'], ['name' => 'B.Tech', 'is_active' => true]);
+        $this->cse = Department::create(['name' => 'Computer Science', 'code' => 'CSE', 'program_id' => $program->id]);
+        $this->mech = Department::create(['name' => 'Mechanical', 'code' => 'ME', 'program_id' => $program->id]);
         $this->cseBranch = Branch::create(['department_id' => $this->cse->id, 'name' => 'Computer Engineering', 'code' => 'CSE-B']);
         $this->mechBranch = Branch::create(['department_id' => $this->mech->id, 'name' => 'Mechanical', 'code' => 'ME-B']);
+        $this->cseDivision = Division::create(['department_id' => $this->cse->id, 'name' => 'CSE Unassigned', 'code' => 'TEST-CSE-UNASSIGNED']);
+        $this->mechDivision = Division::create(['department_id' => $this->mech->id, 'name' => 'ME Unassigned', 'code' => 'TEST-ME-UNASSIGNED']);
     }
 
     protected function makeStudent(
@@ -47,6 +54,7 @@ trait CreatesTpmsFixtures
         $entry = MasterListEntry::create([
             'university_id' => $universityId, 'full_name' => "Student $universityId",
             'institutional_email' => $user->email, 'department_id' => $department->id, 'branch_id' => $branch->id,
+            'division_id' => ($department->id === $this->cse->id ? $this->cseDivision : $this->mechDivision)->id,
             'admission_type' => $type, 'admission_year' => 2026, 'graduation_year' => 2029,
             'current_semester' => $semester, 'claimed_at' => now(),
         ]);
@@ -55,6 +63,7 @@ trait CreatesTpmsFixtures
         $student->forceFill([
             'user_id' => $user->id, 'master_list_id' => $entry->id, 'university_id' => $universityId,
             'full_name' => $entry->full_name, 'department_id' => $department->id, 'branch_id' => $branch->id,
+            'division_id' => ($department->id === $this->cse->id ? $this->cseDivision : $this->mechDivision)->id,
             'admission_type' => $type, 'admission_year' => 2026, 'graduation_year' => 2029, 'current_semester' => $semester,
         ])->save();
 

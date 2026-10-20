@@ -1,11 +1,11 @@
 {{--
   Applications of the department's students (read only). Route: coordinator.applications
-  $rows      GET /api/coordinator/applications -> data. Row: id, student{id,university_id,full_name,branch}, company,
+  $rows      GET /api/coordinator/applications -> data. Row: id, student{id,university_id,full_name,division}, company,
              drive{id,title}, stage, applied_at, stage_updated_at
   $pg        ['current_page','last_page','total','prev_url','next_url']
-  $filters   ['drive_id','stage','branch_id','search']
+  $filters   ['drive_id','stage','division_id','search']
   $drives    optional [['id','company','title'], ...] for the drive select (omit to hide it)
-  $branches  [['id','code','name'], ...]
+  $divisions  [['id','code','name'], ...]
 --}}
 @extends('layouts.coordinator')
 @use('App\Support\StudentUi', 'U')
@@ -14,7 +14,7 @@
 @section('content')
 @php
   $f = $filters;
-  $hasFilter = ! empty($f['drive_id']) || ! empty($f['stage']) || ! empty($f['branch_id']) || ! empty($f['search']);
+  $hasFilter = ! empty($f['drive_id']) || ! empty($f['stage']) || ! empty($f['division_id']) || ! empty($f['search']);
   $stageNames = ['APPLIED' => 'Applied', 'SHORTLISTED' => 'Shortlisted', 'APTITUDE' => 'Aptitude', 'TECHNICAL' => 'Technical', 'HR' => 'HR', 'SELECTED' => 'Selected', 'REJECTED' => 'Rejected', 'OFFER_RECEIVED' => 'Offer received', 'PLACED' => 'Placed', 'WITHDRAWN' => 'Withdrawn'];
 @endphp
 <div class="page">
@@ -57,11 +57,11 @@
           </select>
         </div>
         <div class="field">
-          <label for="f-branch">Branch</label>
-          <select id="f-branch" name="branch_id">
-            <option value="">All branches</option>
-            @foreach ($branches as $b)
-              <option value="{{ $b['id'] }}" @selected((string) ($f['branch_id'] ?? '') === (string) $b['id'])>{{ $b['code'] }} &middot; {{ $b['name'] }}</option>
+          <label for="f-division">Division</label>
+          <select id="f-division" name="division_id">
+            <option value="">All divisions</option>
+            @foreach ($divisions as $b)
+              <option value="{{ $b['id'] }}" @selected((string) ($f['division_id'] ?? '') === (string) $b['id'])>{{ $b['code'] }} &middot; {{ $b['name'] }}</option>
             @endforeach
           </select>
         </div>
@@ -74,12 +74,12 @@
       @if (count($rows))
         <div class="tbl-wrap">
           <table class="tbl">
-            <thead><tr><th>Student</th><th>Branch</th><th>Company</th><th>Drive</th><th>Stage</th><th>Applied</th><th>Last change</th><th><span class="sr">Action</span></th></tr></thead>
+            <thead><tr><th>Student</th><th>Division</th><th>Company</th><th>Drive</th><th>Stage</th><th>Applied</th><th>Last change</th><th><span class="sr">Action</span></th></tr></thead>
             <tbody>
               @foreach ($rows as $r)
                 <tr>
                   <td data-l="Student"><b>{{ $r['student']['full_name'] }}</b><span class="sub">{{ $r['student']['university_id'] }}</span></td>
-                  <td data-l="Branch">{{ U::orDash($r['student']['branch'] ?? null) }}</td>
+                  <td data-l="Division">{{ U::orDash($r['student']['division'] ?? $r['student']['branch'] ?? null) }}</td>
                   <td data-l="Company"><b>{{ $r['company'] }}</b></td>
                   <td data-l="Drive">{{ $r['drive']['title'] }}</td>
                   <td data-l="Stage">@include('coordinator.partials.badge', ['kind' => 'stage', 'value' => $r['stage']])</td>

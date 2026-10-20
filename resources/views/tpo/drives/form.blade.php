@@ -62,21 +62,23 @@
         hint="Free text shown to students, for example: must be willing to relocate. It is not checked automatically and can be edited after publishing." />
     </x-ui.card>
 
-    <x-ui.card id="branches" title="Target branches">
+    <x-ui.card id="departments" title="Target departments">
+      <p class="meta" style="margin-bottom:16px">Select departments, not individual divisions. All divisions in every selected department are covered automatically. The target scope is locked after publishing.</p>
       <div class="field">
-        <span class="lbl">Branches that may apply <span class="req" aria-hidden="true">*</span></span>
-        <div data-err="branch_ids" id="branch-picker">
-          @foreach ($departments as $department)
+        <span class="lbl">Departments that may apply <span class="req" aria-hidden="true">*</span></span>
+        <div data-err="department_ids" id="department-picker">
+          @foreach ($departments->groupBy('program_id') as $programId => $programDepartments)
+            @php($program = $programDepartments->first()->program)
             <div class="dept-grp">
               <div class="dept-h">
-                <b>{{ $department->name }}</b>
-                <button type="button" class="linkbtn" data-toggle-dept="{{ $department->id }}">Select all</button>
+                <b>{{ $program?->name ?? 'Programme' }}</b>
+                <button type="button" class="linkbtn" data-toggle-program="{{ $programId }}">Select all</button>
               </div>
               <div class="checks">
-                @foreach ($department->branches as $branch)
-                  <label class="chk" for="b-{{ $branch->id }}">
-                    <input type="checkbox" id="b-{{ $branch->id }}" data-branch="{{ $branch->id }}" data-dept="{{ $department->id }}">
-                    <span>{{ $branch->name }}</span>
+                @foreach ($programDepartments as $department)
+                  <label class="chk" for="d-{{ $department->id }}">
+                    <input type="checkbox" id="d-{{ $department->id }}" data-department="{{ $department->id }}" data-program="{{ $department->program_id }}">
+                    <span>{{ $department->name }} <small class="sub">{{ $department->code }}</small></span>
                   </label>
                 @endforeach
               </div>
@@ -106,7 +108,7 @@
     let status = 'DRAFT';
 
     const field = (name) => root.querySelector('[data-f="' + name + '"]');
-    const branchBoxes = () => $$('[data-branch]', root);
+    const departmentBoxes = () => $$('[data-department]', root);
 
     function fill(d) {
       status = d.status;
@@ -122,8 +124,8 @@
         field('eligibility.' + k).value = e[k] == null ? '' : e[k];
       });
       field('eligibility.diploma_counts_as_twelfth').checked = e.diploma_counts_as_twelfth == null ? true : !!e.diploma_counts_as_twelfth;
-      const picked = new Set((d.branches || []).map((b) => String(b.id)));
-      branchBoxes().forEach((b) => { b.checked = picked.has(b.dataset.branch); });
+      const picked = new Set((d.departments || []).map((b) => String(b.id)));
+      departmentBoxes().forEach((b) => { b.checked = picked.has(b.dataset.department); });
       applyLocks();
     }
 
@@ -133,19 +135,19 @@
       if (status === 'DRAFT') { note.innerHTML = ''; return; }
       const open = status === 'PUBLISHED';
       $$('[data-f]', root).forEach((el) => { el.disabled = !(open && EDITABLE_AFTER_PUBLISH.includes(el.dataset.f)); });
-      branchBoxes().forEach((b) => { b.disabled = true; });
-      $$('[data-toggle-dept]', root).forEach((b) => { b.disabled = true; });
+      departmentBoxes().forEach((b) => { b.disabled = true; });
+      $$('[data-toggle-program]', root).forEach((b) => { b.disabled = true; });
       note.innerHTML = open
-        ? notice('wait', 'lock', 'This drive is published. Criteria, company, batch and target branches are locked because students have already seen them. You can still change the description, requirements, location, drive date and deadline. To change anything else, cancel the drive and create a new one.')
+        ? notice('wait', 'lock', 'This drive is published. Criteria, company, batch and target departments are locked because students have already seen them. You can still change the description, requirements, location, drive date and deadline. To change anything else, cancel the drive and create a new one.')
         : notice('no', 'lock', 'This drive is ' + status.toLowerCase() + ' and can no longer be edited.');
       if (!open) $('#save').hidden = true;
     }
 
-    $('#branch-picker').addEventListener('click', (e) => {
-      const t = e.target.closest('[data-toggle-dept]');
+    $('#department-picker').addEventListener('click', (e) => {
+      const t = e.target.closest('[data-toggle-program]');
       if (!t) return;
-      const boxes = branchBoxes().filter((b) => b.dataset.dept === t.dataset.toggleDept);
-      const all = boxes.every((b) => b.checked);
+      const boxes = departmentBoxes().filter((b) => b.dataset.program === t.dataset.toggleProgram);
+      const all = boxes.length > 0 && boxes.every((b) => b.checked);
       boxes.forEach((b) => { b.checked = !all; });
       t.textContent = all ? 'Select all' : 'Clear';
     });
@@ -155,7 +157,7 @@
       clearErrors(root);
       const body = collect(root);
       if (body.application_deadline !== undefined) body.application_deadline = fromLocalInput(body.application_deadline);
-      if (status === 'DRAFT') body.branch_ids = branchBoxes().filter((b) => b.checked).map((b) => Number(b.dataset.branch));
+      if (status === 'DRAFT') body.department_ids = departmentBoxes().filter((b) => b.checked).map((b) => Number(b.dataset.department));
 
       btn.disabled = true;
       try {

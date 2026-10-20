@@ -10,6 +10,8 @@ use App\Enums\Role;
 use App\Models\Branch;
 use App\Models\Company;
 use App\Models\Department;
+use App\Models\Division;
+use App\Models\Program;
 use App\Models\PlacementDrive;
 use App\Models\Student;
 use App\Models\StudentMasterList;
@@ -28,18 +30,16 @@ class CompleteStudentAndCompanySeeder extends Seeder
         $hashedPassword = Hash::make($password);
 
         // Get departments and branches
-        $cseDept = Department::where('code', 'CSE')->first();
-        $itDept = Department::where('code', 'IT')->first();
-        $eceDept = Department::where('code', 'ECE')->first();
-        $meDept = Department::where('code', 'ME')->first();
-        $ceDept = Department::where('code', 'CE')->first();
+        // The sample records below are B.Tech students; resolve departments within B.Tech.
+        $btechId = Program::query()->where('code', 'BTECH')->value('id');
+        $cseDept = Department::where('program_id', $btechId)->where('code', 'CSE')->firstOrFail();
+        $aimlDept = Department::where('program_id', $btechId)->where('code', 'AIML')->firstOrFail();
+        $aidsDept = Department::where('program_id', $btechId)->where('code', 'AIDS')->firstOrFail();
 
-        $cseBranch = Branch::where('code', 'CSE')->first();
-        $cseAimlBranch = Branch::where('code', 'CSE-AIML')->first();
-        $itBranch = Branch::where('code', 'IT')->first();
-        $eceBranch = Branch::where('code', 'ECE')->first();
-        $meBranch = Branch::where('code', 'ME')->first();
-        $ceBranch = Branch::where('code', 'CE')->first();
+        $cseBranch = Branch::where('code', 'CSE')->firstOrFail();
+        $cseAimlBranch = Branch::where('code', 'CSE-AIML')->firstOrFail();
+        $aidsBranch = Branch::where('code', 'AIDS')->firstOrFail();
+        $meBranch = Branch::where('code', 'ME')->firstOrFail();
 
         // ============================================
         // COMPLETE STUDENTS (all sections complete)
@@ -101,8 +101,8 @@ class CompleteStudentAndCompanySeeder extends Seeder
                 'university_id' => '2126UITF1002',
                 'full_name' => 'Priya Nair',
                 'institutional_email' => 'priya.nair@sanjivani.edu.in',
-                'department_id' => $itDept->id,
-                'branch_id' => $itBranch->id,
+                'department_id' => $aimlDept->id,
+                'branch_id' => $cseAimlBranch->id,
                 'admission_type' => AdmissionType::REGULAR,
                 'admission_year' => 2024,
                 'graduation_year' => 2028,
@@ -148,8 +148,8 @@ class CompleteStudentAndCompanySeeder extends Seeder
                 'university_id' => '2126UECM1003',
                 'full_name' => 'Rohit Patil',
                 'institutional_email' => 'rohit.patil@sanjivani.edu.in',
-                'department_id' => $eceDept->id,
-                'branch_id' => $eceBranch->id,
+                'department_id' => $aidsDept->id,
+                'branch_id' => $aidsBranch->id,
                 'admission_type' => AdmissionType::REGULAR,
                 'admission_year' => 2024,
                 'graduation_year' => 2028,
@@ -193,8 +193,32 @@ class CompleteStudentAndCompanySeeder extends Seeder
             ],
         ];
 
+        // Put complete demo profiles into real sections rather than the migration's
+        // temporary UNASSIGNED divisions. This gives drive eligibility multiple sections
+        // within each targeted department to compare.
+        $divisionCodes = [
+            '2126UCEM1001' => 'FINAL-CSE-B',
+            '2126UITF1002' => 'SY-AIML-A',
+            '2126UECM1003' => 'SY-AIDS-A',
+        ];
+
         // Create complete students with academic records, experience, and documents
         foreach ($completeStudents as $data) {
+            $divisionCode = $divisionCodes[$data['university_id']] ?? null;
+            $divisionId = $divisionCode
+                ? Division::query()
+                    ->where('department_id', $data['department_id'])
+                    ->where('code', $divisionCode)
+                    ->where('is_active', true)
+                    ->value('id')
+                : null;
+
+            if ($divisionId === null) {
+                throw new \RuntimeException(
+                    "No seeded division {$divisionCode} for complete demo student {$data['university_id']}."
+                );
+            }
+
             // Create master list entry
             $masterList = StudentMasterList::firstOrCreate(
                 ['university_id' => $data['university_id']],
@@ -203,6 +227,7 @@ class CompleteStudentAndCompanySeeder extends Seeder
                     'institutional_email' => $data['institutional_email'],
                     'department_id' => $data['department_id'],
                     'branch_id' => $data['branch_id'],
+                    'division_id' => $divisionId,
                     'admission_type' => $data['admission_type']->value,
                     'admission_year' => $data['admission_year'],
                     'graduation_year' => $data['graduation_year'],
@@ -233,6 +258,7 @@ class CompleteStudentAndCompanySeeder extends Seeder
                     'full_name' => $data['full_name'],
                     'department_id' => $data['department_id'],
                     'branch_id' => $data['branch_id'],
+                    'division_id' => $divisionId,
                     'admission_type' => $data['admission_type']->value,
                     'admission_year' => $data['admission_year'],
                     'graduation_year' => $data['graduation_year'],
@@ -494,7 +520,7 @@ class CompleteStudentAndCompanySeeder extends Seeder
                     'max_active_backlogs' => 0,
                     'max_total_backlogs' => 0,
                 ],
-                'branches' => ['CSE', 'CSE-AIML', 'IT', 'ECE'],
+                'branches' => ['CSE', 'CSE-AIML', 'AIDS', 'CYBERSEC'],
             ],
             [
                 'company_id' => $infosys->id,
@@ -518,7 +544,7 @@ class CompleteStudentAndCompanySeeder extends Seeder
                     'max_active_backlogs' => 0,
                     'max_total_backlogs' => 0,
                 ],
-                'branches' => ['CSE', 'CSE-AIML', 'IT', 'ECE', 'ECE'],
+                'branches' => ['CSE', 'CSE-AIML', 'ME', 'AIDS'],
             ],
             [
                 'company_id' => $amazon->id,
@@ -542,7 +568,7 @@ class CompleteStudentAndCompanySeeder extends Seeder
                     'max_active_backlogs' => 0,
                     'max_total_backlogs' => 0,
                 ],
-                'branches' => ['CSE', 'CSE-AIML', 'IT'],
+                'branches' => ['CSE', 'CSE-AIML', 'AIDS'],
             ],
         ];
 
@@ -565,6 +591,14 @@ class CompleteStudentAndCompanySeeder extends Seeder
             // Attach branches
             $branchIds = Branch::whereIn('code', $branches)->pluck('id');
             $drive->branches()->sync($branchIds);
+            $targetDepartmentIds = Branch::query()->whereIn('id', $branchIds)->get(['code', 'department_id'])->map(function ($branch) {
+                if ($branch->code === 'CSE-AIML') {
+                    return Department::query()->where('program_id', Program::query()->where('code', 'BTECH')->value('id'))->where('code', 'AIML')->value('id');
+                }
+
+                return $branch->department_id;
+            })->filter()->unique()->values()->all();
+            $drive->departments()->sync($targetDepartmentIds);
         }
 
         $this->command->info('Created ' . count($completeStudents) . ' complete students, ' . count($companies) . ' companies, and ' . count($drives) . ' drives.');

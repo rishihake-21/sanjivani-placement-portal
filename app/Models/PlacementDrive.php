@@ -41,16 +41,56 @@ class PlacementDrive extends Model
         return $this->belongsToMany(Branch::class, 'drive_branches', 'drive_id', 'branch_id');
     }
 
+    public function departments(): BelongsToMany
+    {
+        return $this->belongsToMany(Department::class, 'drive_departments', 'drive_id', 'department_id');
+    }
+
+    /**
+     * Resolve department targeting for modern drives and legacy drives that were created
+     * with branch_ids before the programme hierarchy existed.
+     *
+     * @return list<int>
+     */
+    public function targetDepartmentIds(): array
+    {
+        $this->loadMissing(['departments', 'branches']);
+
+        // The new department pivot is authoritative for modern drives. Legacy branch-only
+        // drives are resolved below for compatibility with old clients and existing tests.
+        if ($this->departments->isNotEmpty()) {
+            return $this->departments->pluck('id')->map(fn ($id) => (int) $id)->unique()->values()->all();
+        }
+
+        return $this->branches->map(function (Branch $branch) {
+            if ($branch->code === 'CSE-AIML') {
+                $programId = Department::query()->whereKey($branch->department_id)->value('program_id');
+
+                return Department::query()->where('program_id', $programId)->where('code', 'AIML')->value('id');
+            }
+
+            return $branch->department_id;
+        })->filter()->map(fn ($id) => (int) $id)->unique()->values()->all();
+    }
+
     public function applications(): HasMany
     {
         return $this->hasMany(Application::class, 'drive_id');
     }
 
-    /** Drives a coordinator may see: already published (or closed) AND targeting a branch of their department. */
+    /** Drives a coordinator may see: already published (or closed) AND targeting their department. */
     public function scopeVisibleToDepartment(Builder $query, int $departmentId): Builder
     {
         return $query
             ->whereIn('status', [DriveStatus::PUBLISHED->value, DriveStatus::CLOSED->value])
-            ->whereHas('branches', fn (Builder $b) => $b->where('branches.department_id', $departmentId));
+            ->where(function (Builder $target) use ($departmentId) {
+                $target->whereHas('departments', fn (Builder $d) => $d->where('departments.id', $departmentId))
+                    ->orWhere(function (Builder $legacy) use ($departmentId) {
+                        $legacy->whereDoesntHave('departments')
+                            ->whereHas('branches', function (Builder $branch) use ($departmentId) {
+                                $branch->where('branches.department_id', $departmentId);
+                            });
+                    });
+            });
     }
 }

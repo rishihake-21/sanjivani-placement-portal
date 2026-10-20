@@ -21,7 +21,7 @@ class StudentDirectoryService
     {
         $query = Student::query()
             ->inDepartment((int) $request->user()->department_id)
-            ->with(['department', 'branch'])
+            ->with(['department.program', 'branch', 'division'])
             ->withCount([
                 'academicRecords as pending_academic_count' => fn ($q) => $q->where('status', 'PENDING'),
                 'experiences as pending_experience_count' => fn ($q) => $q->where('status', 'PENDING'),

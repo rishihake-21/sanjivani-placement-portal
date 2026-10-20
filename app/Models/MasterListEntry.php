@@ -30,6 +30,11 @@ class MasterListEntry extends Model
         return $this->belongsTo(Branch::class);
     }
 
+    public function division(): BelongsTo
+    {
+        return $this->belongsTo(Division::class);
+    }
+
     public function isClaimed(): bool
     {
         return $this->claimed_at !== null;
