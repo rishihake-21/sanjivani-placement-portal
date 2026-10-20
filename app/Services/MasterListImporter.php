@@ -199,6 +199,10 @@ class MasterListImporter
                         $legacyBranch = $legacyBranches->get($row['branch_code']);
                         if ($legacyBranch === null) {
                             $rowErrors[] = "unknown legacy branch_code '{$row['branch_code']}'";
+                        } elseif (! $legacyBranch->is_active) {
+                            $rowErrors[] = "legacy branch_code '{$row['branch_code']}' is inactive";
+                        } elseif ($department !== null && (int) $legacyBranch->department_id !== (int) $department->id) {
+                            $rowErrors[] = "legacy branch_code '{$row['branch_code']}' does not belong to department '{$row['department_code']}'";
                         }
                     }
                 } else {
