@@ -19,14 +19,16 @@ class ApplicationDirectoryService
         $request->validate([
             'drive_id' => ['sometimes', 'integer'],
             'stage' => ['sometimes', Rule::enum(ApplicationStage::class)],
+            'division_id' => ['sometimes', 'integer'],
             'branch_id' => ['sometimes', 'integer'],
             'search' => ['sometimes', 'string', 'max:100'],
         ]);
 
         return Application::query()->forDepartment($departmentId)
-            ->with(['student:id,university_id,full_name,branch_id,current_semester', 'student.branch:id,code', 'drive:id,title,company_id', 'drive.company:id,name'])
+            ->with(['student:id,university_id,full_name,branch_id,division_id,current_semester', 'student.branch:id,code', 'student.division:id,code,name', 'drive:id,title,company_id', 'drive.company:id,name'])
             ->when($request->filled('drive_id'), fn ($q) => $q->where('drive_id', $request->integer('drive_id')))
             ->when($request->filled('stage'), fn ($q) => $q->where('stage', $request->string('stage')->toString()))
+            ->when($request->filled('division_id'), fn ($q) => $q->whereHas('student', fn ($s) => $s->where('division_id', $request->integer('division_id'))))
             ->when($request->filled('branch_id'), fn ($q) => $q->whereHas('student', fn ($s) => $s->where('branch_id', $request->integer('branch_id'))))
             ->when($request->filled('search'), function ($q) use ($request) {
                 $term = '%' . addcslashes($request->string('search')->toString(), '%_\\') . '%';
@@ -40,7 +42,7 @@ class ApplicationDirectoryService
     public function show(Request $request, int $id): array
     {
         $application = Application::query()->forDepartment((int) $request->user()->department_id)
-            ->with(['student.branch:id,code,name', 'drive.company', 'history.changedBy:id,name'])
+            ->with(['student.branch:id,code,name', 'student.division:id,code,name', 'drive.company', 'history.changedBy:id,name'])
             ->findOrFail($id);
 
         return $this->row($application) + [
@@ -60,7 +62,7 @@ class ApplicationDirectoryService
     public function studentProgress(Request $request, int $studentId): array
     {
         $student = Student::query()->where('department_id', (int) $request->user()->department_id)
-            ->with('branch:id,code')->findOrFail($studentId);
+            ->with(['branch:id,code', 'division:id,code,name'])->findOrFail($studentId);
 
         $applications = Application::query()->where('student_id', $student->id)
             ->with(['drive.company', 'history.changedBy:id,name'])->orderByDesc('applied_at')->get();
@@ -68,7 +70,7 @@ class ApplicationDirectoryService
         $placements = Placement::query()->where('student_id', $student->id)->with('company:id,name')->orderByDesc('offer_date')->get();
 
         return [
-            'student' => ['id' => $student->id, 'university_id' => $student->university_id, 'full_name' => $student->full_name, 'branch' => $student->branch->code],
+            'student' => ['id' => $student->id, 'university_id' => $student->university_id, 'full_name' => $student->full_name, 'division' => $student->division?->code ?? $student->branch?->code, 'branch' => $student->division?->code ?? $student->branch?->code],
             'is_placed' => $placements->contains(fn ($p) => $p->status->value === 'PLACED'),
             'applications' => $applications->map(fn (Application $a) => [
                 'id' => $a->id,
@@ -95,7 +97,7 @@ class ApplicationDirectoryService
                 'id' => $a->student->id,
                 'university_id' => $a->student->university_id,
                 'full_name' => $a->student->full_name,
-                'branch' => $a->student->branch?->code,
+                'division' => $a->student->division?->code ?? $a->student->branch?->code, 'branch' => $a->student->division?->code ?? $a->student->branch?->code,
             ],
             'company' => $a->drive->company?->name,
             'drive' => ['id' => $a->drive->id, 'title' => $a->drive->title],
