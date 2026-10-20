@@ -25,7 +25,7 @@
           <select id="flt-department_id" data-filter="department_id">
             <option value="">All departments</option>
             @foreach ($departments as $department)
-              <option value="{{ $department->id }}">{{ $department->name }}</option>
+              <option value="{{ $department->id }}">{{ $department->program?->name }} &middot; {{ $department->code }} — {{ $department->name }}</option>
             @endforeach
           </select>
         </div>
