@@ -55,6 +55,7 @@ class DatabaseSeeder extends Seeder
         // company data, and published drives targeting departments.
         $this->call(StudentSeeder::class);
         $this->call(CoordinatorSeeder::class);
+        $this->call(HierarchyDemoRosterSeeder::class);
         $this->call(CompleteStudentAndCompanySeeder::class);
 
         $this->command?->info('TPMS hierarchy and demo accounts seeded.');
