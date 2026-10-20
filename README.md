@@ -87,7 +87,8 @@ download ► GET /api/documents/{uuid}/download ► DocumentPolicy ► stream (n
 
 | Table | Purpose |
 |---|---|
-| `programs`, `departments`, `divisions` | canonical academic hierarchy; a coordinator is assigned to a department |\n| `branches`, `branch_id` | legacy compatibility for old roster/API records during migration |
+| `programs`, `departments`, `divisions` | canonical academic hierarchy; a coordinator is assigned to a department |
+| `branches`, `branch_id` | legacy compatibility for old roster/API records during migration |
 | `users` (+`role`, `department_id`, `is_active`) | all accounts; coordinator must have a department (CHECK) |
 | `student_master_list` | imported roster; registration only for unclaimed IDs |
 | `students` | sections A, B, D, F (identity, contact, skills/links, preferences) |
