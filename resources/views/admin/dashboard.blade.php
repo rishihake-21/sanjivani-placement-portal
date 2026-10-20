@@ -729,7 +729,7 @@
       if (status === 'active' && !row.is_active) return false;
       if (status === 'inactive' && row.is_active) return false;
       if (query) {
-        const text = [row.name, row.email, row.employee_id, row.designation, row.department.name, row.department.code].join(' ').toLowerCase();
+        const text = [row.name, row.email, row.employee_id, row.designation, row.department.name, row.department.code, row.department.program && row.department.program.name].join(' ').toLowerCase();
         if (!text.includes(query)) return false;
       }
       return true;
@@ -748,7 +748,7 @@
         : '<button type="button" class="btn btn-secondary" data-coordinator-action="reactivate" data-id="' + esc(row.id) + '">Reactivate</button>';
       return [
         '<div class="admin-account-cell"><b>' + esc(row.name) + '</b><span class="sub">' + esc(row.email) + '</span></div>',
-        '<span class="admin-account-cell"><b>' + esc(row.department.code) + '</b><span class="sub">' + esc(row.department.name) + '</span></span>',
+        '<span class="admin-account-cell"><b>' + esc(row.department.code) + '</b><span class="sub">' + esc(row.department.name) + '</span><span class="sub">' + esc(row.department.program ? row.department.program.name : '') + '</span></span>',
         '<span class="admin-account-cell">' + esc(row.employee_id || '—') + '<span class="sub">' + esc(row.designation || '—') + '</span></span>',
         state,
         { html: '<div class="admin-actions">' + edit + stateButton + '</div>', cls: 'act' }
