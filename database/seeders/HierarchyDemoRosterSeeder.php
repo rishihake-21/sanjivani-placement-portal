@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Enums\AdmissionType;
 use App\Enums\Role;
+use App\Models\Branch;
 use App\Models\Department;
 use App\Models\Division;
 use App\Models\Student;
@@ -31,6 +32,7 @@ class HierarchyDemoRosterSeeder extends Seeder
                 'program_code' => 'BBA',
                 'department_code' => 'BBA',
                 'division_code' => 'SY-BBA-A',
+                'branch_code' => 'BBA-BBA',
                 'admission_year' => 2025,
                 'graduation_year' => 2028,
                 'current_semester' => 3,
@@ -42,6 +44,7 @@ class HierarchyDemoRosterSeeder extends Seeder
                 'program_code' => 'MBA',
                 'department_code' => 'MBA',
                 'division_code' => 'FY-MBA-A',
+                'branch_code' => 'MBA-MBA',
                 'admission_year' => 2026,
                 'graduation_year' => 2028,
                 'current_semester' => 1,
@@ -53,6 +56,7 @@ class HierarchyDemoRosterSeeder extends Seeder
                 'program_code' => 'MTECH',
                 'department_code' => 'CSE',
                 'division_code' => 'MTECH-CSE-A',
+                'branch_code' => 'MTECH-CSE',
                 'admission_year' => 2026,
                 'graduation_year' => 2028,
                 'current_semester' => 1,
@@ -64,6 +68,7 @@ class HierarchyDemoRosterSeeder extends Seeder
                 'program_code' => 'IBTECH',
                 'department_code' => 'AIML',
                 'division_code' => 'IBTECH-AIML-A',
+                'branch_code' => 'IBTECH-AIML',
                 'admission_year' => 2024,
                 'graduation_year' => 2029,
                 'current_semester' => 5,
@@ -75,6 +80,7 @@ class HierarchyDemoRosterSeeder extends Seeder
                 'program_code' => 'IMTECH',
                 'department_code' => 'DS',
                 'division_code' => 'IMTECH-DS-A',
+                'branch_code' => 'IMTECH-DS',
                 'admission_year' => 2024,
                 'graduation_year' => 2030,
                 'current_semester' => 5,
@@ -93,6 +99,13 @@ class HierarchyDemoRosterSeeder extends Seeder
                 ->where('is_active', true)
                 ->firstOrFail();
 
+            // The new hierarchy uses division_id. Keep a programme-specific branch alias
+            // as a compatibility value for older screens that still render branch data.
+            $branch = Branch::query()
+                ->where('department_id', $department->id)
+                ->where('code', $record['branch_code'])
+                ->firstOrFail();
+
             $user = User::query()->firstOrCreate(['email' => $record['email']], [
                 'name' => $record['name'],
                 'password' => $password,
@@ -107,7 +120,7 @@ class HierarchyDemoRosterSeeder extends Seeder
                     'full_name' => $record['name'],
                     'institutional_email' => $record['email'],
                     'department_id' => $department->id,
-                    'branch_id' => null,
+                    'branch_id' => $branch->id,
                     'division_id' => $division->id,
                     'admission_type' => AdmissionType::REGULAR->value,
                     'admission_year' => $record['admission_year'],
@@ -125,7 +138,7 @@ class HierarchyDemoRosterSeeder extends Seeder
                     'university_id' => $record['university_id'],
                     'full_name' => $record['name'],
                     'department_id' => $department->id,
-                    'branch_id' => null,
+                    'branch_id' => $branch->id,
                     'division_id' => $division->id,
                     'admission_type' => AdmissionType::REGULAR->value,
                     'admission_year' => $record['admission_year'],
