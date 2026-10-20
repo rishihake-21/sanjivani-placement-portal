@@ -1,5 +1,5 @@
 {{-- One notification. Supports legacy RecordReviewed notices and placement notices. --}}
-@use('App\\Support\\StudentUi', 'U')
+@use('App\Support\StudentUi', 'U')
 @php
   $title = $n['title'] ?? $n['subject'] ?? 'Notification';
   $body = $n['body'] ?? null;
