@@ -68,52 +68,71 @@ class UniversityStatsService
         ];
     }
 
-    /** One row per department ('department') or per branch ('branch'). */
+    /** One row per department or per division. The legacy 'branch' level is accepted as a division alias. */
     public function summaryBy(string $level, ?int $year = null): array
     {
-        $isBranch = $level === 'branch';
-        $groupColumn = $isBranch ? 's.branch_id' : 's.department_id';
+        $isDivision = in_array($level, ['branch', 'division'], true);
+        $groupColumn = $isDivision
+            ? "CASE WHEN s.division_id IS NOT NULL THEN 'D:' || s.division_id::text ELSE 'B:' || COALESCE(s.branch_id::text, '0') END"
+            : 's.department_id';
         $year = $year ?: null;
-        $yearFilter = fn (Builder $q) => $q->when($year, fn (Builder $w) => $w->where('s.graduation_year', $year));
+        $yearFilter = fn (Builder $query) => $query->when($year, fn (Builder $filtered) => $filtered->where('s.graduation_year', $year));
 
         $base = DB::table('students as s')
             ->join('departments as d', 'd.id', '=', 's.department_id');
-        if ($isBranch) {
-            $base->join('branches as b', 'b.id', '=', 's.branch_id');
+
+        if ($isDivision) {
+            $base->leftJoin('divisions as dv', 'dv.id', '=', 's.division_id')
+                ->leftJoin('branches as b', 'b.id', '=', 's.branch_id');
         }
 
-        $rows = $yearFilter($base)
-            ->selectRaw(($isBranch ? 'b.id as id, b.code as code, b.name as name, d.code as department, ' : 'd.id as id, d.code as code, d.name as name, ')
-                . 'count(*) as students, sum(case when s.opted_out_of_placement then 1 else 0 end) as opted_out')
-            ->groupBy($isBranch ? ['b.id', 'b.code', 'b.name', 'd.code'] : ['d.id', 'd.code', 'd.name'])
-            ->orderBy('code')->get();
+        if ($isDivision) {
+            $rows = $yearFilter($base)
+                ->selectRaw($groupColumn . ' as group_key')
+                ->selectRaw('s.division_id, s.branch_id, COALESCE(dv.code, b.code, \'UNASSIGNED\') as code, COALESCE(dv.name, b.name, \'Unassigned\') as name, d.code as department')
+                ->selectRaw('count(*) as students, sum(case when s.opted_out_of_placement then 1 else 0 end) as opted_out')
+                ->groupByRaw($groupColumn . ', s.division_id, s.branch_id, COALESCE(dv.code, b.code, \'UNASSIGNED\'), COALESCE(dv.name, b.name, \'Unassigned\'), d.code')
+                ->orderBy('code')->get();
+        } else {
+            $rows = $yearFilter($base)
+                ->selectRaw('d.id as id, d.code as code, d.name as name, count(*) as students, sum(case when s.opted_out_of_placement then 1 else 0 end) as opted_out')
+                ->groupBy('d.id', 'd.code', 'd.name')
+                ->orderBy('code')->get();
+        }
 
         $applied = $yearFilter(DB::table('applications as a')->join('students as s', 's.id', '=', 'a.student_id'))
-            ->selectRaw("{$groupColumn} as gid, count(distinct s.id) as n")->groupBy($groupColumn)->pluck('n', 'gid');
+            ->selectRaw($groupColumn . ' as gid, count(distinct s.id) as n')
+            ->groupByRaw($groupColumn)->pluck('n', 'gid');
 
         $placed = $yearFilter(DB::table('placements as p')->join('students as s', 's.id', '=', 'p.student_id')->where('p.status', 'PLACED'))
-            ->selectRaw("{$groupColumn} as gid, count(distinct s.id) as placed, max(p.ctc_lpa) as highest, avg(p.ctc_lpa) as average")
-            ->groupBy($groupColumn)->get()->keyBy('gid');
+            ->selectRaw($groupColumn . ' as gid, count(distinct s.id) as placed, max(p.ctc_lpa) as highest, avg(p.ctc_lpa) as average')
+            ->groupByRaw($groupColumn)->get()->keyBy('gid');
 
-        return $rows->map(function ($r) use ($applied, $placed, $isBranch) {
-            $p = $placed->get($r->id);
-            $eligible = (int) $r->students - (int) $r->opted_out;
-            $placedCount = (int) ($p->placed ?? 0);
+        return $rows->map(function ($row) use ($applied, $placed, $isDivision) {
+            $key = $isDivision ? $row->group_key : $row->id;
+            $placement = $placed->get($key);
+            $eligible = (int) $row->students - (int) $row->opted_out;
+            $placedCount = (int) ($placement->placed ?? 0);
+            $divisionId = $isDivision && $row->division_id !== null ? (int) $row->division_id : null;
+            $branchId = $isDivision && $row->branch_id !== null ? (int) $row->branch_id : null;
 
             return array_filter([
-                'id' => (int) $r->id,
-                'code' => $r->code,
-                'name' => $r->name,
-                'department' => $isBranch ? $r->department : null,
-                'students' => (int) $r->students,
-                'opted_out' => (int) $r->opted_out,
-                'applied' => (int) ($applied[$r->id] ?? 0),
+                'id' => $isDivision ? ($divisionId ?? $branchId ?? 0) : (int) $row->id,
+                'division_id' => $divisionId,
+                // Compatibility field for older reports clients.
+                'branch_id' => $branchId,
+                'code' => $row->code,
+                'name' => $row->name,
+                'department' => $isDivision ? $row->department : null,
+                'students' => (int) $row->students,
+                'opted_out' => (int) $row->opted_out,
+                'applied' => (int) ($applied[$key] ?? 0),
                 'placed' => $placedCount,
                 'unplaced' => max(0, $eligible - $placedCount),
                 'placement_percentage' => $eligible > 0 ? round($placedCount / $eligible * 100, 2) : null,
-                'highest_ctc_lpa' => $p?->highest !== null ? (float) $p->highest : null,
-                'average_ctc_lpa' => $p?->average !== null ? round((float) $p->average, 2) : null,
-            ], fn ($v, $k) => $k !== 'department' || $v !== null, ARRAY_FILTER_USE_BOTH);
+                'highest_ctc_lpa' => $placement?->highest !== null ? (float) $placement->highest : null,
+                'average_ctc_lpa' => $placement?->average !== null ? round((float) $placement->average, 2) : null,
+            ], fn ($value, $field) => ! in_array($field, ['division_id', 'branch_id', 'department'], true) || $value !== null, ARRAY_FILTER_USE_BOTH);
         })->values()->all();
     }
 
