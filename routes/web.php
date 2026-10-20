@@ -227,7 +227,13 @@ Route::get('/dashboard', [StudentPageController::class, 'dashboard'])->name('das
                 ->where('graduation_year', $student->graduation_year)
                 ->where(function ($target) use ($student) {
                     $target->whereHas('departments', fn ($department) => $department->where('departments.id', $student->department_id))
-                        ->orWhereHas('branches', fn ($branch) => $branch->where('branches.department_id', $student->department_id));
+                        ->orWhere(function ($legacy) use ($student) {
+                            $legacy->whereDoesntHave('departments')
+                                ->whereHas('branches', function ($branch) use ($student) {
+                                    $branch->where('branches.department_id', $student->department_id)
+                                        ->where('branches.code', '<>', 'CSE-AIML');
+                                });
+                        });
                 })
                 ->with(['company', 'eligibility', 'departments.program'])
                 ->orderByDesc('created_at')
