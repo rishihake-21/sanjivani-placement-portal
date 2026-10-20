@@ -65,7 +65,7 @@ class DriveController extends Controller
             ->where(fn (Builder $q) => $q
                 ->where(fn (Builder $t) => $this->scopeTargeted($t, $student))
                 ->orWhereHas('applications', fn (Builder $a) => $a->where('student_id', $student->id)))
-            ->with(['company', 'eligibility', 'branches'])
+            ->with(['company', 'eligibility', 'branches', 'departments.program'])
             ->findOrFail($id);
 
         $result = $this->engine->evaluate($student, $drive);
