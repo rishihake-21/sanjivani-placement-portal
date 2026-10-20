@@ -88,7 +88,7 @@ Seeded sign-in accounts use the password assigned to `TPMS_SEED_PASSWORD`:
 After seeding, verify the counts and division assignments before UI testing:
 
 ```powershell
-php artisan tinker --execute="dump(['programmes' => \App\Models\Program::count(), 'departments' => \App\Models\Department::count(), 'divisions' => \App\Models\Division::count(), 'students_without_division' => \Illuminate\Support\Facades\DB::table('students')->whereNull('division_id')->count(), 'master_list_without_division' => \Illuminate\Support\Facades\DB::table('student_master_list')->whereNull('division_id')->count()]);"
+php artisan tinker --execute="dump(['programmes' => \App\Models\Program::count(), 'departments' => \App\Models\Department::count(), 'divisions' => \App\Models\Division::count(), 'students' => \App\Models\Student::count(), 'cse_final_a_students' => \App\Models\Student::where('division_id', \App\Models\Division::where('code', 'FINAL-CSE-A')->value('id'))->count(), 'coordinators' => \App\Models\User::where('role', \App\Enums\Role::TP_COORDINATOR->value)->count(), 'students_without_division' => \Illuminate\Support\Facades\DB::table('students')->whereNull('division_id')->count(), 'master_list_without_division' => \Illuminate\Support\Facades\DB::table('student_master_list')->whereNull('division_id')->count()]);"
 ```
 Expected clean demo counts: 6 programmes, 14 departments, 43 divisions, 28 students, 14 department coordinators, and zero student/master-list rows without a division. Final Year CSE-A should contain exactly 20 of the demo students.
 
