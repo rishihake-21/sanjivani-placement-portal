@@ -145,6 +145,7 @@ class MasterListImporter
                 array_combine($header, array_slice(array_pad($cells, count($header), ''), 0, count($header)))
             );
             $row['university_id'] = strtoupper($row['university_id'] ?? '');
+            $row['institutional_email'] = trim((string) ($row['institutional_email'] ?? '')) ?: null;
             $row['admission_type'] = strtoupper($row['admission_type'] ?? '');
             $row['program_code'] = strtoupper($row['program_code'] ?? '');
             $row['department_code'] = strtoupper($row['department_code'] ?? '');
