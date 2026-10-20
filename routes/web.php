@@ -230,8 +230,7 @@ Route::get('/dashboard', [StudentPageController::class, 'dashboard'])->name('das
                         ->orWhere(function ($legacy) use ($student) {
                             $legacy->whereDoesntHave('departments')
                                 ->whereHas('branches', function ($branch) use ($student) {
-                                    $branch->where('branches.department_id', $student->department_id)
-                                        ->where('branches.code', '<>', 'CSE-AIML');
+                                    $branch->where('branches.department_id', $student->department_id);
                                 });
                         });
                 })
