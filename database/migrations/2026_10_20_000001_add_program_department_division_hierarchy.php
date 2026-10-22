@@ -171,40 +171,13 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('drive_departments');
-
-        $fallbackBranchId = DB::table('branches')->orderBy('id')->value('id');
-        if ($fallbackBranchId !== null) {
-            DB::table('student_master_list')->whereNull('branch_id')->update(['branch_id' => $fallbackBranchId]);
-            DB::table('students')->whereNull('branch_id')->update(['branch_id' => $fallbackBranchId]);
-            DB::statement('ALTER TABLE student_master_list ALTER COLUMN branch_id SET NOT NULL');
-            DB::statement('ALTER TABLE students ALTER COLUMN branch_id SET NOT NULL');
-        }
-
-        Schema::table('students', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('division_id');
-        });
-        Schema::table('student_master_list', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('division_id');
-        });
-
-        Schema::dropIfExists('divisions');
-
-        Schema::table('departments', function (Blueprint $table) {
-            $table->dropUnique('departments_program_id_name_unique');
-            $table->dropUnique('departments_program_id_code_unique');
-            $table->dropIndex('departments_program_id_index');
-            $table->dropConstrainedForeignId('program_id');
-        });
-
-        // Restore the original global uniqueness rules only if no cross-program duplicates
-        // have been created since this migration. If duplicates exist, rollback should stop
-        // instead of silently merging/removing legitimate programme-specific departments.
-        Schema::table('departments', function (Blueprint $table) {
-            $table->unique('name');
-            $table->unique('code');
-        });
-
-        Schema::dropIfExists('programs');
+        // This migration changes existing academic assignments (notably CSE-AIML) and
+        // introduces nullable legacy branch IDs. The original values are not stored, so
+        // an automatic rollback cannot restore the previous state without guessing.
+        // Fail before making any schema or data changes rather than assigning students
+        // to an arbitrary branch or silently corrupting academic history.
+        throw new \\RuntimeException(
+            'This academic hierarchy migration is not automatically reversible. Restore a verified database backup or create a reviewed forward migration.'
+        );
     }
 };
