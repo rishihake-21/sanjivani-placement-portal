@@ -23,7 +23,7 @@ class StudentSeeder extends Seeder
 {
     public function run(): void
     {
-        $password = env('TPMS_SEED_PASSWORD') ?: 'password';
+        $password = env('TPMS_SEED_PASSWORD')\n            ?: throw new \\RuntimeException('Set TPMS_SEED_PASSWORD before seeding.');
 
         $program = \App\Models\Program::query()->where('code', 'BTECH')->firstOrFail();
         $department = Department::query()
