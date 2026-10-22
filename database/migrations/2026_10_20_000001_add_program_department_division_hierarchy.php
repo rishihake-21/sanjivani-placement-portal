@@ -176,7 +176,7 @@ return new class extends Migration
         // an automatic rollback cannot restore the previous state without guessing.
         // Fail before making any schema or data changes rather than assigning students
         // to an arbitrary branch or silently corrupting academic history.
-        throw new \\RuntimeException(
+        throw new \RuntimeException(
             'This academic hierarchy migration is not automatically reversible. Restore a verified database backup or create a reviewed forward migration.'
         );
     }
