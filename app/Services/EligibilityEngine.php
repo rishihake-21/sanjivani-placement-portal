@@ -29,10 +29,22 @@ class EligibilityEngine
 
     public function evaluate(Student $student, PlacementDrive $drive): EligibilityResult
     {
+        $records = $student->relationLoaded('academicRecords')
+            ? $student->academicRecords
+            : $student->academicRecords()->verified()->get();
+
+        $snapshot = $this->academics->fromRecords($student, $records);
+
+        return $this->evaluateWithSnapshot($student, $drive, $snapshot);
+    }
+
+    public function evaluateWithSnapshot(Student $student, PlacementDrive $drive, VerifiedAcademicSnapshot $snapshot): EligibilityResult
+    {
         $drive->loadMissing(['eligibility', 'branches']);
 
-        $snapshot = $this->academics->fromRecords($student, $student->academicRecords()->verified()->get());
-        $placed = Placement::query()->where('student_id', $student->id)->where('status', 'PLACED')->exists();
+        $placed = $drive->allow_placed_students
+            ? false
+            : Placement::query()->where('student_id', $student->id)->where('status', 'PLACED')->exists();
 
         return $this->check($student, $drive, $snapshot, $placed);
     }
@@ -53,7 +65,9 @@ class EligibilityEngine
         $ids = $students->pluck('id')->all();
 
         $records = AcademicRecord::query()->verified()->whereIn('student_id', $ids)->get()->groupBy('student_id');
-        $placedIds = Placement::query()->where('status', 'PLACED')->whereIn('student_id', $ids)->pluck('student_id')->flip();
+        $placedIds = $drive->allow_placed_students
+            ? collect()
+            : Placement::query()->where('status', 'PLACED')->whereIn('student_id', $ids)->pluck('student_id')->flip();
 
         $results = [];
         foreach ($students as $student) {

@@ -13,6 +13,7 @@ use App\Notifications\PlacementNotice;
 use App\Support\StageTransitions;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -33,32 +34,48 @@ class ApplicationService
 
     public function apply(Student $student, PlacementDrive $drive, User $actor): Application
     {
-        try {
-            return DB::transaction(function () use ($student, $drive, $actor) {
-                $drive = PlacementDrive::query()->whereKey($drive->id)->lockForUpdate()->firstOrFail();
-                $drive->load(['company', 'eligibility', 'branches']);
+        $drive->loadMissing(['company', 'eligibility', 'branches']);
 
-                abort_unless($drive->status === DriveStatus::PUBLISHED, 409, 'This drive is not accepting applications.');
-                abort_if($drive->application_deadline === null || $drive->application_deadline->lte(now()), 409, 'The application deadline has passed.');
-                abort_if($student->isLocked(), 423, 'Your profile is locked. Contact the T&P office.');
+        abort_unless($drive->status === DriveStatus::PUBLISHED, 409, 'This drive is not accepting applications.');
+        abort_if($drive->application_deadline === null || $drive->application_deadline->lte(now()), 409, 'The application deadline has passed.');
+        abort_if($student->isLocked(), 423, 'Your profile is locked. Contact the T&P office.');
+        abort_if(
+            Application::query()->where('drive_id', $drive->id)->where('student_id', $student->id)->exists(),
+            409,
+            'You have already applied to this drive.'
+        );
+
+        // Load live academic records once and reuse across both completeness and eligibility checks.
+        $liveRecords = $student->relationLoaded('academicRecords')
+            ? $student->academicRecords
+            : $student->academicRecords()->live()->get();
+
+        $verifiedSnapshot = $this->academics->fromRecords($student, $liveRecords);
+        $result = $this->engine->evaluateWithSnapshot($student, $drive, $verifiedSnapshot);
+
+        if (! $result->isEligible()) {
+            throw ValidationException::withMessages(['eligibility' => $result->reasons() ?: ['You are not eligible for this drive.']]);
+        }
+
+        $summary = $this->completeness->summarize($student, $liveRecords);
+        if (! $summary['can_apply']) {
+            throw ValidationException::withMessages([
+                'profile' => array_map(fn ($b) => $b['hint'], $summary['blockers']) ?: ['Your profile is not ready to apply.'],
+            ]);
+        }
+
+        try {
+            return DB::transaction(function () use ($student, $drive, $actor, $verifiedSnapshot, $result) {
+                // Re-verify drive is still published without holding an exclusive row lock on placement_drives
+                // across thousands of concurrent student applications.
+                $freshDrive = PlacementDrive::query()->whereKey($drive->id)->firstOrFail();
+                abort_unless($freshDrive->status === DriveStatus::PUBLISHED, 409, 'This drive is not accepting applications.');
+                abort_if($freshDrive->application_deadline === null || $freshDrive->application_deadline->lte(now()), 409, 'The application deadline has passed.');
                 abort_if(
                     Application::query()->where('drive_id', $drive->id)->where('student_id', $student->id)->exists(),
                     409,
                     'You have already applied to this drive.'
                 );
-
-                // Evaluated NOW against verified data - never trust an earlier "eligible".
-                $result = $this->engine->evaluate($student, $drive);
-                if (! $result->isEligible()) {
-                    throw ValidationException::withMessages(['eligibility' => $result->reasons() ?: ['You are not eligible for this drive.']]);
-                }
-
-                $summary = $this->completeness->summarize($student);
-                if (! $summary['can_apply']) {
-                    throw ValidationException::withMessages([
-                        'profile' => array_map(fn ($b) => $b['hint'], $summary['blockers']) ?: ['Your profile is not ready to apply.'],
-                    ]);
-                }
 
                 $now = now();
                 $application = Application::create([
@@ -74,7 +91,7 @@ class ApplicationService
                             'current_semester' => $student->current_semester,
                             'admission_type' => $student->admission_type->value,
                         ],
-                        'verified_academics' => $this->academics->forStudent($student)->toArray(),
+                        'verified_academics' => $verifiedSnapshot->toArray(),
                         'eligibility' => $result->toArray(),
                         'drive_criteria' => $drive->eligibility?->only(DriveService::ELIGIBILITY_FIELDS),
                     ],
@@ -131,8 +148,10 @@ class ApplicationService
         $ids = array_values(array_unique($applicationIds));
 
         return DB::transaction(function () use ($tpo, $drive, $ids, $to, $remarks, $force) {
+            $drive->loadMissing('company');
             $applications = Application::query()->where('drive_id', $drive->id)->whereIn('id', $ids)
-                ->orderBy('id')->lockForUpdate()->with('drive.company', 'student.user')->get();
+                ->orderBy('id')->lockForUpdate()->with('student:id,user_id')->get()
+                ->each(fn (Application $a) => $a->setRelation('drive', $drive));
 
             $errors = [];
             foreach (array_diff($ids, $applications->pluck('id')->all()) as $missing) {
@@ -147,8 +166,77 @@ class ApplicationService
                 throw ValidationException::withMessages(['application_ids' => array_slice($errors, 0, 50)]);
             }
 
+            $now = now();
+            $auditAction = $force ? 'application.stage_corrected' : 'application.stage_changed';
+            $request = request();
+            $metaJson = json_encode([
+                'remarks' => $remarks,
+                'ip' => $request?->ip(),
+                'user_agent' => $request ? substr((string) $request->userAgent(), 0, 255) : null,
+            ]);
+
+            // Bulk update application stages in 1 query instead of N queries
+            Application::query()->whereIn('id', $applications->pluck('id'))->update([
+                'stage' => $to->value,
+                'stage_updated_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            $historyRows = [];
+            $auditRows = [];
+            $notificationRows = [];
+            $title = $drive->company->name . ': ' . str_replace('_', ' ', $to->value);
+
             foreach ($applications as $application) {
-                $this->move($application, $to, $tpo, $remarks, $force ? 'application.stage_corrected' : 'application.stage_changed');
+                $fromValue = $application->stage->value;
+
+                $historyRows[] = [
+                    'application_id' => $application->id,
+                    'from_stage' => $fromValue,
+                    'to_stage' => $to->value,
+                    'changed_by' => $tpo->id,
+                    'remarks' => $remarks,
+                    'created_at' => $now,
+                ];
+
+                $auditRows[] = [
+                    'actor_id' => $tpo->id,
+                    'actor_role' => $tpo->role?->value,
+                    'action' => $auditAction,
+                    'subject_type' => 'Application',
+                    'subject_id' => $application->id,
+                    'student_id' => $application->student_id,
+                    'old_values' => json_encode(['stage' => $fromValue]),
+                    'new_values' => json_encode(['stage' => $to->value]),
+                    'meta' => $metaJson,
+                    'created_at' => $now,
+                ];
+
+                if ($application->student?->user_id !== null && $tpo->id !== $application->student->user_id) {
+                    $notificationRows[] = [
+                        'id' => (string) Str::uuid(),
+                        'type' => PlacementNotice::class,
+                        'notifiable_type' => User::class,
+                        'notifiable_id' => $application->student->user_id,
+                        'data' => json_encode([
+                            'kind' => 'stage_changed',
+                            'title' => $title,
+                            'body' => $remarks,
+                            'application_id' => $application->id,
+                            'stage' => $to->value,
+                        ]),
+                        'read_at' => null,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                }
+            }
+
+            ApplicationStatusHistory::insert($historyRows);
+            DB::table('audit_logs')->insert($auditRows);
+
+            if ($notificationRows !== []) {
+                DB::afterCommit(fn () => DB::table('notifications')->insert($notificationRows));
             }
 
             return $applications->count();

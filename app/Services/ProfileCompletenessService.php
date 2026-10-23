@@ -18,15 +18,23 @@ class ProfileCompletenessService
 {
     private const RANK = ['COMPLETE' => 0, 'OPTIONAL_EMPTY' => 0, 'IN_REVIEW' => 1, 'INCOMPLETE' => 2, 'ACTION_REQUIRED' => 3];
 
-    public function summarize(Student $student): array
+    public function summarize(Student $student, ?Collection $preloadedRecords = null): array
     {
-        $records = $student->academicRecords()->live()->get();
-        $experiences = $student->experiences()->live()->get();
-        $resume = $student->documents()
-            ->where('document_type', DocumentType::RESUME->value)
-            ->where('is_primary', true)
-            ->where('status', '<>', DocumentStatus::SUPERSEDED->value)
-            ->first();
+        $records = $preloadedRecords ?? ($student->relationLoaded('academicRecords')
+            ? $student->academicRecords->filter(fn ($r) => $r->status !== RecordStatus::SUPERSEDED)
+            : $student->academicRecords()->live()->get());
+
+        $experiences = $student->relationLoaded('experiences')
+            ? $student->experiences->filter(fn ($e) => $e->status !== RecordStatus::SUPERSEDED)
+            : $student->experiences()->live()->get();
+
+        $resume = $student->relationLoaded('documents')
+            ? $student->documents->first(fn ($d) => $d->document_type === DocumentType::RESUME && $d->is_primary && $d->status !== DocumentStatus::SUPERSEDED)
+            : $student->documents()
+                ->where('document_type', DocumentType::RESUME->value)
+                ->where('is_primary', true)
+                ->where('status', '<>', DocumentStatus::SUPERSEDED->value)
+                ->first();
 
         $sections = [
             'A_identity' => $this->identity($student),

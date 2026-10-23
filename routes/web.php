@@ -50,7 +50,7 @@ Route::get('/login', [AuthPageController::class, 'showLogin'])
 
 Route::post('/login', [AuthPageController::class, 'login'])
     ->name('login.post')
-    ->middleware('guest');
+    ->middleware(['guest', 'throttle:auth-login']);
 
 
 Route::get('/register', [AuthPageController::class, 'showRegister'])
@@ -60,7 +60,7 @@ Route::get('/register', [AuthPageController::class, 'showRegister'])
 
 Route::post('/register', [AuthPageController::class, 'register'])
     ->name('register.post')
-    ->middleware('guest');
+    ->middleware(['guest', 'throttle:auth-register']);
 
 
 Route::post('/logout', [AuthPageController::class, 'logout'])
@@ -112,7 +112,7 @@ Route::middleware(['auth', 'role:student'])
         |--------------------------------------------------------------------------
         */
 
-Route::get('/dashboard', [StudentPageController::class, 'dashboard'])->name('dashboard');
+        Route::get('/dashboard', [StudentPageController::class, 'dashboard'])->name('dashboard');
 
 
         /*
@@ -221,7 +221,10 @@ Route::get('/dashboard', [StudentPageController::class, 'dashboard'])->name('das
             $student = $request->user()->student;
 
             $drives = \App\Models\PlacementDrive::query()
+                ->with(['company:id,name', 'eligibility', 'branches'])
                 ->where('status', \App\Enums\DriveStatus::PUBLISHED)
+                ->where('graduation_year', $student->graduation_year)
+                ->whereHas('branches', fn ($b) => $b->where('branches.id', $student->branch_id))
                 ->orderByDesc('created_at')
                 ->get();
 
@@ -239,7 +242,7 @@ Route::get('/dashboard', [StudentPageController::class, 'dashboard'])->name('das
 
             $student = $request->user()->student;
 
-            $drive->load('branches.department');
+            $drive->load(['company', 'eligibility', 'branches.department']);
 
             $engine = app(\App\Services\EligibilityEngine::class);
             $eligibility = $engine->evaluate($student, $drive);
@@ -249,7 +252,7 @@ Route::get('/dashboard', [StudentPageController::class, 'dashboard'])->name('das
                 'user' => $request->user(),
                 'student' => $student,
                 'drive' => $drive,
-                'isEligible' => $eligibility->eligible ?? false,
+                'isEligible' => $eligibility->isEligible(),
                 'hasApplied' => $student->applications()
                     ->where('drive_id', $drive->id)
                     ->exists(),
@@ -262,19 +265,15 @@ Route::get('/dashboard', [StudentPageController::class, 'dashboard'])->name('das
 
             $student = $request->user()->student;
 
+            $drive->loadMissing(['company', 'eligibility', 'branches']);
+
             $engine = app(\App\Services\EligibilityEngine::class);
             $eligibility = $engine->evaluate($student, $drive);
 
-            $hasApplied = $student->applications()
+            $application = $student->applications()
                 ->where('drive_id', $drive->id)
-                ->exists();
-
-            $application = null;
-            if ($hasApplied) {
-                $application = $student->applications()
-                    ->where('drive_id', $drive->id)
-                    ->first();
-            }
+                ->first();
+            $hasApplied = $application !== null;
 
             // Get primary resume
             $resume = $student->documents()
@@ -311,7 +310,7 @@ Route::get('/dashboard', [StudentPageController::class, 'dashboard'])->name('das
                 'active' => 'student.applications',
                 'user' => $request->user(),
                 'student' => $student,
-                'applications' => $student->applications()->with('drive')->latest()->get(),
+                'applications' => $student->applications()->with('drive.company')->latest()->get(),
             ]);
 
         })->name('applications');

@@ -19,10 +19,11 @@ trait PresentsStudentDetail
             'documents' => fn ($q) => $q->where('status', '<>', 'SUPERSEDED')->orderBy('document_type'),
         ]);
 
+        // Reuse already eager-loaded relations on $student to eliminate 4 duplicate SQL queries per page view.
         return [
             'student' => new StudentResource($student),
             'completeness' => app(ProfileCompletenessService::class)->summarize($student),
-            'verified_academics' => app(VerifiedAcademicProfileService::class)->forStudent($student)->toArray(),
+            'verified_academics' => app(VerifiedAcademicProfileService::class)->fromRecords($student, $student->academicRecords)->toArray(),
         ];
     }
 }

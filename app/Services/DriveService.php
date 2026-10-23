@@ -13,6 +13,7 @@ use App\Notifications\PlacementNotice;
 use App\Support\StageTransitions;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -153,13 +154,41 @@ class DriveService
             $drive->forceFill(['status' => DriveStatus::CANCELLED, 'cancel_reason' => $reason, 'closed_at' => now()])->save();
             $this->audit->record('drive.cancelled', $drive, null, ['status' => $was], ['status' => 'CANCELLED'], $tpo, ['reason' => $reason]);
 
-            // Tell everyone who is still in the process, once the cancellation has committed.
+            // Bulk-insert notifications in chunks of 500 instead of N individual queries.
             DB::afterCommit(function () use ($drive, $reason) {
-                Application::query()->where('drive_id', $drive->id)->with('student.user')->get()
-                    ->filter(fn (Application $a) => StageTransitions::withdrawable($a->stage))
-                    ->each(fn (Application $a) => $a->student->user->notify(new PlacementNotice(
-                        'drive_cancelled', 'Drive cancelled: ' . $drive->company->name . ' - ' . $drive->title, $reason, ['drive_id' => $drive->id]
-                    )));
+                $title = 'Drive cancelled: ' . $drive->company->name . ' - ' . $drive->title;
+                $payload = json_encode([
+                    'kind' => 'drive_cancelled',
+                    'title' => $title,
+                    'body' => $reason,
+                    'drive_id' => $drive->id,
+                ]);
+
+                Application::query()
+                    ->where('drive_id', $drive->id)
+                    ->with('student:id,user_id')
+                    ->chunkById(500, function ($applications) use ($payload) {
+                        $now = now();
+                        $inserts = [];
+                        foreach ($applications as $application) {
+                            if (! StageTransitions::withdrawable($application->stage) || $application->student?->user_id === null) {
+                                continue;
+                            }
+                            $inserts[] = [
+                                'id' => (string) Str::uuid(),
+                                'type' => PlacementNotice::class,
+                                'notifiable_type' => User::class,
+                                'notifiable_id' => $application->student->user_id,
+                                'data' => $payload,
+                                'read_at' => null,
+                                'created_at' => $now,
+                                'updated_at' => $now,
+                            ];
+                        }
+                        if ($inserts !== []) {
+                            DB::table('notifications')->insert($inserts);
+                        }
+                    });
             });
 
             return $this->loaded($drive);

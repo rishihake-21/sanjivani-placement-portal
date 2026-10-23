@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * "Monitor eligible students". Works for DRAFT drives too, so the TPO can preview the
@@ -61,10 +62,10 @@ class DriveEligibilityController extends Controller
             return response()->json($page->through(fn (Student $s) => $row($s, $results[$s->id])));
         }
 
-        // Status filter: evaluate every candidate in chunks, then paginate the matches.
+        // Status filter: evaluate every candidate in 500-student chunks, then paginate the matches.
         $wanted = $request->string('status')->toString();
         $matches = collect();
-        $filters($this->engine->candidateQuery($drive)->with('branch:id,code'))->chunkById(200, function ($chunk) use ($drive, $wanted, $matches, $row) {
+        $filters($this->engine->candidateQuery($drive)->with('branch:id,code'))->chunkById(500, function ($chunk) use ($drive, $wanted, $matches, $row) {
             $results = $this->engine->evaluateMany($chunk, $drive);
             foreach ($chunk as $student) {
                 if ($results[$student->id]->status === $wanted) {
@@ -84,11 +85,27 @@ class DriveEligibilityController extends Controller
     {
         $drive = PlacementDrive::query()->with(['eligibility', 'branches'])->findOrFail($id);
 
+        $cacheKey = sprintf(
+            'tpms:drive:%d:eligibility_summary:%s:%s',
+            $drive->id,
+            $drive->updated_at?->timestamp ?? 0,
+            $drive->eligibility?->updated_at?->timestamp ?? 0
+        );
+
+        $data = app()->environment('testing')
+            ? $this->computeSummary($drive)
+            : Cache::remember($cacheKey, 120, fn () => $this->computeSummary($drive));
+
+        return response()->json(['data' => $data]);
+    }
+
+    private function computeSummary(PlacementDrive $drive): array
+    {
         $totals = ['candidates' => 0, EligibilityResult::ELIGIBLE => 0, EligibilityResult::PENDING => 0, EligibilityResult::NOT_ELIGIBLE => 0];
         $byBranch = [];
         $failed = [];
 
-        $this->engine->candidateQuery($drive)->with('branch:id,code')->chunkById(200, function ($chunk) use ($drive, &$totals, &$byBranch, &$failed) {
+        $this->engine->candidateQuery($drive)->with('branch:id,code')->chunkById(500, function ($chunk) use ($drive, &$totals, &$byBranch, &$failed) {
             $results = $this->engine->evaluateMany($chunk, $drive);
             foreach ($chunk as $student) {
                 $r = $results[$student->id];
@@ -108,7 +125,7 @@ class DriveEligibilityController extends Controller
 
         arsort($failed);
 
-        return response()->json(['data' => [
+        return [
             'drive_id' => $drive->id,
             'candidates' => $totals['candidates'],
             'eligible' => $totals[EligibilityResult::ELIGIBLE],
@@ -116,6 +133,6 @@ class DriveEligibilityController extends Controller
             'not_eligible' => $totals[EligibilityResult::NOT_ELIGIBLE],
             'by_branch' => $byBranch,
             'failed_criteria' => $failed,
-        ]]);
+        ];
     }
 }

@@ -7,7 +7,6 @@ use App\Models\Department;
 use App\Models\MasterListEntry;
 use App\Models\Student;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -37,45 +36,74 @@ class MasterListImporter
 
         return DB::transaction(function () use ($rows, $batch) {
             $created = $updated = 0;
+            $now = now();
 
-            foreach ($rows as $row) {
-                $attributes = [
-                    'full_name' => $row['full_name'],
-                    'institutional_email' => $row['institutional_email'] ?: null,
-                    'department_id' => $row['_department_id'],
-                    'branch_id' => $row['_branch_id'],
-                    'admission_type' => $row['admission_type'],
-                    'admission_year' => (int) $row['admission_year'],
-                    'graduation_year' => (int) $row['graduation_year'],
-                    'current_semester' => (int) $row['current_semester'],
-                    'import_batch' => $batch,
-                ];
+            foreach (array_chunk($rows, 500) as $chunk) {
+                $uniIds = array_column($chunk, 'university_id');
+                $existingEntries = MasterListEntry::query()
+                    ->whereIn('university_id', $uniIds)
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy('university_id');
 
-                $entry = MasterListEntry::query()->where('university_id', $row['university_id'])->lockForUpdate()->first();
+                $claimedEntryIds = $existingEntries
+                    ->filter(fn (MasterListEntry $e) => $e->isClaimed())
+                    ->pluck('id')
+                    ->all();
 
-                if ($entry === null) {
-                    MasterListEntry::create(['university_id' => $row['university_id']] + $attributes);
-                    $created++;
-                    continue;
+                $claimedStudentsByMasterId = $claimedEntryIds !== []
+                    ? Student::query()->whereIn('master_list_id', $claimedEntryIds)->get()->keyBy('master_list_id')
+                    : collect();
+
+                $newRows = [];
+
+                foreach ($chunk as $row) {
+                    $attributes = [
+                        'full_name' => $row['full_name'],
+                        'institutional_email' => $row['institutional_email'] ?: null,
+                        'department_id' => $row['_department_id'],
+                        'branch_id' => $row['_branch_id'],
+                        'admission_type' => $row['admission_type'],
+                        'admission_year' => (int) $row['admission_year'],
+                        'graduation_year' => (int) $row['graduation_year'],
+                        'current_semester' => (int) $row['current_semester'],
+                        'import_batch' => $batch,
+                    ];
+
+                    /** @var MasterListEntry|null $entry */
+                    $entry = $existingEntries->get($row['university_id']);
+
+                    if ($entry === null) {
+                        $newRows[] = [
+                            'university_id' => $row['university_id'],
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ] + $attributes;
+                        $created++;
+                        continue;
+                    }
+
+                    // A registered student keeps their own name; the master list only moves them along.
+                    if ($entry->isClaimed()) {
+                        unset($attributes['full_name'], $attributes['institutional_email']);
+                        $this->syncRegisteredStudent($claimedStudentsByMasterId->get($entry->id), $attributes);
+                    }
+
+                    $entry->update($attributes);
+                    $updated++;
                 }
 
-                // A registered student keeps their own name; the master list only moves them along.
-                if ($entry->isClaimed()) {
-                    unset($attributes['full_name'], $attributes['institutional_email']);
-                    $this->syncRegisteredStudent($entry, $attributes);
+                if ($newRows !== []) {
+                    MasterListEntry::insert($newRows);
                 }
-
-                $entry->update($attributes);
-                $updated++;
             }
 
             return ['created' => $created, 'updated' => $updated];
         });
     }
 
-    private function syncRegisteredStudent(MasterListEntry $entry, array $attributes): void
+    private function syncRegisteredStudent(?Student $student, array $attributes): void
     {
-        $student = Student::query()->where('master_list_id', $entry->id)->first();
         if ($student === null) {
             return;
         }
@@ -128,19 +156,8 @@ class MasterListImporter
             $row['university_id'] = strtoupper($row['university_id']);
             $row['admission_type'] = strtoupper($row['admission_type']);
 
-            $validator = Validator::make($row, [
-                'university_id' => ['required', 'string', 'max:30'],
-                'full_name' => ['required', 'string', 'max:150'],
-                'institutional_email' => ['nullable', 'email', 'max:190'],
-                'department_code' => ['required', 'string'],
-                'branch_code' => ['required', 'string'],
-                'admission_type' => ['required', 'in:REGULAR,LATERAL'],
-                'admission_year' => ['required', 'integer', 'between:2000,2100'],
-                'graduation_year' => ['required', 'integer', 'gt:admission_year'],
-                'current_semester' => ['required', 'integer', 'between:1,8'],
-            ]);
-
-            $rowErrors = $validator->errors()->all();
+            // Fast native row validation (avoids instantiating 40,000 Validator objects on bulk CSV imports)
+            $rowErrors = $this->validateRow($row);
 
             if ($rowErrors === []) {
                 $deptId = $departments->get($row['department_code']);
@@ -179,5 +196,46 @@ class MasterListImporter
         }
 
         return $rows;
+    }
+
+    /** @return list<string> */
+    private function validateRow(array $row): array
+    {
+        $errors = [];
+
+        if ($row['university_id'] === '' || mb_strlen($row['university_id']) > 30) {
+            $errors[] = 'The university id field is required and must not exceed 30 characters.';
+        }
+        if ($row['full_name'] === '' || mb_strlen($row['full_name']) > 150) {
+            $errors[] = 'The full name field is required and must not exceed 150 characters.';
+        }
+        if ($row['institutional_email'] !== '' && (mb_strlen($row['institutional_email']) > 190 || filter_var($row['institutional_email'], FILTER_VALIDATE_EMAIL) === false)) {
+            $errors[] = 'The institutional email field must be a valid email address.';
+        }
+        if ($row['department_code'] === '') {
+            $errors[] = 'The department code field is required.';
+        }
+        if ($row['branch_code'] === '') {
+            $errors[] = 'The branch code field is required.';
+        }
+        if (! in_array($row['admission_type'], ['REGULAR', 'LATERAL'], true)) {
+            $errors[] = 'The selected admission type is invalid.';
+        }
+
+        $admYear = filter_var($row['admission_year'], FILTER_VALIDATE_INT);
+        $gradYear = filter_var($row['graduation_year'], FILTER_VALIDATE_INT);
+        $sem = filter_var($row['current_semester'], FILTER_VALIDATE_INT);
+
+        if ($admYear === false || $admYear < 2000 || $admYear > 2100) {
+            $errors[] = 'The admission year field must be between 2000 and 2100.';
+        }
+        if ($gradYear === false || ($admYear !== false && $gradYear <= $admYear)) {
+            $errors[] = 'The graduation year field must be greater than admission year.';
+        }
+        if ($sem === false || $sem < 1 || $sem > 8) {
+            $errors[] = 'The current semester field must be between 1 and 8.';
+        }
+
+        return $errors;
     }
 }
