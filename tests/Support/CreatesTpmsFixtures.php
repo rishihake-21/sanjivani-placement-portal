@@ -65,10 +65,11 @@ trait CreatesTpmsFixtures
     {
         $department ??= $this->cse;
 
-        return User::create([
-            'name' => 'Coordinator ' . $department->code, 'email' => strtolower($department->code) . '.coord@college.test',
-            'password' => 'Password123', 'role' => Role::TP_COORDINATOR, 'department_id' => $department->id,
-        ]);
+        // Idempotent: a test may ask for "the CSE coordinator" more than once.
+        return User::firstOrCreate(
+            ['email' => strtolower($department->code) . '.coord@college.test'],
+            ['name' => 'Coordinator ' . $department->code, 'password' => 'Password123', 'role' => Role::TP_COORDINATOR, 'department_id' => $department->id, 'is_active' => true],
+        );
     }
 
     protected function pdf(string $name = 'marksheet.pdf'): UploadedFile
