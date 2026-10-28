@@ -42,11 +42,11 @@
         fillRows($('#drive-rows'), res.data, (d) => [
           `<a class="linkbtn" href="${base}/${d.id}">${esc(d.title)}</a><span class="sub">${esc(d.company ? d.company.name : '')}${d.location ? ' &middot; ' + esc(d.location) : ''}</span>`,
           d.ctc_lpa == null ? dash : lpa(d.ctc_lpa) + (d.ctc_max_lpa ? `<span class="sub">up to ${Number(d.ctc_max_lpa).toFixed(2)} LPA</span>` : ''),
-          d.application_deadline ? fmtDT(d.application_deadline) : dash,
+          { html: d.application_deadline ? fmtDT(d.application_deadline) : dash, cls: 'nw' },
           `<span class="num">${esc(d.graduation_year)}</span>`,
           { html: `<span class="num">${esc(d.applications_count)}</span>`, cls: 'nw' },
           badge('drive', d.status),
-          { html: `<a class="btn btn-secondary" href="${base}/${d.id}">Open</a>`, cls: 'act' },
+          { html: `<a class="btn btn-quiet btn-sm" href="${base}/${d.id}">Open</a>`, cls: 'act' },
         ], 'No drives match these filters.');
         pager($('#pager'), res, (p) => { page = p; load(); });
       } catch (e) { fail(e); }

@@ -5,69 +5,59 @@
 
 @section('content')
   <x-ui.page-header title="Placement dashboard" meta="University-wide numbers. Only verified placements count as placed.">
-    <div class="field" style="min-width:180px">
-      <label for="flt-graduation_year">Batch (graduation year)</label>
-      <select id="flt-graduation_year" data-filter="graduation_year">
-        <option value="">All batches</option>
-        @foreach ($years as $year)
-          <option value="{{ $year }}">{{ $year }}</option>
-        @endforeach
-      </select>
-    </div>
+    <x-ui.segmented name="graduation_year" label="Batch" all-label="All batches" :options="array_combine($years, $years)" />
   </x-ui.page-header>
 
   <div id="dash-error"></div>
 
   <div class="stack">
-    <x-ui.card id="outcome" title="Placement outcome">
-      <div class="stat-grid">
-        <x-ui.stat id="s-students" label="Students" />
-        <x-ui.stat id="s-placed" label="Placed" />
-        <x-ui.stat id="s-pct" label="Placement %" />
-        <x-ui.stat id="s-high" label="Highest CTC" />
-        <x-ui.stat id="s-avg" label="Average CTC" />
-      </div>
-      <p class="meta" style="margin-top:16px" id="s-note"></p>
-    </x-ui.card>
-
-    <x-ui.card id="activity" title="Recruitment activity">
-      <div class="stat-grid">
-        <x-ui.stat id="s-live" label="Drives live" />
-        <x-ui.stat id="s-apps" label="Applications" />
-        <x-ui.stat id="s-recruiting" label="In recruitment" />
-        <x-ui.stat id="s-selected" label="Selected" />
-        <x-ui.stat id="s-offers" label="Offers to verify" />
-      </div>
-    </x-ui.card>
-
     <div class="grid">
-      <x-ui.card id="stages" title="Applications by stage" class="c6">
-        <div class="tbl-wrap">
-          <table class="tbl" data-cols='["Stage","Applications","Share"]'>
-            <thead><tr><th>Stage</th><th>Applications</th><th>Share</th></tr></thead>
-            <tbody id="stage-rows"><tr><td colspan="3"><div class="skel" style="width:60%"></div></td></tr></tbody>
-          </table>
+      <x-ui.card id="outcome" title="Placement outcome" class="c7">
+        <div class="hero">
+          <div>
+            <span class="cap">Placement rate</span>
+            <div class="hero-v" id="h-pct">&ndash;</div>
+            <div class="meter" role="progressbar" aria-labelledby="h-pct" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="h-meter"></i></div>
+            <p class="meta" id="h-note">&nbsp;</p>
+          </div>
+          <dl class="hero-side">
+            <div><dt>Placed</dt><dd id="s-placed">&ndash;</dd></div>
+            <div><dt>Unplaced</dt><dd id="s-unplaced">&ndash;</dd></div>
+            <div><dt>Highest CTC</dt><dd id="s-high">&ndash;</dd></div>
+            <div><dt>Average CTC</dt><dd id="s-avg">&ndash;</dd></div>
+          </dl>
         </div>
       </x-ui.card>
 
-      <x-ui.card id="attention" title="Needs attention" class="c6">
-        <div class="list" id="attention-list"><div class="skel"></div><div class="skel" style="width:70%"></div></div>
+      <x-ui.card id="attention" title="Needs attention" class="c5">
+        <x-slot:actions><span class="badge b-wait" id="attn-count" hidden></span></x-slot:actions>
+        <ul class="queue" id="attention-list"><li><div class="skel" style="width:100%"></div></li></ul>
       </x-ui.card>
     </div>
 
+    <x-ui.card id="pipeline" title="Applications by current stage">
+      <x-slot:actions><a class="btn btn-quiet btn-sm" href="{{ route('tpo.applications') }}">All applications</a></x-slot:actions>
+      <p class="meta" id="pipe-summary" style="margin:-8px 0 16px">&nbsp;</p>
+      <div class="pipe" id="pipe"></div>
+      <div class="pipe-foot" id="pipe-foot"></div>
+    </x-ui.card>
+
     <x-ui.card id="closing" title="Drives closing in the next 7 days">
-      <x-slot:actions><a class="linkbtn" href="{{ route('tpo.drives') }}?status=PUBLISHED">All live drives</a></x-slot:actions>
+      <x-slot:actions>
+        <span class="meta num" id="live-count"></span>
+        <a class="btn btn-quiet btn-sm" href="{{ route('tpo.drives') }}?status=PUBLISHED">All live drives</a>
+      </x-slot:actions>
       <x-ui.table id="closing-rows" :cols="['Company', 'Role', 'Deadline', '']" />
     </x-ui.card>
 
     <x-ui.card id="departments" title="Departments">
-      <x-slot:actions><a class="linkbtn" href="{{ route('tpo.reports') }}">Full reports</a></x-slot:actions>
-      <x-ui.table id="dept-rows" :cols="['Department', 'Students', 'Applied', 'Placed', 'Unplaced', 'Placement %', 'Highest CTC', 'Average CTC']" />
+      <x-slot:actions><a class="btn btn-quiet btn-sm" href="{{ route('tpo.reports') }}">Full reports</a></x-slot:actions>
+      <x-ui.table class="nums" id="dept-rows" :cols="['Department', 'Students', 'Applied', 'Placed', 'Unplaced', 'Placement %', 'Highest CTC', 'Average CTC']" />
     </x-ui.card>
 
     <x-ui.card id="companies" title="Companies">
-      <x-slot:actions><a class="linkbtn" href="{{ route('tpo.reports') }}#sec-companies">All companies</a></x-slot:actions>
-      <x-ui.table id="company-rows" :cols="['Company', 'Drives', 'Applications', 'Selected', 'Placed', 'Highest CTC']" />
+      <x-slot:actions><a class="btn btn-quiet btn-sm" href="{{ route('tpo.reports') }}#sec-companies">All companies</a></x-slot:actions>
+      <x-ui.table class="nums" id="company-rows" :cols="['Company', 'Drives', 'Applications', 'Selected', 'Placed', 'Highest CTC']" />
     </x-ui.card>
   </div>
 @endsection
@@ -75,10 +65,17 @@
 @push('scripts')
 <script>
   (function () {
-    const { $, api, esc, fillRows, badge, label, num2, lpa, pct, fmtDT, dash, notice, fail, syncQuery, readFilters, filterValues, orDash } = TPMS;
+    const { $, api, esc, icon, fillRows, label, num2, lpa, fmtDT, dash, notice, fail, syncQuery, readFilters, filterValues } = TPMS;
     const drivesUrl = @json(route('tpo.drives'));
-    const setStat = (id, html) => { $('#' + id).innerHTML = html; };
+    const appsUrl = @json(route('tpo.applications'));
+    const placementsUrl = @json(route('tpo.placements'));
     const n = (v) => `<span class="num">${esc(v == null ? 0 : v)}</span>`;
+    const plural = (c, one, many) => `${c} ${c === 1 ? one : many}`;
+
+    // The eight stages a student moves through, in order. The last three mean "selected or better".
+    const PIPELINE = ['APPLIED', 'SHORTLISTED', 'APTITUDE', 'TECHNICAL', 'HR', 'SELECTED', 'OFFER_RECEIVED', 'PLACED'];
+    const END = ['SELECTED', 'OFFER_RECEIVED', 'PLACED'];
+    const SHORT = { OFFER_RECEIVED: 'Offer' };
 
     async function load() {
       const year = filterValues(document).graduation_year;
@@ -98,45 +95,83 @@
       }
     }
 
-    function render(d, depts, comps) {
-      const s = d.students, p = d.placements, a = d.applications;
-      setStat('s-students', n(s.total));
-      setStat('s-placed', n(p.placed_students));
-      setStat('s-pct', p.placement_percentage == null ? '&ndash;' : n(num2(p.placement_percentage) + '%'));
-      setStat('s-high', p.highest_ctc_lpa == null ? '&ndash;' : n(num2(p.highest_ctc_lpa) + ' LPA'));
-      setStat('s-avg', p.average_ctc_lpa == null ? '&ndash;' : n(num2(p.average_ctc_lpa) + ' LPA'));
-      $('#s-note').textContent = `${s.opted_out_of_placement} opted out of placements and are left out of the percentage. ${p.unplaced_students} students are still unplaced.`;
+    function renderOutcome(d) {
+      const s = d.students, p = d.placements;
+      const rate = p.placement_percentage;
+      const counted = s.total - s.opted_out_of_placement;
+      $('#h-pct').textContent = rate == null ? '–' : num2(rate) + '%';
+      const meter = $('#h-meter');
+      meter.style.width = Math.max(0, Math.min(100, rate || 0)) + '%';
+      meter.parentNode.setAttribute('aria-valuenow', String(Math.round(rate || 0)));
+      $('#h-note').textContent = counted > 0
+        ? `${p.placed_students} of ${plural(counted, 'student', 'students')} placed` + (s.opted_out_of_placement ? ` · ${s.opted_out_of_placement} opted out, not counted` : '')
+        : 'No students in this batch yet.';
+      $('#s-placed').innerHTML = n(p.placed_students);
+      $('#s-unplaced').innerHTML = n(p.unplaced_students);
+      const ctc = (v) => (v == null ? dash : `<span class="num">${num2(v)}</span> <small>LPA</small>`);
+      $('#s-high').innerHTML = ctc(p.highest_ctc_lpa);
+      $('#s-avg').innerHTML = ctc(p.average_ctc_lpa);
+    }
 
-      setStat('s-live', n((d.drives.by_status || {}).PUBLISHED || 0));
-      setStat('s-apps', n(a.total));
-      setStat('s-recruiting', n(a.in_recruitment));
-      setStat('s-selected', n(a.selected));
-      setStat('s-offers', n(p.open_offers));
-
-      // applications by stage, with a share bar
-      const order = ['APPLIED', 'SHORTLISTED', 'APTITUDE', 'TECHNICAL', 'HR', 'SELECTED', 'OFFER_RECEIVED', 'PLACED', 'REJECTED', 'WITHDRAWN'];
-      const total = a.total || 0;
-      fillRows($('#stage-rows'), order.filter((k) => (a.by_stage || {})[k]), (k) => {
-        const c = a.by_stage[k];
-        const share = total ? Math.round((c / total) * 100) : 0;
-        return [`<a class="linkbtn" href="${@json(route('tpo.applications'))}?stage=${k}">${esc(label('stage', k))}</a>`, n(c),
-          `<span class="bar-track" role="img" aria-label="${share}%"><i style="width:${share}%"></i></span><span class="num meta">${share}%</span>`];
-      }, 'No applications yet.');
-
-      // needs attention
+    function renderAttention(d) {
+      const p = d.placements, v = d.verification_backlog;
       const drafts = (d.drives.by_status || {}).DRAFT || 0;
-      const rows = [];
-      if (p.open_offers) rows.push(['Offers waiting for your verification', `${p.open_offers} offer${p.open_offers === 1 ? '' : 's'} are recorded but not official yet.`, @json(route('tpo.placements')) + '?status=OFFERED', 'Review']);
-      if (drafts) rows.push(['Draft drives', `${drafts} draft${drafts === 1 ? '' : 's'} not published yet.`, drivesUrl + '?status=DRAFT', 'Open']);
-      const v = d.verification_backlog;
-      if (v.academic_records || v.experiences) rows.push(['Verification backlog', `${v.academic_records} academic record${v.academic_records === 1 ? '' : 's'} and ${v.experiences} experience entr${v.experiences === 1 ? 'y' : 'ies'} wait for coordinators. Students with unverified marks cannot apply.`, null, null]);
-      $('#attention-list').innerHTML = rows.length
-        ? rows.map(([t, m, href, cta]) => `<div class="li"><div class="l"><div class="t">${esc(t)}</div><div class="meta">${esc(m)}</div></div>${href ? `<div class="r"><a class="btn btn-secondary" href="${href}">${cta}</a></div>` : ''}</div>`).join('')
-        : '<p class="empty">Nothing needs attention.</p>';
+      const items = []; // [mine?, title, text, href, cta]
+      if (p.open_offers) items.push([true, `${plural(p.open_offers, 'offer', 'offers')} to verify`, 'Recorded, but not official until you verify them.', placementsUrl + '?status=OFFERED', 'Review']);
+      if (drafts) items.push([true, `${plural(drafts, 'draft drive', 'draft drives')} not published`, 'Students cannot see a draft yet.', drivesUrl + '?status=DRAFT', 'Open']);
+      if (v.academic_records || v.experiences) {
+        const what = [];
+        if (v.academic_records) what.push(plural(v.academic_records, 'academic record', 'academic records'));
+        if (v.experiences) what.push(v.experiences === 1 ? '1 experience entry' : v.experiences + ' experience entries');
+        items.push([false, 'Verification backlog',
+          `${what.join(' and ')} ${v.academic_records + v.experiences === 1 ? 'waits' : 'wait'} for coordinators. Students with unverified marks cannot apply.`, null, null]);
+      }
+      const mine = items.filter((i) => i[0]).length;
+      const badge = $('#attn-count');
+      badge.hidden = !mine;
+      badge.textContent = mine;
+      $('#attention-list').innerHTML = items.length
+        ? items.map(([own, t, m, href, cta]) => `<li><span class="dot${own ? '' : ' info'}" aria-hidden="true"></span><div class="q-b"><div class="q-t">${esc(t)}</div><div class="q-m">${esc(m)}</div></div>${href ? `<a class="btn btn-quiet btn-sm" href="${href}">${cta}</a>` : ''}</li>`).join('')
+        : `<li><div class="all-clear">${icon('check', 'sm')}Nothing needs your attention.</div></li>`;
+    }
 
+    function renderPipeline(a) {
+      const by = a.by_stage || {};
+      const max = Math.max(1, ...PIPELINE.map((k) => by[k] || 0));
+      $('#pipe-summary').textContent = a.total
+        ? `${plural(a.total, 'application', 'applications')} · ${a.in_recruitment} in interview rounds · ${a.selected} selected or placed`
+        : 'No applications yet for this batch.';
+      $('#pipe').innerHTML = PIPELINE.map((k) => {
+        const c = by[k] || 0;
+        const cls = [END.includes(k) ? 'end' : '', c ? '' : 'zero'].filter(Boolean).join(' ');
+        return `<a href="${appsUrl}?stage=${k}" class="${cls}" aria-label="${esc(label('stage', k))}: ${c}">
+          <span class="p-l">${esc(SHORT[k] || label('stage', k))}</span><span class="p-n">${c}</span>
+          <span class="p-bar"><i data-w="${Math.round((c / max) * 100)}"></i></span></a>`;
+      }).join('');
+      $('#pipe-foot').innerHTML = ['REJECTED', 'WITHDRAWN'].map((k) =>
+        `<a href="${appsUrl}?stage=${k}"><span>${esc(label('stage', k))}</span><b>${by[k] || 0}</b></a>`).join('');
+      // widths are applied a frame later so the bars grow in instead of appearing
+      requestAnimationFrame(() => requestAnimationFrame(() => { document.querySelectorAll('#pipe i[data-w]').forEach((i) => { i.style.width = i.dataset.w + '%'; }); }));
+    }
+
+    function due(iso) {
+      const h = (new Date(iso) - Date.now()) / 36e5;
+      if (!(h > 0)) return '';
+      if (h < 24) return '<span class="due soon">Under 24 h</span>';
+      const days = Math.floor(h / 24);
+      return `<span class="due${days <= 2 ? ' soon' : ''}">${days} days left</span>`;
+    }
+
+    function render(d, depts, comps) {
+      renderOutcome(d);
+      renderAttention(d);
+      renderPipeline(d.applications);
+
+      const live = (d.drives.by_status || {}).PUBLISHED || 0;
+      $('#live-count').textContent = plural(live, 'drive live', 'drives live');
       fillRows($('#closing-rows'), d.drives.closing_in_7_days, (x) => [
-        `<span class="name">${esc(x.company)}</span>`, esc(x.title), fmtDT(x.application_deadline),
-        { html: `<a class="btn btn-secondary" href="${drivesUrl}/${x.id}">View</a>`, cls: 'act' },
+        `<span class="name">${esc(x.company)}</span>`, esc(x.title), fmtDT(x.application_deadline) + due(x.application_deadline),
+        { html: `<a class="btn btn-quiet btn-sm" href="${drivesUrl}/${x.id}">View</a>`, cls: 'act' },
       ], 'No drive closes in the next 7 days.');
 
       fillRows($('#dept-rows'), depts, (r) => [

@@ -243,8 +243,65 @@
   function readFilters(root) {
     const p = params();
     $$('[data-filter]', root).forEach((el) => { if (p[el.dataset.filter] !== undefined) el.value = p[el.dataset.filter]; });
+    syncFilterUi(root);
     return p;
   }
+
+  /* Filter chrome: which controls are narrowing the list, the segmented control and the "Clear filters" button.
+     Visible controls only; a hidden [data-filter] (e.g. the drive id carried in a link) has its own "show all" control. */
+  const visibleFilters = (root) => $$('[data-filter]', root).filter((el) => el.type !== 'hidden');
+  function syncFilterUi(root) {
+    $$('.segmented', root).forEach((seg) => {
+      const v = ($('[data-filter]', seg) || {}).value || '';
+      $$('button[data-value]', seg).forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.value === v)));
+    });
+    $$('form.filters', root).forEach((form) => {
+      const set = visibleFilters(form).filter((el) => el.value.trim() !== '');
+      visibleFilters(form).forEach((el) => { const f = el.closest('.field'); if (f) f.classList.toggle('is-set', el.value.trim() !== ''); });
+      const clear = $('.clear-filters', form);
+      if (clear) clear.hidden = !set.length;
+    });
+  }
+  function clearFilters(form) {
+    const changed = visibleFilters(form).filter((el) => el.value.trim() !== '');
+    changed.forEach((el) => { el.value = ''; });
+    syncFilterUi(form.ownerDocument);
+    // every page reloads from the current filter values, so one event is enough
+    const first = changed[0];
+    if (first) first.dispatchEvent(new Event(first.tagName === 'SELECT' ? 'change' : 'input', { bubbles: true }));
+    const target = $('[data-filter]:not([type=hidden])', form);
+    if (target) target.focus({ preventScroll: true });
+  }
+  function initFilterUi() {
+    // A click on a segment is the same as choosing an option in a <select>.
+    document.addEventListener('click', (e) => {
+      const b = e.target.closest('.segmented button[data-value]');
+      if (!b) return;
+      const input = $('[data-filter]', b.closest('.segmented'));
+      if (!input || input.value === b.dataset.value) return;
+      input.value = b.dataset.value;
+      syncFilterUi(document);
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    // TPO list pages: a "Clear filters" button on every filter toolbar.
+    if (document.body.classList.contains('tpo')) {
+      $$('form.filters').forEach((form) => {
+        if ($('.clear-filters', form)) return;
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'btn btn-quiet clear-filters';
+        b.hidden = true;
+        b.textContent = 'Clear filters';
+        b.addEventListener('click', () => clearFilters(form));
+        form.append(b);
+      });
+      const refresh = (e) => { if (e.target.matches && e.target.matches('[data-filter]')) syncFilterUi(document); };
+      document.addEventListener('input', refresh);
+      document.addEventListener('change', refresh);
+      syncFilterUi(document);
+    }
+  }
+  document.addEventListener('DOMContentLoaded', initFilterUi);
   function filterValues(root) {
     const o = {};
     $$('[data-filter]', root).forEach((el) => { o[el.dataset.filter] = el.value.trim(); });

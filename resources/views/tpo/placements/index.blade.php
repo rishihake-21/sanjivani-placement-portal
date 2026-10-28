@@ -53,9 +53,9 @@
 
     function actions(p) {
       const out = [];
-      if (p.status === 'OFFERED') out.push(`<button type="button" class="btn btn-primary" data-verify="${p.id}">Verify</button>`, `<button type="button" class="btn btn-danger" data-decline="${p.id}">Declined</button>`);
-      if (p.status !== 'DECLINED') out.push(`<button type="button" class="btn btn-secondary" data-edit="${p.id}">Edit</button>`);
-      if (p.application_id) out.push(`<a class="btn btn-secondary" href="${appBase}/${p.application_id}">Application</a>`);
+      if (p.status === 'OFFERED') out.push(`<button type="button" class="btn btn-primary btn-sm" data-verify="${p.id}">Verify</button>`, `<button type="button" class="btn btn-danger btn-sm" data-decline="${p.id}">Declined</button>`);
+      if (p.status !== 'DECLINED') out.push(`<button type="button" class="btn btn-quiet btn-sm" data-edit="${p.id}">Edit</button>`);
+      if (p.application_id) out.push(`<a class="btn btn-quiet btn-sm" href="${appBase}/${p.application_id}">Application</a>`);
       return out.join(' ');
     }
 

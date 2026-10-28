@@ -230,7 +230,7 @@
           { html: `<input type="checkbox" data-sel="${a.id}" aria-label="Select ${esc(a.student.full_name)}"${selected.has(a.id) ? ' checked' : ''}>`, cls: 'sel' },
           `<span class="name">${esc(a.student.full_name)}</span><span class="sub">${esc(a.student.university_id)}</span>`, esc(a.student.branch || ''),
           badge('stage', a.stage), fmtDate(a.applied_at), fmtDate(a.stage_updated_at),
-          { html: `<a class="btn btn-secondary" href="${appUrl}/${a.id}">Open</a>`, cls: 'act' },
+          { html: `<a class="btn btn-quiet btn-sm" href="${appUrl}/${a.id}">Open</a>`, cls: 'act' },
         ], 'No applications yet.');
         $('#app-rows-all').checked = rows.length > 0 && rows.every((a) => selected.has(a.id));
         pager($('#app-pager'), res, (p) => { appPage = p; loadApplications(); });

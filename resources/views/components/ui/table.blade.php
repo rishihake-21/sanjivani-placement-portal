@@ -6,7 +6,7 @@
 --}}
 @php($labels = $selectable ? array_merge([''], $cols) : $cols)
 <div class="tbl-wrap">
-  <table class="tbl" data-cols='@json($labels)'>
+  <table {{ $attributes->merge(['class' => 'tbl']) }} data-cols='@json($labels)'>
     <thead>
       <tr>
         @if ($selectable)

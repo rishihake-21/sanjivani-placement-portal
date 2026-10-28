@@ -13,9 +13,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&display=swap">
   <link rel="stylesheet" href="{{ asset('css/tpms-portal.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/tpo.css') }}">
   @stack('styles')
 </head>
-<body>
+<body class="tpo">
 @include('partials.icons')
 
 @php
@@ -41,7 +42,9 @@
     <div class="tb-r">
       <div class="who">
         <b>{{ auth()->user()->name }}</b>
-        <span>Training &amp; Placement Officer</span>
+        @if (strcasecmp(trim(auth()->user()->name), 'Training & Placement Officer') !== 0)
+          <span>Training &amp; Placement Officer</span>
+        @endif
       </div>
     </div>
   </header>

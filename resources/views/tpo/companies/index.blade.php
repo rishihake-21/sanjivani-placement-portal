@@ -46,7 +46,7 @@
             : TPMS.dash,
           `<span class="num">${esc(c.drives_count)}</span>`,
           badge('company', String(!!c.is_active)),
-          { html: `<a class="btn btn-secondary" href="${drivesUrl}?company_id=${c.id}">Drives</a> <button type="button" class="btn btn-secondary" data-edit="${c.id}">Edit</button>`, cls: 'act' },
+          { html: `<a class="btn btn-quiet btn-sm" href="${drivesUrl}?company_id=${c.id}">Drives</a> <button type="button" class="btn btn-quiet btn-sm" data-edit="${c.id}">Edit</button>`, cls: 'act' },
         ], 'No companies match these filters.');
         pager($('#pager'), res, (p) => { page = p; load(); });
       } catch (e) { fail(e); }

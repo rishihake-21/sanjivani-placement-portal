@@ -43,7 +43,7 @@
           `<span class="name">${esc(a.student.full_name)}</span><span class="sub">${esc(a.student.university_id)}</span>`,
           `<a class="linkbtn" href="${drivesBase}/${a.drive.id}">${esc(a.drive.title)}</a><span class="sub">${esc(a.company || '')}</span>`,
           esc(a.student.branch || ''), badge('stage', a.stage), fmtDate(a.applied_at), fmtDate(a.stage_updated_at),
-          { html: `<a class="btn btn-secondary" href="${base}/${a.id}">Open</a>`, cls: 'act' },
+          { html: `<a class="btn btn-quiet btn-sm" href="${base}/${a.id}">Open</a>`, cls: 'act' },
         ], 'No applications match these filters.');
         pager($('#pager'), res, (p) => { page = p; load(); });
       } catch (e) { fail(e); }
