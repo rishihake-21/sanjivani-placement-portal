@@ -61,11 +61,21 @@ class UniversityStatsService
                 'highest_ctc_lpa' => $ctc?->highest !== null ? (float) $ctc->highest : null,
                 'average_ctc_lpa' => $ctc?->average !== null ? round((float) $ctc->average, 2) : null,
             ],
+            // Follows the batch filter like every other number on the dashboard.
             'verification_backlog' => [
-                'academic_records' => DB::table('academic_records')->where('status', 'PENDING')->count(),
-                'experiences' => DB::table('experiences')->where('status', 'PENDING')->count(),
+                'academic_records' => $this->pendingFor('academic_records', $year),
+                'experiences' => $this->pendingFor('experiences', $year),
             ],
         ];
+    }
+
+    /** Records still waiting for a coordinator, for the students of one batch (or all). */
+    private function pendingFor(string $table, ?int $year): int
+    {
+        return DB::table("{$table} as t")->join('students as s', 's.id', '=', 't.student_id')
+            ->where('t.status', 'PENDING')
+            ->when($year, fn (Builder $q) => $q->where('s.graduation_year', $year))
+            ->count();
     }
 
     /** One row per department ('department') or per branch ('branch'). */
@@ -136,6 +146,17 @@ class UniversityStatsService
             ->when($year, fn (Builder $q) => $q->where('s.graduation_year', $year))
             ->selectRaw('p.company_id, count(distinct s.id) as placed, max(p.ctc_lpa) as highest, avg(p.ctc_lpa) as average')
             ->groupBy('p.company_id')->get()->keyBy('company_id');
+
+        // A company can have placed students of this batch without a drive for it (off-campus placements).
+        // Leaving those out would make the company rows add up to less than the placed total.
+        $withoutDrive = $placed->keys()->map(fn ($id) => (int) $id)->diff($rows->pluck('id')->map(fn ($id) => (int) $id));
+        if ($withoutDrive->isNotEmpty()) {
+            $names = DB::table('companies')->whereIn('id', $withoutDrive->all())->pluck('name', 'id');
+            foreach ($withoutDrive as $id) {
+                $rows->push((object) ['id' => $id, 'name' => $names[$id] ?? 'Company #' . $id, 'drives' => 0, 'applications' => 0, 'selected' => 0]);
+            }
+            $rows = $rows->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)->values();
+        }
 
         return $rows->map(fn ($r) => [
             'company_id' => (int) $r->id,

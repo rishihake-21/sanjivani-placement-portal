@@ -15,6 +15,7 @@
       <x-ui.select filter name="stage" label="Stage" placeholder="All stages" :options="$stages" />
       <x-ui.select filter name="company_id" label="Company" placeholder="All" :options="$companies->pluck('name', 'id')->all()" />
       <x-ui.select filter name="department_id" label="Department" placeholder="All" :options="$departments->pluck('name', 'id')->all()" />
+      <x-ui.select filter name="graduation_year" label="Batch" placeholder="All" :options="array_combine($years, $years)" />
       <input type="hidden" data-filter="drive_id" id="flt-drive_id">
     </x-ui.filter-bar>
     <div id="drive-chip" style="margin-bottom:16px"></div>
@@ -51,7 +52,7 @@
 
     const reload = () => { page = 1; load(); };
     $('#flt-search').addEventListener('input', debounce(reload, 300));
-    ['stage', 'company_id', 'department_id'].forEach((k) => $('#flt-' + k).addEventListener('change', reload));
+    ['stage', 'company_id', 'department_id', 'graduation_year'].forEach((k) => $('#flt-' + k).addEventListener('change', reload));
     document.addEventListener('click', (e) => { if (e.target.closest('#clear-drive')) { $('#flt-drive_id').value = ''; reload(); } });
 
     const p = readFilters(document);

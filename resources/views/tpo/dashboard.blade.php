@@ -36,7 +36,7 @@
     </div>
 
     <x-ui.card id="pipeline" title="Applications by current stage">
-      <x-slot:actions><a class="btn btn-quiet btn-sm" href="{{ route('tpo.applications') }}">All applications</a></x-slot:actions>
+      <x-slot:actions><a class="btn btn-quiet btn-sm" id="lnk-apps" href="{{ route('tpo.applications') }}">All applications</a></x-slot:actions>
       <p class="meta" id="pipe-summary" style="margin:-8px 0 16px">&nbsp;</p>
       <div class="pipe" id="pipe"></div>
       <div class="pipe-foot" id="pipe-foot"></div>
@@ -45,18 +45,18 @@
     <x-ui.card id="closing" title="Drives closing in the next 7 days">
       <x-slot:actions>
         <span class="meta num" id="live-count"></span>
-        <a class="btn btn-quiet btn-sm" href="{{ route('tpo.drives') }}?status=PUBLISHED">All live drives</a>
+        <a class="btn btn-quiet btn-sm" id="lnk-live" href="{{ route('tpo.drives') }}?status=PUBLISHED">All live drives</a>
       </x-slot:actions>
       <x-ui.table id="closing-rows" :cols="['Company', 'Role', 'Deadline', '']" />
     </x-ui.card>
 
     <x-ui.card id="departments" title="Departments">
-      <x-slot:actions><a class="btn btn-quiet btn-sm" href="{{ route('tpo.reports') }}">Full reports</a></x-slot:actions>
+      <x-slot:actions><a class="btn btn-quiet btn-sm" id="lnk-reports" href="{{ route('tpo.reports') }}">Full reports</a></x-slot:actions>
       <x-ui.table class="nums" id="dept-rows" :cols="['Department', 'Students', 'Applied', 'Placed', 'Unplaced', 'Placement %', 'Highest CTC', 'Average CTC']" />
     </x-ui.card>
 
     <x-ui.card id="companies" title="Companies">
-      <x-slot:actions><a class="btn btn-quiet btn-sm" href="{{ route('tpo.reports') }}#sec-companies">All companies</a></x-slot:actions>
+      <x-slot:actions><a class="btn btn-quiet btn-sm" id="lnk-companies" href="{{ route('tpo.reports') }}#sec-companies">All companies</a></x-slot:actions>
       <x-ui.table class="nums" id="company-rows" :cols="['Company', 'Drives', 'Applications', 'Selected', 'Placed', 'Highest CTC']" />
     </x-ui.card>
   </div>
@@ -69,6 +69,14 @@
     const drivesUrl = @json(route('tpo.drives'));
     const appsUrl = @json(route('tpo.applications'));
     const placementsUrl = @json(route('tpo.placements'));
+    const reportsUrl = @json(route('tpo.reports'));
+    // Every link out of the dashboard keeps the selected batch, so the list it opens adds up to the number that was clicked.
+    let batch = '';
+    const to = (url, params, hash) => {
+      const q = new URLSearchParams(params || {});
+      if (batch) q.set('graduation_year', batch);
+      return url + (q.toString() ? '?' + q : '') + (hash || '');
+    };
     const n = (v) => `<span class="num">${esc(v == null ? 0 : v)}</span>`;
     const plural = (c, one, many) => `${c} ${c === 1 ? one : many}`;
 
@@ -79,6 +87,7 @@
 
     async function load() {
       const year = filterValues(document).graduation_year;
+      batch = year;
       syncQuery({ graduation_year: year });
       $('#dash-error').innerHTML = '';
       try {
@@ -117,8 +126,8 @@
       const p = d.placements, v = d.verification_backlog;
       const drafts = (d.drives.by_status || {}).DRAFT || 0;
       const items = []; // [mine?, title, text, href, cta]
-      if (p.open_offers) items.push([true, `${plural(p.open_offers, 'offer', 'offers')} to verify`, 'Recorded, but not official until you verify them.', placementsUrl + '?status=OFFERED', 'Review']);
-      if (drafts) items.push([true, `${plural(drafts, 'draft drive', 'draft drives')} not published`, 'Students cannot see a draft yet.', drivesUrl + '?status=DRAFT', 'Open']);
+      if (p.open_offers) items.push([true, `${plural(p.open_offers, 'offer', 'offers')} to verify`, 'Recorded, but not official until you verify them.', to(placementsUrl, { status: 'OFFERED' }), 'Review']);
+      if (drafts) items.push([true, `${plural(drafts, 'draft drive', 'draft drives')} not published`, 'Students cannot see a draft yet.', to(drivesUrl, { status: 'DRAFT' }), 'Open']);
       if (v.academic_records || v.experiences) {
         const what = [];
         if (v.academic_records) what.push(plural(v.academic_records, 'academic record', 'academic records'));
@@ -131,7 +140,7 @@
       badge.hidden = !mine;
       badge.textContent = mine;
       $('#attention-list').innerHTML = items.length
-        ? items.map(([own, t, m, href, cta]) => `<li><span class="dot${own ? '' : ' info'}" aria-hidden="true"></span><div class="q-b"><div class="q-t">${esc(t)}</div><div class="q-m">${esc(m)}</div></div>${href ? `<a class="btn btn-quiet btn-sm" href="${href}">${cta}</a>` : ''}</li>`).join('')
+        ? items.map(([own, t, m, href, cta]) => `<li><span class="dot${own ? '' : ' info'}" aria-hidden="true"></span><div class="q-b"><div class="q-t">${esc(t)}</div><div class="q-m">${esc(m)}</div></div>${href ? `<a class="btn btn-quiet btn-sm" href="${esc(href)}">${cta}</a>` : ''}</li>`).join('')
         : `<li><div class="all-clear">${icon('check', 'sm')}Nothing needs your attention.</div></li>`;
     }
 
@@ -144,12 +153,12 @@
       $('#pipe').innerHTML = PIPELINE.map((k) => {
         const c = by[k] || 0;
         const cls = [END.includes(k) ? 'end' : '', c ? '' : 'zero'].filter(Boolean).join(' ');
-        return `<a href="${appsUrl}?stage=${k}" class="${cls}" aria-label="${esc(label('stage', k))}: ${c}">
+        return `<a href="${esc(to(appsUrl, { stage: k }))}" class="${cls}" aria-label="${esc(label('stage', k))}: ${c}">
           <span class="p-l">${esc(SHORT[k] || label('stage', k))}</span><span class="p-n">${c}</span>
           <span class="p-bar"><i data-w="${Math.round((c / max) * 100)}"></i></span></a>`;
       }).join('');
       $('#pipe-foot').innerHTML = ['REJECTED', 'WITHDRAWN'].map((k) =>
-        `<a href="${appsUrl}?stage=${k}"><span>${esc(label('stage', k))}</span><b>${by[k] || 0}</b></a>`).join('');
+        `<a href="${esc(to(appsUrl, { stage: k }))}"><span>${esc(label('stage', k))}</span><b>${by[k] || 0}</b></a>`).join('');
       // widths are applied a frame later so the bars grow in instead of appearing
       requestAnimationFrame(() => requestAnimationFrame(() => { document.querySelectorAll('#pipe i[data-w]').forEach((i) => { i.style.width = i.dataset.w + '%'; }); }));
     }
@@ -166,6 +175,10 @@
       renderOutcome(d);
       renderAttention(d);
       renderPipeline(d.applications);
+      $('#lnk-apps').href = to(appsUrl);
+      $('#lnk-live').href = to(drivesUrl, { status: 'PUBLISHED' });
+      $('#lnk-reports').href = to(reportsUrl);
+      $('#lnk-companies').href = to(reportsUrl, {}, '#sec-companies');
 
       const live = (d.drives.by_status || {}).PUBLISHED || 0;
       $('#live-count').textContent = plural(live, 'drive live', 'drives live');

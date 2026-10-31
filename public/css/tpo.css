@@ -32,13 +32,13 @@ body.tpo .tbl td.act .btn-quiet+.btn-quiet{margin-left:4px}
 
 /* ---------- filters: one toolbar above a table ---------- */
 body.tpo .filters{gap:12px;margin-bottom:16px;align-items:flex-end}
-body.tpo .filters .field{gap:6px;min-width:150px;flex:0 1 170px}
+body.tpo .filters .field{gap:6px;min-width:130px;flex:0 1 140px}
 body.tpo .filters .field>label{font:600 12px var(--font);letter-spacing:.04em;text-transform:uppercase;color:var(--text-muted)}
-body.tpo .filters .field.grow{flex:1 1 240px}
+body.tpo .filters .field.grow{flex:1 1 200px;min-width:180px}
 body.tpo .filters .field select,
 body.tpo .filters .field input[type=search],
 body.tpo .filters .field input[type=text]{height:36px}
-body.tpo .filters .clear-filters{height:36px;align-self:flex-end}
+body.tpo .filters .clear-filters{height:36px;align-self:flex-end;padding:0 10px}
 
 /* selects: own chevron instead of the browser's, on every TPO form control */
 body.tpo .field select{
