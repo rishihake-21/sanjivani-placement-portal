@@ -79,7 +79,7 @@
                 </section>
             </div>
 
-            <div class="c5">
+            <div class="c5 sticky-side">
                 <section class="card">
                     <div class="card-h"><h2>Your application</h2></div>
                     @if ($hasApplied)

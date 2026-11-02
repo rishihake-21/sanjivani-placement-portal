@@ -27,7 +27,7 @@
     <section class="card" aria-labelledby="h-pl">
       <div class="card-h"><h2 id="h-pl">All placements</h2></div>
 
-      <form method="get" action="{{ route('coordinator.placements') }}" class="fbar">
+      <form method="get" action="{{ route('coordinator.placements') }}" class="filters">
         <div class="field">
           <label for="f-status">Status</label>
           <select id="f-status" name="status">

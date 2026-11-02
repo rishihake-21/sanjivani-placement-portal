@@ -33,7 +33,7 @@
     <section class="card" aria-labelledby="h-dr">
       <div class="card-h"><h2 id="h-dr">All drives</h2></div>
 
-      <form method="get" action="{{ route('coordinator.drives') }}" class="fbar">
+      <form method="get" action="{{ route('coordinator.drives') }}" class="filters">
         <div class="field">
           <label for="f-status">Status</label>
           <select id="f-status" name="status">
@@ -69,7 +69,7 @@
                   <td data-l="Deadline" class="nw">{{ U::date($r['application_deadline'] ?? null) ?: '–' }}</td>
                   <td data-l="Status">@include('coordinator.partials.badge', ['kind' => 'drive', 'value' => $r['status']])</td>
                   <td data-l="Applications" class="num">{{ $r['department_applications_count'] }}</td>
-                  <td class="act"><a class="btn btn-secondary" href="{{ route('coordinator.drives.show', $r['id']) }}">View</a></td>
+                  <td class="act"><a class="btn btn-quiet btn-sm" href="{{ route('coordinator.drives.show', $r['id']) }}">View</a></td>
                 </tr>
               @endforeach
             </tbody>

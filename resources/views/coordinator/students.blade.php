@@ -27,7 +27,7 @@
     <section class="card" aria-labelledby="h-stu">
       <div class="card-h"><h2 id="h-stu">Directory</h2></div>
 
-      <form method="get" action="{{ route('coordinator.students') }}" class="fbar">
+      <form method="get" action="{{ route('coordinator.students') }}" class="filters">
         <div class="field grow">
           <label for="f-search">Name or university ID</label>
           <input id="f-search" type="text" name="search" value="{{ $f['search'] ?? '' }}" autocomplete="off">
@@ -80,7 +80,7 @@
                   <td data-l="Semester" class="num">{{ $r['current_semester'] }}</td>
                   <td data-l="Graduation year" class="num">{{ $r['graduation_year'] }}</td>
                   <td data-l="Pending reviews">@if (! empty($r['pending_reviews']))<span class="badge b-wait">{{ $r['pending_reviews'] }}</span>@else<span class="meta">&ndash;</span>@endif</td>
-                  <td class="act"><a class="btn btn-secondary" href="{{ route('coordinator.students.show', $r['id']) }}">View</a></td>
+                  <td class="act"><a class="btn btn-quiet btn-sm" href="{{ route('coordinator.students.show', $r['id']) }}">View</a></td>
                 </tr>
               @endforeach
             </tbody>

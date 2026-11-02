@@ -88,6 +88,14 @@ class PortalShellTest extends TestCase
             ->assertSee('My applications');
     }
 
+    public function test_the_coordinator_sidebar_marks_the_page_you_are_on(): void
+    {
+        $this->actingAs($this->coordinator())->get(route('coordinator.students'))
+            ->assertOk()
+            ->assertSee('href="'.route('coordinator.students').'" class="nav-item active"', false)
+            ->assertDontSee('href="'.route('coordinator.dashboard').'" class="nav-item active"', false);
+    }
+
     public function test_the_user_chip_shows_initials_without_punctuation(): void
     {
         $this->actingAs($this->tpo())->get(route('tpo.dashboard'))

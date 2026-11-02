@@ -3,7 +3,8 @@
   Variables: $department  ['id','name','code']  (the coordinator's own department, passed by the page controller)
 --}}
 @php
-  $active = trim($__env->yieldContent('nav', 'dashboard'));
+  // A page can name its nav item with @section('nav', ...); otherwise it comes from the controller's $active ('coordinator.students' -> 'students').
+  $active = trim($__env->yieldContent('nav')) ?: str((string) ($active ?? 'dashboard'))->after('coordinator.')->toString();
   $portal = [
     'label' => 'Coordinator',
     'role' => 'T&P Coordinator' . (! empty($department) ? ' · ' . $department['code'] : ''),

@@ -25,7 +25,7 @@
     <section class="card" aria-labelledby="h-ru">
       <div class="card-h"><h2 id="h-ru">Requests</h2></div>
 
-      <form method="get" action="{{ route('coordinator.reuploads') }}" class="fbar">
+      <form method="get" action="{{ route('coordinator.reuploads') }}" class="filters">
         <div class="field">
           <label for="f-status">Status</label>
           <select id="f-status" name="status">
@@ -54,7 +54,7 @@
                   <td data-l="Status">@include('coordinator.partials.badge', ['kind' => 'req', 'value' => $r['status']])</td>
                   <td data-l="Requested" class="nw">{{ U::date($r['created_at']) }}</td>
                   <td data-l="Closed" class="nw">{{ U::date($r['closed_at'] ?? null) ?: '–' }}</td>
-                  <td class="act">@if ($r['status'] === 'OPEN')<button type="button" class="btn btn-secondary" data-post="{{ route('coordinator.x.reupload.cancel', $r['id']) }}" data-done="Re-upload request cancelled.">Cancel request</button>@endif</td>
+                  <td class="act">@if ($r['status'] === 'OPEN')<button type="button" class="btn btn-quiet btn-sm" data-post="{{ route('coordinator.x.reupload.cancel', $r['id']) }}" data-done="Re-upload request cancelled.">Cancel request</button>@endif</td>
                 </tr>
               @endforeach
             </tbody>
