@@ -14,7 +14,6 @@
 @php
   $subject = ['ACADEMIC_RECORD' => 'Academic record', 'EXPERIENCE' => 'Experience', 'DOCUMENT' => 'Document'];
 @endphp
-<div class="page">
   <div class="ph">
     <div>
       <h1>Re-upload requests</h1>
@@ -67,5 +66,4 @@
       @include('coordinator.partials.pager', ['pg' => $pg])
     </section>
   </div>
-</div>
 @endsection

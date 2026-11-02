@@ -1,9 +1,8 @@
 @extends('layouts.student')
 
-@section('title', 'My Applications - TPMS')
+@section('title', 'My Applications')
 
 @section('content')
-<div class="page">
     <div class="ph">
         <div>
             <h1>My Applications</h1>
@@ -104,5 +103,4 @@
             </section>
         @endif
     </div>
-</div>
 @endsection

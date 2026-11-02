@@ -71,6 +71,8 @@ final class StudentUi
         'student.experience' => ['Experience', 'brief'],
         'student.documents' => ['Documents', 'file'],
         'student.notifications' => ['Notifications', 'bell'],
+        'student.drives' => ['Placement drives', 'building'],
+        'student.applications' => ['My applications', 'award'],
     ];
 
     // ------------------------------------------------------------------ escaping, badges, icons

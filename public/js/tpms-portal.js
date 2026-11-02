@@ -283,8 +283,8 @@
       syncFilterUi(document);
       input.dispatchEvent(new Event('change', { bubbles: true }));
     });
-    // TPO list pages: a "Clear filters" button on every filter toolbar.
-    if (document.body.classList.contains('tpo')) {
+    // Every list page: a "Clear filters" button on its filter toolbar.
+    {
       $$('form.filters').forEach((form) => {
         if ($('.clear-filters', form)) return;
         const b = document.createElement('button');
@@ -393,33 +393,11 @@
 
   /* ---------------- shell ---------------- */
   function initShell() {
-    const app = $('#app');
-    if (!app) return;
-    const mq = window.matchMedia('(max-width:767px)');
-    const toggle = $('[data-act="toggle-nav"]');
-    const sync = () => {
-      app.classList.toggle('is-overlay', mq.matches);
-      if (mq.matches) app.classList.remove('collapsed');
-      else { app.classList.toggle('collapsed', localStorage.getItem('tpms.nav') === 'c'); app.classList.remove('overlay-open'); }
-      if (toggle) {
-        toggle.setAttribute('aria-label', mq.matches ? 'Open menu' : app.classList.contains('collapsed') ? 'Expand sidebar' : 'Collapse sidebar');
-        toggle.setAttribute('aria-expanded', String(mq.matches ? app.classList.contains('overlay-open') : !app.classList.contains('collapsed')));
-      }
-    };
-    mq.addEventListener('change', sync);
-    sync();
-    if (toggle) {
-      toggle.addEventListener('click', () => {
-        if (mq.matches) app.classList.toggle('overlay-open');
-        else { app.classList.toggle('collapsed'); localStorage.setItem('tpms.nav', app.classList.contains('collapsed') ? 'c' : 'e'); }
-        sync();
-      });
-    }
-    const scrim = $('.nav-scrim');
-    if (scrim) scrim.addEventListener('click', () => { app.classList.remove('overlay-open'); sync(); });
-
+    // The sidebar itself is public/js/shell.js; this only shows the message left by the previous page.
     const msg = sessionStorage.getItem('tpms.flash');
     if (msg) { sessionStorage.removeItem('tpms.flash'); toast(msg); }
+    const t = $('#toast');
+    if (t && t.dataset.flash) toast(t.dataset.flash);
   }
   document.addEventListener('DOMContentLoaded', initShell);
 

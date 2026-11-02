@@ -7,7 +7,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-/** The TPO web pages render with their own stylesheet and the shared filter components. */
+/** The TPO web pages render on the shared portal shell with the shared filter components. */
 class TpoPagesTest extends TestCase
 {
     use RefreshDatabase;
@@ -25,12 +25,11 @@ class TpoPagesTest extends TestCase
         $this->get('/tpo/dashboard')->assertRedirect('/login');
     }
 
-    public function test_the_dashboard_uses_the_tpo_theme_and_a_batch_segmented_filter(): void
+    public function test_the_dashboard_has_a_batch_segmented_filter_and_its_sections(): void
     {
         $this->actingAs($this->tpo())->get('/tpo/dashboard')
             ->assertOk()
-            ->assertSee('<body class="tpo">', false)
-            ->assertSee('css/tpo.css', false)
+            ->assertSee('css/tpms-portal.css', false)
             ->assertSee('class="segmented"', false)
             ->assertSee('data-filter="graduation_year"', false)
             ->assertSee('Needs attention')

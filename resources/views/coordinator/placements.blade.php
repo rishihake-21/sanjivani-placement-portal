@@ -16,7 +16,6 @@
   $f = $filters;
   $hasFilter = ! empty($f['status']) || ! empty($f['branch_id']) || ! empty($f['graduation_year']) || ! empty($f['company_id']);
 @endphp
-<div class="page">
   <div class="ph">
     <div>
       <h1>Placements</h1>
@@ -97,5 +96,4 @@
       @include('coordinator.partials.pager', ['pg' => $pg])
     </section>
   </div>
-</div>
 @endsection

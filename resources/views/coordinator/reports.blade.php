@@ -15,7 +15,6 @@
   $lpa = fn ($v) => $v === null ? '–' : U::num2($v);
   $sum = fn ($key) => array_sum(array_map(fn ($r) => (int) $r[$key], $rows));
 @endphp
-<div class="page">
   <div class="ph">
     <div>
       <h1>Reports</h1>
@@ -85,5 +84,4 @@
       </div>
     </section>
   </div>
-</div>
 @endsection

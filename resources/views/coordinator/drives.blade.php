@@ -22,7 +22,6 @@
   };
   $human = fn ($v) => ucfirst(strtolower(str_replace('_', ' ', (string) $v)));
 @endphp
-<div class="page">
   <div class="ph">
     <div>
       <h1>Drives</h1>
@@ -82,5 +81,4 @@
       @include('coordinator.partials.pager', ['pg' => $pg])
     </section>
   </div>
-</div>
 @endsection

@@ -17,7 +17,6 @@
   $hasFilter = ! empty($f['drive_id']) || ! empty($f['stage']) || ! empty($f['branch_id']) || ! empty($f['search']);
   $stageNames = ['APPLIED' => 'Applied', 'SHORTLISTED' => 'Shortlisted', 'APTITUDE' => 'Aptitude', 'TECHNICAL' => 'Technical', 'HR' => 'HR', 'SELECTED' => 'Selected', 'REJECTED' => 'Rejected', 'OFFER_RECEIVED' => 'Offer received', 'PLACED' => 'Placed', 'WITHDRAWN' => 'Withdrawn'];
 @endphp
-<div class="page">
   <div class="ph">
     <div>
       <h1>Applications</h1>
@@ -97,5 +96,4 @@
       @include('coordinator.partials.pager', ['pg' => $pg])
     </section>
   </div>
-</div>
 @endsection

@@ -16,7 +16,6 @@
   $f = $filters;
   $hasFilter = ! empty($f['search']) || ! empty($f['branch_id']) || ! empty($f['semester']) || ! empty($f['admission_type']) || ! empty($f['only_pending']);
 @endphp
-<div class="page">
   <div class="ph">
     <div>
       <h1>Students</h1>
@@ -93,5 +92,4 @@
       @include('coordinator.partials.pager', ['pg' => $pg])
     </section>
   </div>
-</div>
 @endsection

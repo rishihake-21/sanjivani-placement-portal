@@ -33,7 +33,6 @@
       $ctc = U::num2($drive['ctc_lpa']) . ($max !== null && (float) $max !== (float) $drive['ctc_lpa'] ? ' – ' . U::num2($max) : '') . ' LPA';
   }
 @endphp
-<div class="page">
   <div class="ph">
     <div>
       <h1>{{ $drive['company'] }}</h1>
@@ -102,5 +101,4 @@
       </div>
     </div>
   </div>
-</div>
 @endsection
