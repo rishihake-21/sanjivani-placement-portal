@@ -10,7 +10,7 @@
     </a>
   </x-ui.page-header>
 
-  <x-ui.card id="list" title="All drives">
+  <x-ui.card id="list" class="flat" aria-label="All drives">
     <x-ui.filter-bar>
       <div class="field grow">
         <label for="flt-search">Search</label>
@@ -22,7 +22,7 @@
       <x-ui.select filter name="graduation_year" label="Batch" placeholder="All" :options="array_combine($years, $years)" />
     </x-ui.filter-bar>
 
-    <x-ui.table id="drive-rows" :cols="['Drive', 'CTC', 'Deadline', 'Batch', 'Applications', 'Status', '']" />
+    <x-ui.table class="rows-open" id="drive-rows" :cols="['Drive', 'CTC', 'Deadline', 'Batch', 'Applications', 'Status', '']" />
     <div class="pager" id="pager"></div>
   </x-ui.card>
 @endsection
@@ -40,8 +40,8 @@
       try {
         const res = await api('/tpo/drives', { query: Object.assign({}, f, { page }) });
         fillRows($('#drive-rows'), res.data, (d) => [
-          `<a class="linkbtn" href="${base}/${d.id}">${esc(d.title)}</a><span class="sub">${esc(d.company ? d.company.name : '')}${d.location ? ' &middot; ' + esc(d.location) : ''}</span>`,
-          d.ctc_lpa == null ? dash : lpa(d.ctc_lpa) + (d.ctc_max_lpa ? `<span class="sub">up to ${Number(d.ctc_max_lpa).toFixed(2)} LPA</span>` : ''),
+          `<a class="linkbtn" href="${base}/${d.id}">${esc(d.title)}</a><span class="sub">${esc(d.company ? d.company.name : '')}</span>${d.location ? `<span class="sub faint" title="${esc(d.location)}">${esc(d.location)}</span>` : ''}`,
+          d.ctc_lpa == null ? dash : lpa(d.ctc_lpa) + (Number(d.ctc_max_lpa) > Number(d.ctc_lpa) ? `<span class="sub">up to ${Number(d.ctc_max_lpa).toFixed(2)} LPA</span>` : ''),
           { html: d.application_deadline ? fmtDT(d.application_deadline) : dash, cls: 'nw' },
           `<span class="num">${esc(d.graduation_year)}</span>`,
           { html: `<span class="num">${esc(d.applications_count)}</span>`, cls: 'nw' },

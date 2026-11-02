@@ -6,7 +6,7 @@
 @section('content')
   <x-ui.page-header title="Applications" meta="Every student application across all drives. Open one to move it through the rounds." />
 
-  <x-ui.card id="list" title="All applications">
+  <x-ui.card id="list" class="flat" aria-label="All applications">
     <x-ui.filter-bar>
       <div class="field grow">
         <label for="flt-search">Search</label>
@@ -20,7 +20,7 @@
     </x-ui.filter-bar>
     <div id="drive-chip" style="margin-bottom:16px"></div>
 
-    <x-ui.table id="app-rows" :cols="['Student', 'Drive', 'Branch', 'Stage', 'Applied', 'Updated', '']" />
+    <x-ui.table class="rows-open" id="app-rows" :cols="['Student', 'Drive', 'Branch', 'Stage', 'Applied', 'Updated', '']" />
     <div class="pager" id="pager"></div>
   </x-ui.card>
 @endsection

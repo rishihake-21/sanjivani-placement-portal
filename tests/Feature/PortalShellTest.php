@@ -96,6 +96,13 @@ class PortalShellTest extends TestCase
             ->assertDontSee('href="'.route('coordinator.dashboard').'" class="nav-item active"', false);
     }
 
+    public function test_each_portal_marks_its_own_body_so_a_skin_stays_scoped(): void
+    {
+        $this->actingAs($this->tpo())->get(route('tpo.dashboard'))->assertSee('<body data-portal="tpo">', false);
+        $this->actingAs($this->coordinator())->get(route('coordinator.dashboard'))->assertSee('<body data-portal="coordinator">', false)->assertDontSee('data-portal="tpo"', false);
+        $this->actingAs($this->makeStudent('SH5')->user)->get(route('student.dashboard'))->assertSee('<body data-portal="student">', false)->assertDontSee('data-portal="tpo"', false);
+    }
+
     public function test_the_user_chip_shows_initials_without_punctuation(): void
     {
         $this->actingAs($this->tpo())->get(route('tpo.dashboard'))

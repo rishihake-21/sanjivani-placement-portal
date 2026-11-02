@@ -4,7 +4,7 @@
 @section('nav', 'dashboard')
 
 @section('content')
-  <x-ui.page-header title="Placement dashboard" meta="University-wide numbers. Only verified placements count as placed.">
+  <x-ui.page-header title="Dashboard" meta="University-wide. Only placements you have verified count as placed.">
     <x-ui.segmented name="graduation_year" label="Batch" all-label="All batches" :options="array_combine($years, $years)" />
   </x-ui.page-header>
 
@@ -12,50 +12,46 @@
 
   <div class="stack">
     <div class="grid">
-      <x-ui.card id="outcome" title="Placement outcome" class="c7">
-        <div class="hero">
-          <div>
-            <span class="cap">Placement rate</span>
-            <div class="hero-v" id="h-pct">&ndash;</div>
-            <div class="meter" role="progressbar" aria-labelledby="h-pct" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="h-meter"></i></div>
-            <p class="meta" id="h-note">&nbsp;</p>
-          </div>
-          <dl class="hero-side">
-            <div><dt>Placed</dt><dd id="s-placed">&ndash;</dd></div>
-            <div><dt>Unplaced</dt><dd id="s-unplaced">&ndash;</dd></div>
-            <div><dt>Highest CTC</dt><dd id="s-high">&ndash;</dd></div>
-            <div><dt>Average CTC</dt><dd id="s-avg">&ndash;</dd></div>
-          </dl>
-        </div>
-      </x-ui.card>
-
-      <x-ui.card id="attention" title="Needs attention" class="c5">
+      <x-ui.card id="attention" title="Needs your attention" class="c7">
         <x-slot:actions><span class="badge b-wait" id="attn-count" hidden></span></x-slot:actions>
         <ul class="queue" id="attention-list"><li><div class="skel" style="width:100%"></div></li></ul>
       </x-ui.card>
+
+      <section class="card figure c5" aria-labelledby="h-pct-l">
+        <p class="meta" id="h-pct-l">Placement rate</p>
+        <div class="hero-v" id="h-pct">&ndash;</div>
+        <div class="meter" role="progressbar" aria-labelledby="h-pct-l" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="h-meter"></i></div>
+        <p class="meta" id="h-note">&nbsp;</p>
+        <dl class="hero-side">
+          <div><dt>Placed</dt><dd id="s-placed">&ndash;</dd></div>
+          <div><dt>Not yet placed</dt><dd id="s-unplaced">&ndash;</dd></div>
+          <div><dt>Highest package</dt><dd id="s-high">&ndash;</dd></div>
+          <div><dt>Average package</dt><dd id="s-avg">&ndash;</dd></div>
+        </dl>
+      </section>
     </div>
 
-    <x-ui.card id="pipeline" title="Applications by current stage">
+    <x-ui.card id="pipeline" class="flat" title="Where applications stand">
       <x-slot:actions><a class="btn btn-quiet btn-sm" id="lnk-apps" href="{{ route('tpo.applications') }}">All applications</a></x-slot:actions>
       <p class="meta" id="pipe-summary" style="margin:-8px 0 16px">&nbsp;</p>
       <div class="pipe" id="pipe"></div>
       <div class="pipe-foot" id="pipe-foot"></div>
     </x-ui.card>
 
-    <x-ui.card id="closing" title="Drives closing in the next 7 days">
+    <x-ui.card id="closing" class="flat" title="Closing this week">
       <x-slot:actions>
         <span class="meta num" id="live-count"></span>
         <a class="btn btn-quiet btn-sm" id="lnk-live" href="{{ route('tpo.drives') }}?status=PUBLISHED">All live drives</a>
       </x-slot:actions>
-      <x-ui.table id="closing-rows" :cols="['Company', 'Role', 'Deadline', '']" />
+      <x-ui.table class="rows-open" id="closing-rows" :cols="['Company', 'Role', 'Deadline', '']" />
     </x-ui.card>
 
-    <x-ui.card id="departments" title="Departments">
+    <x-ui.card id="departments" class="flat" title="Departments">
       <x-slot:actions><a class="btn btn-quiet btn-sm" id="lnk-reports" href="{{ route('tpo.reports') }}">Full reports</a></x-slot:actions>
       <x-ui.table class="nums" id="dept-rows" :cols="['Department', 'Students', 'Applied', 'Placed', 'Unplaced', 'Placement %', 'Highest CTC', 'Average CTC']" />
     </x-ui.card>
 
-    <x-ui.card id="companies" title="Companies">
+    <x-ui.card id="companies" class="flat" title="Companies">
       <x-slot:actions><a class="btn btn-quiet btn-sm" id="lnk-companies" href="{{ route('tpo.reports') }}#sec-companies">All companies</a></x-slot:actions>
       <x-ui.table class="nums" id="company-rows" :cols="['Company', 'Drives', 'Applications', 'Selected', 'Placed', 'Highest CTC']" />
     </x-ui.card>
@@ -113,7 +109,7 @@
       meter.style.width = Math.max(0, Math.min(100, rate || 0)) + '%';
       meter.parentNode.setAttribute('aria-valuenow', String(Math.round(rate || 0)));
       $('#h-note').textContent = counted > 0
-        ? `${p.placed_students} of ${plural(counted, 'student', 'students')} placed` + (s.opted_out_of_placement ? ` · ${s.opted_out_of_placement} opted out, not counted` : '')
+        ? `${p.placed_students} of ${plural(counted, 'student', 'students')} placed` + (s.opted_out_of_placement ? `. ${s.opted_out_of_placement} opted out and are not counted.` : '')
         : 'No students in this batch yet.';
       $('#s-placed').innerHTML = n(p.placed_students);
       $('#s-unplaced').innerHTML = n(p.unplaced_students);
@@ -148,7 +144,7 @@
       const by = a.by_stage || {};
       const max = Math.max(1, ...PIPELINE.map((k) => by[k] || 0));
       $('#pipe-summary').textContent = a.total
-        ? `${plural(a.total, 'application', 'applications')} · ${a.in_recruitment} in interview rounds · ${a.selected} selected or placed`
+        ? `${plural(a.total, 'application', 'applications')}, ${a.in_recruitment} in interview rounds, ${a.selected} selected or placed`
         : 'No applications yet for this batch.';
       $('#pipe').innerHTML = PIPELINE.map((k) => {
         const c = by[k] || 0;

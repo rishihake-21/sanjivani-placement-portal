@@ -10,7 +10,7 @@
     </button>
   </x-ui.page-header>
 
-  <x-ui.card id="list" title="All companies">
+  <x-ui.card id="list" class="flat" aria-label="All companies">
     <x-ui.filter-bar>
       <div class="field grow">
         <label for="flt-search">Search</label>

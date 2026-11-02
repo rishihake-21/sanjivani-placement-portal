@@ -6,6 +6,7 @@
   // A page can name its nav item with @section('nav', ...); otherwise it comes from the controller's $active ('coordinator.students' -> 'students').
   $active = trim($__env->yieldContent('nav')) ?: str((string) ($active ?? 'dashboard'))->after('coordinator.')->toString();
   $portal = [
+    'key' => 'coordinator',
     'label' => 'Coordinator',
     'role' => 'T&P Coordinator' . (! empty($department) ? ' · ' . $department['code'] : ''),
     'profile' => route('coordinator.profile'),

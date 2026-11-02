@@ -391,6 +391,19 @@
     });
   }
 
+  /* ---------------- table rows ---------------- */
+  // TPO tables marked .rows-open: the whole row follows the link in its action cell (Open, View), a bigger
+  // target than the title text. Links, buttons and fields inside the row still do their own thing; modifier-clicks
+  // are left to the browser.
+  document.addEventListener('click', (e) => {
+    if (document.body.dataset.portal !== 'tpo' || e.defaultPrevented || e.button !== 0) return;
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const row = e.target.closest('.tbl.rows-open tbody tr');
+    if (!row || e.target.closest('a, button, input, select, textarea, label, summary')) return;
+    const link = row.querySelector('td.act a[href]:not([download]):not([target])');
+    if (link) link.click();
+  });
+
   /* ---------------- shell ---------------- */
   function initShell() {
     // The sidebar itself is public/js/shell.js; this only shows the message left by the previous page.

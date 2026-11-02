@@ -2,6 +2,7 @@
 @php
   $active = trim($__env->yieldContent('nav', 'dashboard'));
   $portal = [
+    'key' => 'tpo',
     'label' => 'TPO',
     'role' => 'Training & Placement Officer',
     'profile' => null,

@@ -10,6 +10,7 @@
   $active ??= \Illuminate\Support\Facades\Route::currentRouteName();
   $nav = fn (string $route) => [$route, ...U::NAV[$route], route($route)];
   $portal = [
+    'key' => 'student',
     'label' => 'Student portal',
     'role' => 'Student',
     'profile' => route('student.profile'),

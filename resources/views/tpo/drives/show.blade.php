@@ -127,7 +127,7 @@
       const d = drive;
       document.title = d.title + ' · TPMS';
       $('.ph h1').textContent = d.title;
-      $('.ph .meta').innerHTML = `${esc(d.company ? d.company.name : '')} &middot; Batch ${esc(d.graduation_year)} &middot; ${badge('drive', d.status)}`;
+      $('.ph .meta').innerHTML = `${esc(d.company ? d.company.name : '')}, batch ${esc(d.graduation_year)} ${badge('drive', d.status)}`;
 
       const acts = [];
       if (d.status === 'DRAFT') acts.push(`<a class="btn btn-secondary" href="${editUrl}">Edit</a>`, `<button type="button" class="btn btn-danger" data-do="delete">Delete draft</button>`, `<button type="button" class="btn btn-primary" data-do="publish">Publish</button>`);
@@ -140,7 +140,7 @@
 
       $('#overview-dl').innerHTML = [
         dl('Company', esc(d.company ? d.company.name : '')), dl('Employment', esc(EMPLOYMENT[d.employment_type] || d.employment_type)),
-        dl('CTC', d.ctc_lpa == null ? '' : `${num(d.ctc_lpa)}${d.ctc_max_lpa ? ' to ' + num(d.ctc_max_lpa) : ''} LPA`),
+        dl('CTC', d.ctc_lpa == null ? '' : `${num(d.ctc_lpa)}${Number(d.ctc_max_lpa) > Number(d.ctc_lpa) ? ' to ' + num(d.ctc_max_lpa) : ''} LPA`),
         dl('Location', esc(d.location || '')),
         dl('Drive date', d.drive_date ? fmtDate(d.drive_date) : ''), dl('Application deadline', d.application_deadline ? fmtDT(d.application_deadline) : ''),
         dl('Published', d.published_at ? fmtDT(d.published_at) : ''), dl('Placed students may apply', d.allow_placed_students ? 'Yes' : 'No'),

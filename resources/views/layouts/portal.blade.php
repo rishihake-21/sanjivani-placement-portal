@@ -3,6 +3,7 @@
   A portal layout (tpo, coordinator, student) only describes itself and extends this:
 
     $portal = [
+      'key'     => 'tpo',                              body[data-portal], for portal-specific styling
       'label'   => 'TPO',                              names the area (page title fallback, nav aria-label)
       'role'    => 'Training & Placement Officer',     shown under the user's name
       'profile' => url|null,                           makes the user chip a link
@@ -40,7 +41,7 @@
     })();
   </script>
 </head>
-<body>
+<body data-portal="{{ $portal['key'] ?? 'app' }}">
 @include('partials.icons')
 <a class="skip" href="#content">Skip to content</a>
 

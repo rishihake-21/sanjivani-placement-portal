@@ -10,7 +10,7 @@
     </button>
   </x-ui.page-header>
 
-  <x-ui.card id="list" title="All placements">
+  <x-ui.card id="list" class="flat" aria-label="All placements">
     <x-ui.filter-bar>
       <x-ui.select filter name="status" label="Status" placeholder="All"
         :options="['OFFERED' => 'Offered, not verified', 'PLACED' => 'Placed', 'DECLINED' => 'Declined']" />
@@ -42,7 +42,7 @@
         const res = await api('/tpo/placements', { query: Object.assign({}, f, { page }) });
         items = res.data;
         fillRows($('#pl-rows'), items, (p) => [
-          `<span class="name">${esc(p.student.full_name)}</span><span class="sub">${esc(p.student.university_id)} &middot; ${esc(p.student.branch || '')}</span>`,
+          `<span class="name">${esc(p.student.full_name)}</span><span class="sub">${esc(p.student.university_id)}${p.student.branch ? ', ' + esc(p.student.branch) : ''}</span>`,
           esc(p.company || ''), esc(p.role_title), lpa(p.ctc_lpa), p.offer_date ? fmtDate(p.offer_date) : dash,
           `<div class="stk">${badge('placement', p.status)}${p.application_id ? '' : '<span class="tag">Off-campus</span>'}</div>`,
           { html: actions(p), cls: 'act' },

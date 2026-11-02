@@ -32,8 +32,9 @@ class TpoPagesTest extends TestCase
             ->assertSee('css/tpms-portal.css', false)
             ->assertSee('class="segmented"', false)
             ->assertSee('data-filter="graduation_year"', false)
-            ->assertSee('Needs attention')
-            ->assertSee('Applications by current stage');
+            ->assertSee('Needs your attention')
+            ->assertSee('Where applications stand')
+            ->assertSee('data-portal="tpo"', false);
     }
 
     public function test_list_pages_render_a_filter_toolbar(): void
