@@ -419,3 +419,7 @@ Route::middleware(['auth', 'role:system_admin'])
         })->name('dashboard');
 
     });
+
+
+// Separate recruiter workspace, protected by recruiter-specific access middleware.
+require __DIR__.'/recruiter-web.php';
