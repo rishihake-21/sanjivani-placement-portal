@@ -58,7 +58,7 @@
         <h2 id="snapshot-company">Loading…</h2>
         <p class="meta" id="snapshot-industry">Company information</p>
         <dl class="dl recruiter-company-facts">
-          <div><dt>Website</dt><dd id="snapshot-website">—</dd></div>
+          <div><dt>Website</dt><dd><a id="snapshot-website">—</a></dd></div>
           <div><dt>Recruiter email</dt><dd id="snapshot-email">—</dd></div>
           <div><dt>Designation</dt><dd id="snapshot-designation">—</dd></div>
         </dl>
@@ -129,13 +129,13 @@
   </section>
 </div>
 
-<div id="drawer-backdrop" class="scrim recruiter-backdrop" hidden></div>
-<aside id="drawer" class="drawer recruiter-drawer" aria-hidden="true">
+<div id="drawer-backdrop" class="scrim rw-backdrop recruiter-backdrop" hidden></div>
+<aside id="drawer" class="drawer rw-drawer recruiter-drawer" aria-hidden="true">
   <header class="dr-h">
     <div><small class="cap">Candidate profile</small><h2 id="detail-name">Applicant</h2><p id="detail-subtitle" class="meta"></p></div>
     <button id="detail-close" class="icon-btn" type="button" aria-label="Close candidate profile">×</button>
   </header>
-  <div id="detail-body" class="dr-b recruiter-detail-body">Select an applicant to view verified details.</div>
+  <div id="detail-body" class="dr-b rw-drawer-body recruiter-detail-body">Select an applicant to view verified details.</div>
 </aside>
 @endsection
 
