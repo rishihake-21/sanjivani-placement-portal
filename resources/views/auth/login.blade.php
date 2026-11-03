@@ -38,6 +38,7 @@
                     <label class="rd"><input type="radio" name="role" value="tp_coordinator"> T&P Coordinator</label>
                     <label class="rd"><input type="radio" name="role" value="tpo"> TPO</label>
                     <label class="rd"><input type="radio" name="role" value="system_admin"> System Admin</label>
+                    <label class="rd"><input type="radio" name="role" value="recruiter"> Recruiter</label>
                 </div>
             </fieldset>
             
