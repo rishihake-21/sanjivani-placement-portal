@@ -15,7 +15,6 @@
   $secondLabel = $student['admission_type'] === 'LATERAL' ? 'Diploma' : '12th';
   $secondValue = $student['admission_type'] === 'LATERAL' ? $verified['diploma_percentage'] : $verified['twelfth_percentage'];
 @endphp
-<div class="page">
   <div class="ph">
     <div>
       <h1>Academic records</h1>
@@ -75,6 +74,5 @@
       </div>
     </section>
   </div>
-</div>
 @include('student.partials.acad-drawers')
 @endsection

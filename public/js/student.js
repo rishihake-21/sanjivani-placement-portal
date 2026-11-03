@@ -4,7 +4,7 @@
      - opens and closes the drawers (cloned from <template id="tpl-...">),
      - sends writes to the module's API controllers (JSON or multipart, session + CSRF),
      - shows validation errors next to the field,
-     - runs the sidebar, chip inputs, file picker and toasts.
+     - runs chip inputs, file picker and toasts.
    Reads window.TPMS.urls (set in layouts/student.blade.php).
    ===================================================================== */
 (function () {
@@ -483,32 +483,6 @@
   }
   function drawerOpen() { var r = $('#drawer-root'); return !!(r && r.firstChild); }
 
-  /* ---------------------------------------------------------------- sidebar */
-  function navOverlay() { return window.innerWidth < 768; }
-  function syncNavToggle() {
-    var b = $('[data-nav-toggle]');
-    if (!b) { return; }
-    var root = document.documentElement;
-    if (navOverlay()) {
-      b.setAttribute('aria-label', 'Open menu');
-      b.setAttribute('aria-expanded', String(root.classList.contains('nav-open')));
-    } else {
-      var collapsed = root.classList.contains('nav-collapsed');
-      b.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
-      b.setAttribute('aria-expanded', String(!collapsed));
-    }
-  }
-  function toggleNav() {
-    var root = document.documentElement;
-    if (navOverlay()) { root.classList.toggle('nav-open'); }
-    else {
-      var c = root.classList.toggle('nav-collapsed');
-      try { localStorage.setItem('tpms.nav', c ? 'collapsed' : 'expanded'); } catch (e) { /* ignore */ }
-    }
-    syncNavToggle();
-  }
-  function closeOverlay() { document.documentElement.classList.remove('nav-open'); syncNavToggle(); }
-
   /* ---------------------------------------------------------------- chips */
   function chipMsg(box, msg) {
     var f = box.closest('.field'), m = $('.err.tmp', f);
@@ -544,11 +518,7 @@
     var t = e.target;
     if (!t.closest) { return; }
 
-    var el = t.closest('[data-nav-toggle]');
-    if (el) { toggleNav(); return; }
-    if (t.closest('[data-nav-close]')) { closeOverlay(); return; }
-
-    el = t.closest('[data-open]');
+    var el = t.closest('[data-open]');
     if (el && !el.disabled) { openDrawer(el.dataset.open, { key: el.dataset.key, focus: el.dataset.focus, trigger: el }); return; }
     if (t.closest('[data-drawer-close]')) { closeDrawer(); return; }
 
@@ -643,7 +613,7 @@
       if (e.key === 'Backspace' && !input.value) { var cs = $$('.chip', box); if (cs.length) { cs[cs.length - 1].remove(); } }
     }
     if (e.key === 'Escape') {
-      if (drawerOpen()) { closeDrawer(); } else { closeOverlay(); }
+      if (drawerOpen()) { closeDrawer(); }
       return;
     }
     if (e.key === 'Tab' && drawerOpen()) {
@@ -660,14 +630,8 @@
     if (input && input.value.trim()) { addChip(input.closest('[data-tags]')); }
   });
 
-  window.addEventListener('resize', function () {
-    if (!navOverlay()) { document.documentElement.classList.remove('nav-open'); }
-    syncNavToggle();
-  });
-
   /* ---------------------------------------------------------------- boot */
   function boot() {
-    syncNavToggle();
     restoreAfterReload();
     initDocumentRefresh();
   }

@@ -8,7 +8,6 @@
   $locked = ! empty($student['profile_locked']);
   $liveExps = array_values(array_filter($experiences, fn ($x) => $x['status'] !== 'SUPERSEDED'));
 @endphp
-<div class="page">
   <div class="ph">
     <div>
       <h1>Experience</h1>
@@ -50,6 +49,5 @@
       @endif
     </section>
   </div>
-</div>
 @include('student.partials.exp-drawers')
 @endsection

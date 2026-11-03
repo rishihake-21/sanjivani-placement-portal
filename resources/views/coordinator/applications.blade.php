@@ -17,7 +17,6 @@
   $hasFilter = ! empty($f['drive_id']) || ! empty($f['stage']) || ! empty($f['branch_id']) || ! empty($f['search']);
   $stageNames = ['APPLIED' => 'Applied', 'SHORTLISTED' => 'Shortlisted', 'APTITUDE' => 'Aptitude', 'TECHNICAL' => 'Technical', 'HR' => 'HR', 'SELECTED' => 'Selected', 'REJECTED' => 'Rejected', 'OFFER_RECEIVED' => 'Offer received', 'PLACED' => 'Placed', 'WITHDRAWN' => 'Withdrawn'];
 @endphp
-<div class="page">
   <div class="ph">
     <div>
       <h1>Applications</h1>
@@ -29,7 +28,7 @@
     <section class="card" aria-labelledby="h-ap">
       <div class="card-h"><h2 id="h-ap">All applications</h2></div>
 
-      <form method="get" action="{{ route('coordinator.applications') }}" class="fbar">
+      <form method="get" action="{{ route('coordinator.applications') }}" class="filters">
         <div class="field grow">
           <label for="f-search">Name or university ID</label>
           <input id="f-search" type="text" name="search" value="{{ $f['search'] ?? '' }}" autocomplete="off">
@@ -85,7 +84,7 @@
                   <td data-l="Stage">@include('coordinator.partials.badge', ['kind' => 'stage', 'value' => $r['stage']])</td>
                   <td data-l="Applied" class="nw">{{ U::date($r['applied_at']) }}</td>
                   <td data-l="Last change" class="nw">{{ U::date($r['stage_updated_at'] ?? null) ?: '–' }}</td>
-                  <td class="act"><a class="btn btn-secondary" href="{{ route('coordinator.applications.show', $r['id']) }}">View</a></td>
+                  <td class="act"><a class="btn btn-quiet btn-sm" href="{{ route('coordinator.applications.show', $r['id']) }}">View</a></td>
                 </tr>
               @endforeach
             </tbody>
@@ -97,5 +96,4 @@
       @include('coordinator.partials.pager', ['pg' => $pg])
     </section>
   </div>
-</div>
 @endsection

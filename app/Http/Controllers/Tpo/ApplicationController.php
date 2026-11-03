@@ -30,6 +30,7 @@ class ApplicationController extends Controller
             'stage' => ['sometimes', Rule::enum(ApplicationStage::class)],
             'department_id' => ['sometimes', 'integer'],
             'branch_id' => ['sometimes', 'integer'],
+            'graduation_year' => ['sometimes', 'integer'],
             'search' => ['sometimes', 'string', 'max:100'],
         ]);
 
@@ -40,6 +41,7 @@ class ApplicationController extends Controller
             ->when($request->filled('stage'), fn ($q) => $q->where('stage', $request->string('stage')->toString()))
             ->when($request->filled('department_id'), fn ($q) => $q->whereHas('student', fn ($s) => $s->where('department_id', $request->integer('department_id'))))
             ->when($request->filled('branch_id'), fn ($q) => $q->whereHas('student', fn ($s) => $s->where('branch_id', $request->integer('branch_id'))))
+            ->when($request->filled('graduation_year'), fn ($q) => $q->whereHas('student', fn ($s) => $s->where('graduation_year', $request->integer('graduation_year'))))
             ->when($request->filled('search'), function ($q) use ($request) {
                 $term = '%' . addcslashes($request->string('search')->toString(), '%_\\') . '%';
                 $q->whereHas('student', fn ($s) => $s->where('full_name', 'ilike', $term)->orWhere('university_id', 'ilike', $term));

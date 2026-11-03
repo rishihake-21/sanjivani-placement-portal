@@ -1,9 +1,8 @@
 @extends('layouts.student')
 
-@section('title', 'Drive Details - TPMS')
+@section('title', 'Drive Details')
 
 @section('content')
-<div class="page">
     <div class="ph">
         <div>
             <a href="{{ route('student.drives') }}" class="linkbtn" style="margin-bottom:8px;display:inline-block">← Back to Drives</a>
@@ -80,7 +79,7 @@
                 </section>
             </div>
 
-            <div class="c5">
+            <div class="c5 sticky-side">
                 <section class="card">
                     <div class="card-h"><h2>Your application</h2></div>
                     @if ($hasApplied)
@@ -105,5 +104,4 @@
             </div>
         </div>
     </div>
-</div>
 @endsection

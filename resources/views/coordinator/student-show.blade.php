@@ -70,7 +70,6 @@
       return 'Document' . (isset($docById[$id]) ? ': ' . U::docType($docById[$id]['document_type']) : '');
   };
 @endphp
-<div class="page">
   <div class="ph">
     <div>
       <h1>{{ $student['full_name'] }}</h1>
@@ -355,7 +354,6 @@
       </section>
     @endif
   </div>
-</div>
 
 @foreach ($reviews as [$rk, $ri])
   @include('coordinator.partials.review-drawer', ['kind' => $rk, 'item' => $ri])

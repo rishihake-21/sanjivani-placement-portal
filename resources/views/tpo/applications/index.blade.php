@@ -6,7 +6,7 @@
 @section('content')
   <x-ui.page-header title="Applications" meta="Every student application across all drives. Open one to move it through the rounds." />
 
-  <x-ui.card id="list" title="All applications">
+  <x-ui.card id="list" class="flat" aria-label="All applications">
     <x-ui.filter-bar>
       <div class="field grow">
         <label for="flt-search">Search</label>
@@ -15,11 +15,12 @@
       <x-ui.select filter name="stage" label="Stage" placeholder="All stages" :options="$stages" />
       <x-ui.select filter name="company_id" label="Company" placeholder="All" :options="$companies->pluck('name', 'id')->all()" />
       <x-ui.select filter name="department_id" label="Department" placeholder="All" :options="$departments->pluck('name', 'id')->all()" />
+      <x-ui.select filter name="graduation_year" label="Batch" placeholder="All" :options="array_combine($years, $years)" />
       <input type="hidden" data-filter="drive_id" id="flt-drive_id">
     </x-ui.filter-bar>
     <div id="drive-chip" style="margin-bottom:16px"></div>
 
-    <x-ui.table id="app-rows" :cols="['Student', 'Drive', 'Branch', 'Stage', 'Applied', 'Updated', '']" />
+    <x-ui.table class="rows-open" id="app-rows" :cols="['Student', 'Drive', 'Branch', 'Stage', 'Applied', 'Updated', '']" />
     <div class="pager" id="pager"></div>
   </x-ui.card>
 @endsection
@@ -43,7 +44,7 @@
           `<span class="name">${esc(a.student.full_name)}</span><span class="sub">${esc(a.student.university_id)}</span>`,
           `<a class="linkbtn" href="${drivesBase}/${a.drive.id}">${esc(a.drive.title)}</a><span class="sub">${esc(a.company || '')}</span>`,
           esc(a.student.branch || ''), badge('stage', a.stage), fmtDate(a.applied_at), fmtDate(a.stage_updated_at),
-          { html: `<a class="btn btn-secondary" href="${base}/${a.id}">Open</a>`, cls: 'act' },
+          { html: `<a class="btn btn-quiet btn-sm" href="${base}/${a.id}">Open</a>`, cls: 'act' },
         ], 'No applications match these filters.');
         pager($('#pager'), res, (p) => { page = p; load(); });
       } catch (e) { fail(e); }
@@ -51,7 +52,7 @@
 
     const reload = () => { page = 1; load(); };
     $('#flt-search').addEventListener('input', debounce(reload, 300));
-    ['stage', 'company_id', 'department_id'].forEach((k) => $('#flt-' + k).addEventListener('change', reload));
+    ['stage', 'company_id', 'department_id', 'graduation_year'].forEach((k) => $('#flt-' + k).addEventListener('change', reload));
     document.addEventListener('click', (e) => { if (e.target.closest('#clear-drive')) { $('#flt-drive_id').value = ''; reload(); } });
 
     const p = readFilters(document);

@@ -30,7 +30,6 @@
   };
   $snap = is_array($snapshot) ? $flat($snapshot) : [];
 @endphp
-<div class="page">
   <div class="ph">
     <div>
       <h1>{{ $st['full_name'] }}</h1>
@@ -92,5 +91,4 @@
       @endif
     </section>
   </div>
-</div>
 @endsection

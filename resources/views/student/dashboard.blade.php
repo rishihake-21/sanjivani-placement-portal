@@ -21,7 +21,6 @@
   $canApply = ! empty($completeness['can_apply']);
   $unreadCount = $unread;
 @endphp
-<div class="page">
   <div class="ph">
     <div>
       <h1>Welcome, {{ $first }}</h1>
@@ -143,6 +142,5 @@
       @endif
     </section>
   </div>
-</div>
 @include('student.partials.acad-drawers')
 @endsection

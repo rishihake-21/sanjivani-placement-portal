@@ -75,7 +75,7 @@
         `<a class="linkbtn" href="${studentsUrl}/${r.item.student.id}"><span class="name">${esc(r.item.student.full_name)}</span></a><span class="sub">${esc(r.item.student.university_id)}</span>`,
         `<span class="name">${esc(r.title)}</span>${r.rev ? ' <span class="tag">Revision</span>' : ''}${r.sub ? `<span class="sub">${esc(r.sub)}</span>` : ''}`,
         { html: r.at ? fmtDate(r.at) : TPMS.dash, cls: 'nw' },
-        { html: `<button type="button" class="btn btn-primary" data-review="${shown.indexOf(r)}">Review</button>`, cls: 'act' },
+        { html: `<button type="button" class="btn btn-secondary btn-sm" data-review="${shown.indexOf(r)}">Review</button>`, cls: 'act' },
       ], items.length ? 'No items match the filters.' : 'Nothing is waiting for review.');
     }
 

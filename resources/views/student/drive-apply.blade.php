@@ -1,9 +1,8 @@
 @extends('layouts.student')
 
-@section('title', 'Apply to Drive - TPMS')
+@section('title', 'Apply to Drive')
 
 @section('content')
-<div class="page">
     <div class="ph">
         <div>
             <a href="{{ route('student.drives.show', $drive) }}" class="linkbtn" style="margin-bottom:8px;display:inline-block">← Back to drive</a>
@@ -116,7 +115,6 @@
             </section>
         @endif
     </div>
-</div>
 
 @if (!$hasApplied)
 <script>

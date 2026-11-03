@@ -16,7 +16,6 @@
   $f = $filters;
   $hasFilter = ! empty($f['status']) || ! empty($f['branch_id']) || ! empty($f['graduation_year']) || ! empty($f['company_id']);
 @endphp
-<div class="page">
   <div class="ph">
     <div>
       <h1>Placements</h1>
@@ -28,7 +27,7 @@
     <section class="card" aria-labelledby="h-pl">
       <div class="card-h"><h2 id="h-pl">All placements</h2></div>
 
-      <form method="get" action="{{ route('coordinator.placements') }}" class="fbar">
+      <form method="get" action="{{ route('coordinator.placements') }}" class="filters">
         <div class="field">
           <label for="f-status">Status</label>
           <select id="f-status" name="status">
@@ -97,5 +96,4 @@
       @include('coordinator.partials.pager', ['pg' => $pg])
     </section>
   </div>
-</div>
 @endsection

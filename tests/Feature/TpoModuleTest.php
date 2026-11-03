@@ -408,6 +408,59 @@ class TpoModuleTest extends TestCase
         $this->assertStringContainsString('A1', $csv);
     }
 
+    public function test_dashboard_backlog_and_company_report_follow_the_batch_filter(): void
+    {
+        $a = $this->makeStudent('B1');                                   // batch 2029 (fixture default)
+        $b = $this->makeStudent('B2');
+        $b->forceFill(['graduation_year' => 2030])->save();
+
+        // one record waiting for a coordinator in each batch
+        foreach ([$a, $b] as $s) {
+            $record = $this->verified($s, AcademicLevel::DIPLOMA->value, null, ['percentage' => 80]);
+            DB::table('academic_records')->where('id', $record->id)->update(['status' => 'PENDING', 'reviewed_by' => null, 'reviewed_at' => null, 'locked_at' => null]);
+        }
+
+        // an off-campus placement: the company has no drive in batch 2029
+        $company = Company::create(['name' => 'Offcampus Ltd', 'created_by' => $this->tpo->id]);
+        Placement::create(['student_id' => $a->id, 'company_id' => $company->id, 'role_title' => 'Analyst', 'ctc_lpa' => 9, 'status' => 'PLACED', 'verified_by' => $this->tpo->id, 'verified_at' => now()]);
+
+        Sanctum::actingAs($this->tpo);
+
+        $all = $this->getJson('/api/tpo/dashboard')->assertOk()->json('data');
+        $this->assertSame(2, $all['verification_backlog']['academic_records']);
+
+        $batch = $this->getJson('/api/tpo/dashboard?graduation_year=2029')->assertOk()->json('data');
+        $this->assertSame(1, $batch['verification_backlog']['academic_records']);
+        $this->assertSame(1, $batch['placements']['placed_students']);
+
+        $none = $this->getJson('/api/tpo/dashboard?graduation_year=2031')->assertOk()->json('data');
+        $this->assertSame(0, $none['verification_backlog']['academic_records']);
+
+        // the company rows add up to the placed total, even for a company without a drive
+        $rows = collect($this->getJson('/api/tpo/reports/companies?graduation_year=2029')->assertOk()->json('data'));
+        $this->assertSame($batch['placements']['placed_students'], $rows->sum('students_placed'));
+        $row = $rows->firstWhere('company', 'Offcampus Ltd');
+        $this->assertSame(1, $row['students_placed']);
+        $this->assertSame(0, $row['drives']);
+    }
+
+    public function test_application_list_can_be_filtered_by_the_students_batch(): void
+    {
+        $in2029 = $this->makeStudent('C1');
+        $in2030 = $this->makeStudent('C2');
+        $in2030->forceFill(['graduation_year' => 2030])->save();
+        $drive = $this->drive();
+
+        foreach ([$in2029, $in2030] as $s) {
+            Application::create(['drive_id' => $drive->id, 'student_id' => $s->id, 'stage' => 'APPLIED', 'applied_at' => now(), 'stage_updated_at' => now(), 'data_snapshot' => []]);
+        }
+
+        Sanctum::actingAs($this->tpo);
+        $this->assertSame(2, $this->getJson('/api/tpo/applications')->assertOk()->json('total'));
+        $this->assertSame(1, $this->getJson('/api/tpo/applications?graduation_year=2029')->assertOk()->json('total'));
+        $this->assertSame(0, $this->getJson('/api/tpo/applications?graduation_year=2031')->assertOk()->json('total'));
+    }
+
     public function test_database_refuses_an_unverified_placed_record(): void
     {
         $student = $this->makeStudent('A1');
