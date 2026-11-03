@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Route;
 |   routes/tpo.php         -> /api/tpo/*, /api/student/*        (drives, applications, ...)
 |   routes/coordinator.php -> /api/coordinator/*, /api/admin/*,
 |                              /api/student/reupload-requests
+|   routes/recruiter.php   -> /api/recruiter/*                  (a company's applicant cards, read-only)
 */
 
 Route::prefix('auth')->group(function () {
@@ -35,4 +36,5 @@ Route::middleware('auth:sanctum')->group(function () {
     // ---- Module endpoint groups (inherit this prefix + auth:sanctum) ---------------------------
     require __DIR__.'/tpo.php';
     require __DIR__.'/coordinator.php';
+    require __DIR__.'/recruiter.php';
 });

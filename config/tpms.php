@@ -15,5 +15,14 @@ return [
     ],
 
     // Roles whose access to someone else's document is written to the audit log.
-    'audit_document_views_for' => ['tp_coordinator', 'tpo', 'hod'],
+    'audit_document_views_for' => ['tp_coordinator', 'tpo', 'hod', 'recruiter'],
+
+    'recruiter' => [
+        // A recruiter sees a student's phone and personal e-mail only once the company has moved them
+        // past the first screen. APPLIED and REJECTED applicants stay anonymous to the company.
+        'contact_visible_stages' => ['SHORTLISTED', 'APTITUDE', 'TECHNICAL', 'HR', 'SELECTED', 'OFFER_RECEIVED', 'PLACED'],
+
+        // Drive states whose applicants a recruiter may see (never DRAFT or CANCELLED).
+        'visible_drive_statuses' => ['PUBLISHED', 'CLOSED'],
+    ],
 ];

@@ -26,12 +26,13 @@
             <select id="up-type" name="document_type" data-upload-type @disabled($locked)>
               <option value="RESUME">Resume</option>
               <option value="CERT_OTHER">Other certificate</option>
+              <option value="PHOTO">Photo (shown to recruiters once approved)</option>
             </select>
           </div>
           <div class="field" data-field="document">
             <label for="up-file">File</label>
             @include('student.partials.file-box', ['id' => 'up-file', 'name' => 'document', 'disabled' => $locked])
-            <span class="hint">PDF, JPG or PNG, up to 5 MB.</span>
+            <span class="hint">PDF, JPG or PNG, up to 5 MB. A photo must be a JPG or PNG.</span>
           </div>
           <div class="full" data-resume-note>
             @include('student.partials.notice', ['kind' => 'neutral', 'ic' => 'info', 'text' => 'If your current resume is approved, it stays primary until the new one is approved.'])

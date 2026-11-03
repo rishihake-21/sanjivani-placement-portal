@@ -23,7 +23,7 @@
       }
   }
   foreach ($documents as $dd) {
-      if ($dd['status'] === 'APPROVED' && isset($dd['id']) && in_array($dd['document_type'], ['RESUME', 'CERT_OTHER'], true)) {
+      if ($dd['status'] === 'APPROVED' && isset($dd['id']) && in_array($dd['document_type'], ['RESUME', 'CERT_OTHER', 'PHOTO'], true)) {
           $subjects[] = ['DOCUMENT|' . $dd['id'], 'Document: ' . U::docType($dd['document_type']) . ' (' . $dd['original_name'] . ')'];
       }
   }

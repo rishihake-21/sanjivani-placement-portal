@@ -18,4 +18,9 @@ class Company extends Model
     {
         return $this->hasMany(PlacementDrive::class);
     }
+
+    public function recruiters(): HasMany
+    {
+        return $this->hasMany(Recruiter::class);
+    }
 }

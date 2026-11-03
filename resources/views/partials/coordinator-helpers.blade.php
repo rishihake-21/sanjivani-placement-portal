@@ -34,12 +34,12 @@
     const p = (BADGES[kind] || {})[v];
     return p ? `<span class="badge b-${p[0]}">${esc(p[1])}</span>` : T.badge(kind, v);
   };
-  const DOC_TYPE = { RESUME: 'Resume', MARKSHEET_10TH: '10th marksheet', MARKSHEET_12TH: '12th marksheet', MARKSHEET_DIPLOMA: 'Diploma marksheet', MARKSHEET_SEMESTER: 'Semester marksheet', CERT_INTERNSHIP: 'Internship certificate', CERT_EXPERIENCE: 'Experience certificate', CERT_OTHER: 'Other certificate' };
+  const DOC_TYPE = { RESUME: 'Resume', MARKSHEET_10TH: '10th marksheet', MARKSHEET_12TH: '12th marksheet', MARKSHEET_DIPLOMA: 'Diploma marksheet', MARKSHEET_SEMESTER: 'Semester marksheet', CERT_INTERNSHIP: 'Internship certificate', CERT_EXPERIENCE: 'Experience certificate', CERT_OTHER: 'Other certificate', PHOTO: 'Photo' };
   const EXP_TYPE = { INTERNSHIP: 'Internship', JOB: 'Job', PROJECT_WORK: 'Project work', TRAINING: 'Training' };
   const ADMISSION = { REGULAR: 'Regular', LATERAL: 'Lateral' };
   const GENDER = { MALE: 'Male', FEMALE: 'Female', OTHER: 'Other', PREFER_NOT_TO_SAY: 'Prefer not to say' };
   const SECTIONS = [['A_identity', 'A', 'Identity'], ['B_contact', 'B', 'Contact'], ['C_academic', 'C', 'Academic'], ['D_skills_links', 'D', 'Skills and links'], ['E_experience', 'E', 'Experience'], ['F_preferences', 'F', 'Preferences'], ['G_resume', 'G', 'Resume']];
-  const STANDALONE = ['RESUME', 'CERT_OTHER']; // marksheets and certificates are reviewed together with their record
+  const STANDALONE = ['RESUME', 'CERT_OTHER', 'PHOTO']; // marksheets and certificates are reviewed together with their record
   const docType = (t) => DOC_TYPE[t] || t;
   const expType = (t) => EXP_TYPE[t] || t;
 

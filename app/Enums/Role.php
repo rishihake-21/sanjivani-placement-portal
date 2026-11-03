@@ -9,5 +9,5 @@ enum Role: string
     case TPO = 'tpo';
     case SYSTEM_ADMIN = 'system_admin';
     case HOD = 'hod';              // future, read-only
-    case RECRUITER = 'recruiter';  // future
+    case RECRUITER = 'recruiter';  // read-only: sees the applicants of their own company's drives
 }

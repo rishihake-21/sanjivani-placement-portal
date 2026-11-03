@@ -33,7 +33,7 @@
   usort($liveRecs, fn ($a, $b) => [$order[$a['level']] ?? 9, (int) ($a['semester'] ?? 0)] <=> [$order[$b['level']] ?? 9, (int) ($b['semester'] ?? 0)]);
   $liveExps = array_values(array_filter($experiences, fn ($x) => $x['status'] !== 'SUPERSEDED'));
   $liveDocs = array_values(array_filter($documents, fn ($d) => $d['status'] !== 'SUPERSEDED'));
-  $standalone = ['RESUME', 'CERT_OTHER'];
+  $standalone = ['RESUME', 'CERT_OTHER', 'PHOTO'];
 
   // Everything that can be approved or rejected from this page, in the shape the review drawer expects.
   $reviews = [];

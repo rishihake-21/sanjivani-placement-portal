@@ -31,6 +31,7 @@ final class StudentUi
         'CERT_INTERNSHIP' => 'Internship certificate',
         'CERT_EXPERIENCE' => 'Experience certificate',
         'CERT_OTHER' => 'Other certificate',
+        'PHOTO' => 'Photo',
     ];
 
     /** kind => value => [badge variant, label]. Variants: ok, wait, no, neutral. */

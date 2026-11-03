@@ -148,7 +148,7 @@ class VerificationService
         return $unlocked;
     }
 
-    // ---- standalone documents (resume, other certificates) ---------------------------------
+    // ---- standalone documents (resume, photo, other certificates) ---------------------------------
 
     public function approveDocument(Document $document, User $reviewer): Document
     {
@@ -173,6 +173,18 @@ class VerificationService
                     $this->documents->supersede($previous);
                 }
                 $isPrimary = true;
+            }
+
+            // An approved photo takes over from the previous approved one.
+            if ($locked->document_type->value === 'PHOTO') {
+                Document::query()
+                    ->where('student_id', $locked->student_id)
+                    ->where('document_type', 'PHOTO')
+                    ->where('status', DocumentStatus::APPROVED->value)
+                    ->where('id', '<>', $locked->id)
+                    ->lockForUpdate()
+                    ->get()
+                    ->each(fn (Document $previous) => $this->documents->supersede($previous));
             }
 
             $locked->forceFill([
