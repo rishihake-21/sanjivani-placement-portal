@@ -32,6 +32,7 @@ Route::get('/', function () {
         'tp_coordinator' => redirect()->route('coordinator.dashboard'),
         'tpo' => redirect()->route('tpo.dashboard'),
         'system_admin' => redirect()->route('admin.dashboard'),
+        'recruiter' => redirect()->route('recruiter.dashboard'),
         default => redirect()->route('login'),
     };
 });
@@ -418,3 +419,7 @@ Route::middleware(['auth', 'role:system_admin'])
         })->name('dashboard');
 
     });
+
+
+// Separate recruiter workspace, protected by recruiter-specific access middleware.
+require __DIR__.'/recruiter-web.php';

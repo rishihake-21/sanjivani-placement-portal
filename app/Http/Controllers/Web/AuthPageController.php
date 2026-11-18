@@ -36,6 +36,7 @@ class AuthPageController extends Controller
                 Role::TP_COORDINATOR->value,
                 Role::TPO->value,
                 Role::SYSTEM_ADMIN->value,
+                Role::RECRUITER->value,
             ])],
         ]);
 
@@ -99,6 +100,7 @@ class AuthPageController extends Controller
             Role::TP_COORDINATOR => 'coordinator.dashboard',
             Role::TPO => 'tpo.dashboard',
             Role::SYSTEM_ADMIN => 'admin.dashboard',
+            Role::RECRUITER => 'recruiter.dashboard',
             default => 'login',
         };
     }
