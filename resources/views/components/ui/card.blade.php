@@ -1,5 +1,5 @@
 @props(['id' => null, 'title' => null, 'actions' => null])
-<section {{ $attributes->merge(['class' => 'card']) }} @if ($id) id="{{ $id }}" aria-labelledby="h-{{ $id }}" @endif>
+<section {{ $attributes->merge(['class' => 'card']) }} @if ($id) id="{{ $id }}" @endif @if ($id && $title) aria-labelledby="h-{{ $id }}" @endif>
   @if ($title)
     <div class="card-h">
       <h2 @if ($id) id="h-{{ $id }}" @endif>{{ $title }}</h2>

@@ -38,15 +38,15 @@
       </div>
     </x-ui.card>
 
-    <x-ui.card id="sec-departments" title="By department">
+    <x-ui.card id="sec-departments" class="flat" title="By department">
       <x-ui.table id="dept-rows" :cols="['Department', 'Students', 'Applied', 'Placed', 'Unplaced', 'Placement %', 'Highest CTC', 'Average CTC']" />
     </x-ui.card>
 
-    <x-ui.card id="sec-branches" title="By branch">
+    <x-ui.card id="sec-branches" class="flat" title="By branch">
       <x-ui.table id="branch-rows" :cols="['Branch', 'Department', 'Students', 'Applied', 'Placed', 'Unplaced', 'Placement %', 'Highest CTC', 'Average CTC']" />
     </x-ui.card>
 
-    <x-ui.card id="sec-companies" title="By company">
+    <x-ui.card id="sec-companies" class="flat" title="By company">
       <x-ui.table id="company-rows" :cols="['Company', 'Drives', 'Applications', 'Selected', 'Placed', 'Highest CTC', 'Average CTC']" />
     </x-ui.card>
   </div>

@@ -15,13 +15,12 @@
   $lpa = fn ($v) => $v === null ? '–' : U::num2($v);
   $sum = fn ($key) => array_sum(array_map(fn ($r) => (int) $r[$key], $rows));
 @endphp
-<div class="page">
   <div class="ph">
     <div>
       <h1>Reports</h1>
       <p class="meta">{{ $department['name'] }} &middot; {{ $graduationYear ? 'Graduation year ' . $graduationYear : 'All graduation years' }}</p>
     </div>
-    <form method="get" action="{{ route('coordinator.reports') }}" class="fbar" style="margin:0">
+    <form method="get" action="{{ route('coordinator.reports') }}" class="filters inline">
       <div class="field">
         <label for="gy">Graduation year</label>
         <input id="gy" type="number" name="graduation_year" min="2000" max="2100" value="{{ $graduationYear }}">
@@ -85,5 +84,4 @@
       </div>
     </section>
   </div>
-</div>
 @endsection

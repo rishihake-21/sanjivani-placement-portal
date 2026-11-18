@@ -11,7 +11,6 @@
   $status = fn ($key) => U::section($completeness, $key)['status'];
   $other = [['C_academic', 'student.academic', 'sec-academic', 'Academic records'], ['E_experience', 'student.experience', 'sec-experience', 'Experience'], ['G_resume', 'student.documents', 'sec-upload', 'Resume']];
 @endphp
-<div class="page">
   <div class="ph">
     <div>
       <h1>Profile</h1>
@@ -137,5 +136,4 @@
       </div>
     </section>
   </div>
-</div>
 @endsection

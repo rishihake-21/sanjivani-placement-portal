@@ -69,6 +69,7 @@ class TpoPageController extends Controller
             'companies' => $this->companyOptions(),
             'departments' => Department::query()->orderBy('name')->get(['id', 'name']),
             'stages' => self::STAGES,
+            'years' => $this->years(),
         ]);
     }
 

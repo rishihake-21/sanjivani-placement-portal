@@ -243,8 +243,65 @@
   function readFilters(root) {
     const p = params();
     $$('[data-filter]', root).forEach((el) => { if (p[el.dataset.filter] !== undefined) el.value = p[el.dataset.filter]; });
+    syncFilterUi(root);
     return p;
   }
+
+  /* Filter chrome: which controls are narrowing the list, the segmented control and the "Clear filters" button.
+     Visible controls only; a hidden [data-filter] (e.g. the drive id carried in a link) has its own "show all" control. */
+  const visibleFilters = (root) => $$('[data-filter]', root).filter((el) => el.type !== 'hidden');
+  function syncFilterUi(root) {
+    $$('.segmented', root).forEach((seg) => {
+      const v = ($('[data-filter]', seg) || {}).value || '';
+      $$('button[data-value]', seg).forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.value === v)));
+    });
+    $$('form.filters', root).forEach((form) => {
+      const set = visibleFilters(form).filter((el) => el.value.trim() !== '');
+      visibleFilters(form).forEach((el) => { const f = el.closest('.field'); if (f) f.classList.toggle('is-set', el.value.trim() !== ''); });
+      const clear = $('.clear-filters', form);
+      if (clear) clear.hidden = !set.length;
+    });
+  }
+  function clearFilters(form) {
+    const changed = visibleFilters(form).filter((el) => el.value.trim() !== '');
+    changed.forEach((el) => { el.value = ''; });
+    syncFilterUi(form.ownerDocument);
+    // every page reloads from the current filter values, so one event is enough
+    const first = changed[0];
+    if (first) first.dispatchEvent(new Event(first.tagName === 'SELECT' ? 'change' : 'input', { bubbles: true }));
+    const target = $('[data-filter]:not([type=hidden])', form);
+    if (target) target.focus({ preventScroll: true });
+  }
+  function initFilterUi() {
+    // A click on a segment is the same as choosing an option in a <select>.
+    document.addEventListener('click', (e) => {
+      const b = e.target.closest('.segmented button[data-value]');
+      if (!b) return;
+      const input = $('[data-filter]', b.closest('.segmented'));
+      if (!input || input.value === b.dataset.value) return;
+      input.value = b.dataset.value;
+      syncFilterUi(document);
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    // Every list page: a "Clear filters" button on its filter toolbar.
+    {
+      $$('form.filters').forEach((form) => {
+        if ($('.clear-filters', form)) return;
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'btn btn-quiet clear-filters';
+        b.hidden = true;
+        b.textContent = 'Clear filters';
+        b.addEventListener('click', () => clearFilters(form));
+        form.append(b);
+      });
+      const refresh = (e) => { if (e.target.matches && e.target.matches('[data-filter]')) syncFilterUi(document); };
+      document.addEventListener('input', refresh);
+      document.addEventListener('change', refresh);
+      syncFilterUi(document);
+    }
+  }
+  document.addEventListener('DOMContentLoaded', initFilterUi);
   function filterValues(root) {
     const o = {};
     $$('[data-filter]', root).forEach((el) => { o[el.dataset.filter] = el.value.trim(); });
@@ -334,35 +391,26 @@
     });
   }
 
+  /* ---------------- table rows ---------------- */
+  // TPO tables marked .rows-open: the whole row follows the link in its action cell (Open, View), a bigger
+  // target than the title text. Links, buttons and fields inside the row still do their own thing; modifier-clicks
+  // are left to the browser.
+  document.addEventListener('click', (e) => {
+    if (document.body.dataset.portal !== 'tpo' || e.defaultPrevented || e.button !== 0) return;
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const row = e.target.closest('.tbl.rows-open tbody tr');
+    if (!row || e.target.closest('a, button, input, select, textarea, label, summary')) return;
+    const link = row.querySelector('td.act a[href]:not([download]):not([target])');
+    if (link) link.click();
+  });
+
   /* ---------------- shell ---------------- */
   function initShell() {
-    const app = $('#app');
-    if (!app) return;
-    const mq = window.matchMedia('(max-width:767px)');
-    const toggle = $('[data-act="toggle-nav"]');
-    const sync = () => {
-      app.classList.toggle('is-overlay', mq.matches);
-      if (mq.matches) app.classList.remove('collapsed');
-      else { app.classList.toggle('collapsed', localStorage.getItem('tpms.nav') === 'c'); app.classList.remove('overlay-open'); }
-      if (toggle) {
-        toggle.setAttribute('aria-label', mq.matches ? 'Open menu' : app.classList.contains('collapsed') ? 'Expand sidebar' : 'Collapse sidebar');
-        toggle.setAttribute('aria-expanded', String(mq.matches ? app.classList.contains('overlay-open') : !app.classList.contains('collapsed')));
-      }
-    };
-    mq.addEventListener('change', sync);
-    sync();
-    if (toggle) {
-      toggle.addEventListener('click', () => {
-        if (mq.matches) app.classList.toggle('overlay-open');
-        else { app.classList.toggle('collapsed'); localStorage.setItem('tpms.nav', app.classList.contains('collapsed') ? 'c' : 'e'); }
-        sync();
-      });
-    }
-    const scrim = $('.nav-scrim');
-    if (scrim) scrim.addEventListener('click', () => { app.classList.remove('overlay-open'); sync(); });
-
+    // The sidebar itself is public/js/shell.js; this only shows the message left by the previous page.
     const msg = sessionStorage.getItem('tpms.flash');
     if (msg) { sessionStorage.removeItem('tpms.flash'); toast(msg); }
+    const t = $('#toast');
+    if (t && t.dataset.flash) toast(t.dataset.flash);
   }
   document.addEventListener('DOMContentLoaded', initShell);
 

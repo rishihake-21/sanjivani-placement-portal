@@ -7,7 +7,6 @@
   $documents = array_values($documents ?? []);
   $locked = ! empty($student['profile_locked']);
 @endphp
-<div class="page">
   <div class="ph">
     <div>
       <h1>Documents</h1>
@@ -72,5 +71,4 @@
       </div>
     </section>
   </div>
-</div>
 @endsection

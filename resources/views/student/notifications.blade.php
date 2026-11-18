@@ -3,7 +3,6 @@
 @section('title', 'Notifications')
 
 @section('content')
-<div class="page">
   <div class="ph">
     <div>
       <h1>Notifications</h1>
@@ -22,5 +21,4 @@
       @endif
     </section>
   </div>
-</div>
 @endsection

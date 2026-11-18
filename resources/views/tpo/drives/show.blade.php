@@ -127,7 +127,7 @@
       const d = drive;
       document.title = d.title + ' · TPMS';
       $('.ph h1').textContent = d.title;
-      $('.ph .meta').innerHTML = `${esc(d.company ? d.company.name : '')} &middot; Batch ${esc(d.graduation_year)} &middot; ${badge('drive', d.status)}`;
+      $('.ph .meta').innerHTML = `${esc(d.company ? d.company.name : '')}, batch ${esc(d.graduation_year)} ${badge('drive', d.status)}`;
 
       const acts = [];
       if (d.status === 'DRAFT') acts.push(`<a class="btn btn-secondary" href="${editUrl}">Edit</a>`, `<button type="button" class="btn btn-danger" data-do="delete">Delete draft</button>`, `<button type="button" class="btn btn-primary" data-do="publish">Publish</button>`);
@@ -140,7 +140,7 @@
 
       $('#overview-dl').innerHTML = [
         dl('Company', esc(d.company ? d.company.name : '')), dl('Employment', esc(EMPLOYMENT[d.employment_type] || d.employment_type)),
-        dl('CTC', d.ctc_lpa == null ? '' : `${num(d.ctc_lpa)}${d.ctc_max_lpa ? ' to ' + num(d.ctc_max_lpa) : ''} LPA`),
+        dl('CTC', d.ctc_lpa == null ? '' : `${num(d.ctc_lpa)}${Number(d.ctc_max_lpa) > Number(d.ctc_lpa) ? ' to ' + num(d.ctc_max_lpa) : ''} LPA`),
         dl('Location', esc(d.location || '')),
         dl('Drive date', d.drive_date ? fmtDate(d.drive_date) : ''), dl('Application deadline', d.application_deadline ? fmtDT(d.application_deadline) : ''),
         dl('Published', d.published_at ? fmtDT(d.published_at) : ''), dl('Placed students may apply', d.allow_placed_students ? 'Yes' : 'No'),
@@ -230,7 +230,7 @@
           { html: `<input type="checkbox" data-sel="${a.id}" aria-label="Select ${esc(a.student.full_name)}"${selected.has(a.id) ? ' checked' : ''}>`, cls: 'sel' },
           `<span class="name">${esc(a.student.full_name)}</span><span class="sub">${esc(a.student.university_id)}</span>`, esc(a.student.branch || ''),
           badge('stage', a.stage), fmtDate(a.applied_at), fmtDate(a.stage_updated_at),
-          { html: `<a class="btn btn-secondary" href="${appUrl}/${a.id}">Open</a>`, cls: 'act' },
+          { html: `<a class="btn btn-quiet btn-sm" href="${appUrl}/${a.id}">Open</a>`, cls: 'act' },
         ], 'No applications yet.');
         $('#app-rows-all').checked = rows.length > 0 && rows.every((a) => selected.has(a.id));
         pager($('#app-pager'), res, (p) => { appPage = p; loadApplications(); });

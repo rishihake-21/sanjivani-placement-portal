@@ -51,7 +51,7 @@
     function render() {
       document.title = a.student.full_name + ' · TPMS';
       $('.ph h1').textContent = a.student.full_name;
-      $('.ph .meta').innerHTML = `${esc(a.student.university_id)} &middot; ${esc(a.student.branch || '')} &middot; <a class="linkbtn" href="${drivesBase}/${a.drive.id}">${esc(a.company || '')} &ndash; ${esc(a.drive.title)}</a> &middot; ${badge('stage', a.stage)}`;
+      $('.ph .meta').innerHTML = `${esc(a.student.university_id)}${a.student.branch ? ', ' + esc(a.student.branch) : ''}<br><a class="linkbtn" href="${drivesBase}/${a.drive.id}">${esc(a.company || '')}, ${esc(a.drive.title)}</a> ${badge('stage', a.stage)}`;
       renderProgress();
       renderOffer();
 
