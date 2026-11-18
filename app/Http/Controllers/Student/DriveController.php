@@ -71,10 +71,15 @@ class DriveController extends Controller
         $result = $this->engine->evaluate($student, $drive);
         $mine = Application::query()->where('drive_id', $drive->id)->where('student_id', $student->id)->first();
 
-        return response()->json(['data' => DrivePresenter::detail($drive) + [
+        // array_merge, not `+`: detail() already has an `eligibility` key (the drive's criteria), and `+` would keep it
+        // and silently drop this student's result. The criteria stay available under `criteria`.
+        $detail = DrivePresenter::detail($drive);
+
+        return response()->json(['data' => array_merge($detail, [
+            'criteria' => $detail['eligibility'],
             'eligibility' => $result->toArray(),   // full per-criterion breakdown
             'my_application' => $mine ? ['id' => $mine->id, 'stage' => $mine->stage->value, 'applied_at' => $mine->applied_at] : null,
-        ]]);
+        ])]);
     }
 
     public function apply(Request $request, int $id, ApplicationService $applications): JsonResponse

@@ -35,7 +35,7 @@ class TpoModuleTest extends TestCase
     {
         parent::setUp();
         $this->setUpTpms();
-        $this->tpo = User::create(['name' => 'TPO', 'email' => 'tpo@college.test', 'password' => 'Password123', 'role' => Role::TPO]);
+        $this->tpo = User::create(['name' => 'TPO', 'email' => 'tpo@college.test', 'password' => 'Password123', 'role' => Role::TPO, 'is_active' => true]);
     }
 
     // ---- fixtures ---------------------------------------------------------------------------------
@@ -262,6 +262,23 @@ class TpoModuleTest extends TestCase
         $drive->forceFill(['application_deadline' => now()->subMinute()])->save();
         Sanctum::actingAs($late->user);
         $this->postJson("/api/student/drives/{$drive->id}/apply")->assertStatus(409);
+    }
+
+    public function test_student_drive_api_returns_the_students_own_eligibility_result(): void
+    {
+        $student = $this->makeReady($this->makeStudent('A1'));
+        $drive = $this->drive();
+
+        Sanctum::actingAs($student->user);
+        $this->getJson("/api/student/drives/{$drive->id}")->assertOk()
+            ->assertJsonPath('data.eligibility.status', 'ELIGIBLE')
+            ->assertJsonPath('data.criteria.min_cgpa', '7.00');
+
+        $low = $this->makeReady($this->makeStudent('A2'), sgpa: 6);
+        Sanctum::actingAs($low->user);
+        $this->getJson("/api/student/drives/{$drive->id}")->assertOk()
+            ->assertJsonPath('data.eligibility.status', 'NOT_ELIGIBLE')
+            ->assertJsonPath('data.eligibility.checks.4.result', 'FAIL');
     }
 
     // ---- recruitment stages ---------------------------------------------------------------------------------
