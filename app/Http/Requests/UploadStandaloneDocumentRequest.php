@@ -15,10 +15,14 @@ class UploadStandaloneDocumentRequest extends FormRequest
 
     public function rules(): array
     {
+        // A photo has to be a picture; the other standalone documents may also be PDFs.
+        $imageOnly = DocumentType::tryFrom((string) $this->input('document_type'))?->isImageOnly() === true;
+
         return [
             'document_type' => ['required', Rule::in(DocumentType::standaloneValues())],
             'document' => ['required', 'file', 'max:' . config('tpms.documents.max_kb'),
-                'mimes:pdf,jpg,jpeg,png', 'mimetypes:application/pdf,image/jpeg,image/png'],
+                $imageOnly ? 'mimes:jpg,jpeg,png' : 'mimes:pdf,jpg,jpeg,png',
+                $imageOnly ? 'mimetypes:image/jpeg,image/png' : 'mimetypes:application/pdf,image/jpeg,image/png'],
         ];
     }
 }

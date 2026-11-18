@@ -38,6 +38,11 @@ class User extends Authenticatable
         return $this->hasOne(Student::class);
     }
 
+    public function recruiter(): HasOne
+    {
+        return $this->hasOne(Recruiter::class);
+    }
+
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);

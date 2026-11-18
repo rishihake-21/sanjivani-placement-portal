@@ -20,6 +20,13 @@ Route::middleware('role:tpo')->prefix('tpo')->group(function () {
     Route::get('companies/{id}', [Tpo\CompanyController::class, 'show'])->whereNumber('id');
     Route::patch('companies/{id}', [Tpo\CompanyController::class, 'update'])->whereNumber('id');
 
+    // recruiter logins (what a company's recruiter may see is set by their company)
+    Route::get('recruiters', [Tpo\RecruiterController::class, 'index']);
+    Route::post('recruiters', [Tpo\RecruiterController::class, 'store']);
+    Route::patch('recruiters/{recruiter}', [Tpo\RecruiterController::class, 'update'])->whereNumber('recruiter');
+    Route::post('recruiters/{recruiter}/deactivate', [Tpo\RecruiterController::class, 'deactivate'])->whereNumber('recruiter');
+    Route::post('recruiters/{recruiter}/reactivate', [Tpo\RecruiterController::class, 'reactivate'])->whereNumber('recruiter');
+
     // drives
     Route::get('drives', [Tpo\DriveController::class, 'index']);
     Route::post('drives', [Tpo\DriveController::class, 'store']);

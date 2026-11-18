@@ -112,7 +112,7 @@ class DocumentService
     }
 
     /**
-     * Standalone uploads: RESUME and CERT_OTHER.
+     * Standalone uploads: RESUME, PHOTO and CERT_OTHER.
      *
      * Resume rules
      *  - first resume                       -> becomes the primary immediately (still PENDING review)
@@ -123,6 +123,10 @@ class DocumentService
     public function uploadStandalone(Student $student, UploadedFile $file, DocumentType $type, User $uploader): Document
     {
         abort_unless($type->isStandalone(), 422, 'This document type must be attached to a record.');
+
+        if ($type === DocumentType::PHOTO) {
+            return $this->uploadPhoto($student, $file, $uploader);
+        }
 
         if ($type !== DocumentType::RESUME) {
             return $this->store($student, $file, $type, $uploader);
@@ -152,6 +156,31 @@ class DocumentService
         });
     }
 
+    /**
+     * One live photo per student. While the current photo is approved it stays the visible one; a new
+     * upload waits for review (replacing any earlier waiting/rejected upload) and takes over on approval.
+     */
+    private function uploadPhoto(Student $student, UploadedFile $file, User $uploader): Document
+    {
+        return DB::transaction(function () use ($student, $file, $uploader) {
+            $live = Document::query()
+                ->where('student_id', $student->id)
+                ->where('document_type', DocumentType::PHOTO->value)
+                ->where('status', '<>', DocumentStatus::SUPERSEDED->value)
+                ->lockForUpdate()
+                ->get();
+
+            $approved = $live->first(fn (Document $d) => $d->status === DocumentStatus::APPROVED);
+            $waiting = $live->first(fn (Document $d) => $d->status !== DocumentStatus::APPROVED);
+
+            if ($approved === null) {
+                return $this->store($student, $file, DocumentType::PHOTO, $uploader, replaces: $waiting);
+            }
+
+            return $this->store($student, $file, DocumentType::PHOTO, $uploader, replaces: $waiting ?? $approved, supersedeReplaced: $waiting !== null);
+        });
+    }
+
     public function supersede(Document $document): void
     {
         $document->forceFill(['status' => DocumentStatus::SUPERSEDED, 'is_primary' => false])->save();
@@ -163,6 +192,19 @@ class DocumentService
         abort_unless($disk->exists($document->path), 404, 'File not found in storage.');
 
         return $disk->download($document->path, $document->original_name, [
+            'Content-Type' => $document->mime_type,
+            'X-Content-Type-Options' => 'nosniff',
+            'Cache-Control' => 'private, no-store',
+        ]);
+    }
+
+    /** Same checks as download(), but shown in the browser (images, PDFs) instead of saved. */
+    public function view(Document $document): StreamedResponse
+    {
+        $disk = Storage::disk($document->disk);
+        abort_unless($disk->exists($document->path), 404, 'File not found in storage.');
+
+        return $disk->response($document->path, $document->original_name, [
             'Content-Type' => $document->mime_type,
             'X-Content-Type-Options' => 'nosniff',
             'Cache-Control' => 'private, no-store',

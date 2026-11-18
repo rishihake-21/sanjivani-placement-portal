@@ -37,6 +37,20 @@ class Application extends Model
         return $this->hasMany(ApplicationStatusHistory::class)->orderBy('created_at')->orderBy('id');
     }
 
+    /**
+     * The single definition of "an applicant of this recruiter": applied to a published or closed drive
+     * of the recruiter's own company, and has not withdrawn. Every recruiter query and the document
+     * policy go through here, so the boundary cannot drift between endpoints.
+     */
+    public function scopeVisibleToRecruiter(Builder $query, Recruiter $recruiter): Builder
+    {
+        return $query
+            ->where('stage', '<>', ApplicationStage::WITHDRAWN->value)
+            ->whereHas('drive', fn (Builder $d) => $d
+                ->where('company_id', $recruiter->company_id)
+                ->whereIn('status', config('tpms.recruiter.visible_drive_statuses')));
+    }
+
     public function scopeForDepartment(Builder $query, int $departmentId): Builder
     {
         return $query->whereHas('student', fn (Builder $s) => $s->where('department_id', $departmentId));

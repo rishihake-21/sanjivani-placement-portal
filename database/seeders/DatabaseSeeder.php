@@ -57,5 +57,8 @@ class DatabaseSeeder extends Seeder
 
         // Seed complete students, companies, and drives
         $this->call(CompleteStudentAndCompanySeeder::class);
+
+        // One demo recruiter login per company
+        $this->call(RecruiterSeeder::class);
     }
 }

@@ -12,11 +12,18 @@ enum DocumentType: string
     case CERT_INTERNSHIP = 'CERT_INTERNSHIP';
     case CERT_EXPERIENCE = 'CERT_EXPERIENCE';
     case CERT_OTHER = 'CERT_OTHER';
+    case PHOTO = 'PHOTO';
 
     /** Types a student may upload on their own (not attached to a record). */
     public function isStandalone(): bool
     {
-        return in_array($this, [self::RESUME, self::CERT_OTHER], true);
+        return in_array($this, [self::RESUME, self::CERT_OTHER, self::PHOTO], true);
+    }
+
+    /** Photos must be images; everything else may also be a PDF. */
+    public function isImageOnly(): bool
+    {
+        return $this === self::PHOTO;
     }
 
     /** @return list<string> */
